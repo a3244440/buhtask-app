@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #080E1A;
+  --foreground: #E8EDF5;
+  --card: #0F1828;
+  --card-foreground: #E8EDF5;
+  --primary: #2563EB;
+  --primary-foreground: #ffffff;
+  --secondary: #162035;
+  --secondary-foreground: #E8EDF5;
+  --muted: #162035;
+  --muted-foreground: #7A8BA8;
+  --accent: #10B981;
+  --accent-foreground: #ffffff;
+  --destructive: #EF4444;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: #162035;
+  --ring: #2563EB;
+  --radius: 0.625rem;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: Inter, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
