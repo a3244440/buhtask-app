@@ -26,11 +26,34 @@ export default function CreateTask() {
   const [category, setCategory] = useState('tax_reporting');
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('Астана');
+  const [budget, setBudget] = useState('');
+  const [deadline, setDeadline] = useState('');
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push('/auth'); return; }
       setUserId(data.user.id);
+
+      // Убеждаемся что профиль существует (создаём если нет)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', data.user.id)
+        .single();
+
+      if (!profile) {
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          email: data.user.email,
+          phone: '',
+          role: 'client',
+          rating: 0,
+          is_banned: false,
+          completed_tasks: 0,
+          verification_status: 'not_verified',
+          availability: 'free',
+        });
+      }
     });
   }, []);
 
@@ -38,22 +61,46 @@ export default function CreateTask() {
     setError('');
     if (!title.trim()) { setError('Введите название задачи'); return; }
     if (!description.trim()) { setError('Добавьте описание'); return; }
-    if (!userId) { setError('Ошибка авторизации'); return; }
+    if (!userId) { setError('Ошибка авторизации — войдите заново'); return; }
+
     setLoading(true);
     try {
-      const { error: e } = await supabase.from('tasks').insert({
+      const payload: Record<string, any> = {
         client_id: userId,
         title: title.trim(),
         description: description.trim(),
         category,
         city,
         status: 'open',
-      });
-      if (e) throw e;
+      };
+
+      if (budget && !isNaN(parseFloat(budget))) {
+        payload.budget = parseFloat(budget);
+      }
+      if (deadline) {
+        payload.deadline = deadline;
+      }
+
+      const { data, error: e } = await supabase
+        .from('tasks')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (e) {
+        // Показываем детальную ошибку для отладки
+        const errMsg = e.message || e.details || e.hint || JSON.stringify(e);
+        console.error('Supabase error:', e);
+        setError(`Ошибка: ${errMsg}`);
+        return;
+      }
+
       router.push('/dashboard/client');
     } catch (err: any) {
-      setError(err.message || 'Ошибка создания задачи');
-    } finally { setLoading(false); }
+      setError(err?.message || 'Неизвестная ошибка');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,6 +119,7 @@ export default function CreateTask() {
             <p className="text-sm text-gray-500">Бухгалтеры получат уведомление и смогут откликнуться</p>
           </div>
         </div>
+
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Категория *</label>
@@ -79,27 +127,70 @@ export default function CreateTask() {
               {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Название задачи *</label>
             <input type="text" value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="Например: Сдача налоговой отчётности за 2 квартал 2026" className={inp} />
+              placeholder="Например: Сдача отчёта 910 ФНО за 2 квартал" className={inp} />
           </div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Описание *</label>
             <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)}
-              placeholder="Опишите задачу: тип компании (ИП/ТОО), налоговый режим, детали..." className={inp + ' resize-none'} />
+              placeholder="Опишите задачу: тип компании (ИП/ТОО), налоговый режим, детали..."
+              className={inp + ' resize-none'} />
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Бюджет (₸)</label>
+              <input type="number" value={budget} onChange={e => setBudget(e.target.value)}
+                placeholder="15000" className={inp} min="0" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Срок выполнения</label>
+              <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
+                className={inp} min={new Date().toISOString().split('T')[0]} />
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Город *</label>
             <select value={city} onChange={e => setCity(e.target.value)} className={inp}>
               {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+              <p className="font-medium mb-1">Не удалось создать задачу</p>
+              <p className="text-xs opacity-80">{error}</p>
+              {error.includes('row-level security') || error.includes('policy') ? (
+                <p className="text-xs mt-2 text-red-500">
+                  💡 Нужно настроить RLS в Supabase. Обратитесь к разработчику.
+                </p>
+              ) : null}
+            </div>
+          )}
+
           <button onClick={handleSubmit} disabled={loading || !userId}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3.5 rounded-xl font-semibold transition-colors text-sm">
-            {loading ? 'Публикуем...' : 'Опубликовать задачу'}
+            {loading ? 'Публикуем задачу...' : 'Опубликовать задачу'}
           </button>
+        </div>
+
+        {/* SQL hint for RLS */}
+        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-700">
+          <p className="font-semibold mb-1">⚙️ Если задача не сохраняется — выполни в Supabase SQL Editor:</p>
+          <pre className="bg-amber-100 rounded-lg p-2 mt-2 overflow-x-auto text-[10px] leading-relaxed">{`-- Разрешить создание задач авторизованным пользователям
+DROP POLICY IF EXISTS "tasks_insert" ON tasks;
+CREATE POLICY "tasks_insert" ON tasks
+  FOR INSERT WITH CHECK (auth.uid() = client_id);
+
+-- Разрешить чтение всех задач
+DROP POLICY IF EXISTS "tasks_select" ON tasks;
+CREATE POLICY "tasks_select" ON tasks
+  FOR SELECT USING (true);`}</pre>
         </div>
       </main>
     </div>
