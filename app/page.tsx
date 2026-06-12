@@ -9,7 +9,16 @@ import {
   Clock, MapPin, Zap, DollarSign, BarChart2, Moon, Sun,
 } from "lucide-react";
 
-const TYPING_WORDS = ["минуты", "секунды", "рублей"];
+const TYPING_WORDS = [
+  "Открыть ТОО",
+  "Закрыть ТОО",
+  "Сдать отчёт 910 ФНО",
+  "Расчёт зарплаты сотрудника",
+  "Ведение бухгалтерии",
+  "Консультация по НДС",
+  "Регистрация ИП",
+  "Налоговый аудит",
+];
 const STATS = [
   { value: "500+", label: "Проверенных бухгалтеров" },
   { value: "2 000+", label: "Выполненных задач" },
@@ -132,15 +141,11 @@ export default function HomePage() {
             <MapPin className="w-3.5 h-3.5" /> Маркетплейс бухгалтерских услуг Казахстана
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] mb-6">
-            Найдите бухгалтера<br />за{" "}
-            <span className="text-yellow-300 inline-block min-w-[3ch]">
-              {displayed}
-              <span className={`inline-block w-0.5 h-[0.85em] bg-yellow-300 ml-0.5 align-middle transition-opacity ${showCursor ? 'opacity-100' : 'opacity-0'}`} />
-            </span>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] mb-5">
+            Найти бухгалтера<br />просто и быстро
           </h1>
 
-          <p className="text-lg text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg text-blue-100 max-w-2xl mx-auto mb-8 leading-relaxed">
             BuhTask — цифровая платформа, где предприниматели находят проверенных бухгалтеров и получают бухгалтерские услуги из любой точки Казахстана.
           </p>
 
@@ -153,6 +158,15 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl border-2 border-white/30 text-white font-semibold text-base hover:bg-white/10 transition-all">
               Я бухгалтер — найти заказы
             </button>
+          </div>
+
+          {/* Typing animation between buttons */}
+          <div className="mt-8 flex items-center justify-center gap-3">
+            <span className="text-white/50 text-sm">Например:</span>
+            <div className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-sm min-w-[260px] justify-start">
+              <span className="text-yellow-300 text-sm font-medium">{displayed}</span>
+              <span className={`inline-block w-0.5 h-4 bg-yellow-300 ml-0.5 align-middle transition-opacity ${showCursor ? 'opacity-100' : 'opacity-0'}`} />
+            </div>
           </div>
         </div>
       </section>
