@@ -10,8 +10,12 @@ interface Conversation { id: string; other_name: string; other_id: string; last_
 interface Message { id: string; sender_id: string; content: string; created_at: string; }
 
 const CATS: Record<string, string> = {
-  tax_reporting: 'Налоговая отчётность', salary: 'Расчёт зарплаты', registration: 'Регистрация ИП/ТОО',
-  audit: 'Аудит', consultation: 'Консультация', full_accounting: 'Ведение бухгалтерии', other: 'Прочее',
+  tax: 'Налоги и НДС',
+  salary: 'Расчёт зарплаты',
+  register: 'Регистрация ИП/ТОО',
+  audit: 'Аудит',
+  report: 'Отчётность (910, 700 ФНО)',
+  other: 'Прочее',
 };
 const STATUS: Record<string, { label: string; color: string }> = {
   open: { label: 'Открыта', color: 'bg-emerald-100 text-emerald-700' },

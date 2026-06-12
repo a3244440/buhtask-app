@@ -6,12 +6,11 @@ import { ArrowLeft, FileText } from 'lucide-react';
 import DashboardHeader from '../../../components/DashboardHeader';
 
 const CATEGORIES = [
-  { value: 'tax_reporting', label: 'Налоговая отчётность' },
+  { value: 'tax', label: 'Налоги и НДС' },
   { value: 'salary', label: 'Расчёт зарплаты' },
-  { value: 'registration', label: 'Регистрация ИП / ТОО' },
+  { value: 'register', label: 'Регистрация ИП / ТОО' },
   { value: 'audit', label: 'Аудит' },
-  { value: 'consultation', label: 'Консультация' },
-  { value: 'full_accounting', label: 'Ведение бухгалтерии' },
+  { value: 'report', label: 'Отчётность (910, 700 ФНО)' },
   { value: 'other', label: 'Прочее' },
 ];
 const CITIES = ['Астана','Алматы','Шымкент','Актобе','Тараз','Павлодар','Усть-Каменогорск','Семей','Атырау','Костанай','Кызылорда','Уральск','Петропавловск','Актау','Темиртау','Туркестан','Кокшетау','Талдыкорган'];
@@ -23,7 +22,7 @@ export default function CreateTask() {
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('tax_reporting');
+  const [category, setCategory] = useState('tax');
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('Астана');
   const [budget, setBudget] = useState('');
