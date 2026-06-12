@@ -1,224 +1,189 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
-import { Task, TASK_CATEGORIES, TaskCategory } from '@/types';
-import { Star, MapPin } from 'lucide-react';
+import { LogOut, Search, Home, Briefcase, MessageSquare, User, Star, MapPin, Clock, ChevronRight, TrendingUp } from 'lucide-react';
 
-interface AccountantProfile {
-  id: string;
-  full_name: string;
-  specialization: string[];
-  experience_years: number;
-  rating: number;
-  completed_tasks: number;
-  description: string;
-  verified: boolean;
-  cities_served: string[];
-}
+interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; }
+
+const CATEGORIES: Record<string, string> = {
+  tax_report: 'Налоговая отчётность', accounting: 'Ведение бухгалтерии', salary: 'Расчёт зарплаты',
+  ip_registration: 'Регистрация ИП', too_registration: 'Регистрация ТОО', consultation: 'Консультация', audit: 'Аудит', other: 'Прочее',
+};
 
 export default function AccountantDashboard() {
-  const { user } = useAuthStore();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [profile, setProfile] = useState<AccountantProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<TaskCategory | 'all'>('all');
+  const [userEmail, setUserEmail] = useState('');
+  const [activeTab, setActiveTab] = useState('home');
+  const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
-  const fetchProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('accountants')
-        .select(`
-          *,
-          profiles!inner(full_name)
-        `)
-        .eq('id', user?.id)
-        .single();
+  useEffect(() => { init(); }, []);
 
-      if (error) throw error;
-      setProfile({
-        ...data,
-        full_name: data.profiles?.full_name || 'Бухгалтер',
-      });
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-    }
+  const init = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push('/auth'); return; }
+    setUserEmail(user.email || '');
+    // Бухгалтер видит все открытые задачи
+    const { data } = await supabase.from('tasks').select('*').eq('status', 'open').order('created_at', { ascending: false });
+    setTasks(data || []);
+    setLoading(false);
   };
 
-  const fetchTasks = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('status', 'open')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setTasks(data || []);
-    } catch (err) {
-      console.error('Error fetching tasks:', err);
-    } finally {
-      setLoading(false);
-    }
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
   };
 
-  useEffect(() => {
-    if (!user) {
-      router.push('/auth');
-      return;
-    }
-    fetchProfile();
-    fetchTasks();
-  }, [user, router, fetchProfile, fetchTasks]);
+  const filtered = tasks.filter(t =>
+    !searchQuery ||
+    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    CATEGORIES[t.category]?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const filteredTasks = filter === 'all'
-    ? tasks
-    : tasks.filter(task => task.category === filter);
+  const navItems = [
+    { id: 'home', icon: Home, label: 'Главная' },
+    { id: 'tasks', icon: Briefcase, label: 'Задачи' },
+    { id: 'messages', icon: MessageSquare, label: 'Сообщения' },
+    { id: 'profile', icon: User, label: 'Профиль' },
+  ];
+
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">BuhTask</h1>
-              <p className="text-sm text-gray-600">Личный кабинет бухгалтера</p>
+    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Sidebar */}
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-gray-100 flex-col z-40">
+        <div className="p-6 border-b border-gray-100">
+          <a href="/"><img src="/images/logo.png" alt="BuhTask" className="h-8 w-auto" /></a>
+        </div>
+        <nav className="flex-1 p-4 space-y-1">
+          {[
+            { id: 'home', icon: Home, label: 'Главная' },
+            { id: 'tasks', icon: Briefcase, label: 'Доступные задачи' },
+            { id: 'my_tasks', icon: TrendingUp, label: 'Мои заказы' },
+            { id: 'messages', icon: MessageSquare, label: 'Сообщения' },
+          ].map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === item.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+              <item.icon className="w-4 h-4" />{item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="p-4 border-t border-gray-100">
+          <div className="flex items-center gap-3 px-4 py-3 mb-2">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
+              {userEmail[0]?.toUpperCase()}
             </div>
-            {profile && (
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">{profile.full_name}</div>
-                  <div className="text-sm text-gray-600 flex items-center gap-1">
-                    <Star size={14} className="text-yellow-500 fill-current" />
-                    {profile.rating.toFixed(1)} · {profile.completed_tasks} задач
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-gray-900 truncate">{userEmail}</p>
+              <p className="text-xs text-gray-400">Бухгалтер</p>
+            </div>
+          </div>
+          <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-500 hover:bg-red-50 transition-colors">
+            <LogOut className="w-4 h-4" /> Выйти
+          </button>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="lg:pl-64">
+        <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
+          <div className="px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+            <div className="lg:hidden">
+              <img src="/images/logo.png" alt="BuhTask" className="h-8 w-auto" />
+            </div>
+            <div className="hidden lg:block">
+              <h1 className="text-lg font-semibold text-gray-900">Кабинет бухгалтера</h1>
+            </div>
+            <div className="flex-1 max-w-sm lg:max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input type="text" placeholder="Поиск задач..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="p-4 sm:p-8 pb-24 lg:pb-8">
+          {/* Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {[
+              { label: 'Доступных задач', value: tasks.length, color: 'text-blue-600' },
+              { label: 'Найдено по фильтру', value: filtered.length, color: 'text-emerald-600' },
+              { label: 'Мои заказы', value: 0, color: 'text-purple-600' },
+              { label: 'Мой рейтинг', value: '—', color: 'text-amber-500' },
+            ].map(s => (
+              <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                <p className="text-xs text-gray-500 mb-2">{s.label}</p>
+                <p className={`text-3xl font-extrabold ${s.color}`}>{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Available tasks */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100">
+              <h2 className="font-semibold text-gray-900">Доступные задачи</h2>
+              <p className="text-xs text-gray-400 mt-0.5">{filtered.length} задач открыто для откликов</p>
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Briefcase className="w-8 h-8 text-gray-300" />
+                </div>
+                <p className="text-gray-400">Задачи не найдены</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {filtered.map(task => (
+                  <div key={task.id} onClick={() => router.push(`/dashboard/accountant/tasks/${task.id}`)}
+                    className="px-6 py-5 hover:bg-gray-50 cursor-pointer transition-colors group">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-1">{task.title}</h3>
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-3">{task.description}</p>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-medium">{CATEGORIES[task.category] || task.category}</span>
+                          {task.city && <span className="flex items-center gap-1 text-gray-400"><MapPin className="w-3 h-3" />{task.city}</span>}
+                          {task.budget && <span className="flex items-center gap-1 text-emerald-600 font-medium">💰 {task.budget.toLocaleString()} ₸</span>}
+                          {task.deadline && <span className="flex items-center gap-1 text-gray-400"><Clock className="w-3 h-3" />{new Date(task.deadline).toLocaleDateString('ru-RU')}</span>}
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors">
+                          Откликнуться
+                        </button>
+                        <ChevronRight className="w-4 h-4 text-gray-300 mx-auto mt-2" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold">
-                  {profile.full_name[0]}
-                </div>
+                ))}
               </div>
             )}
           </div>
-        </div>
-      </header>
+        </main>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="text-sm text-gray-600 mb-1">Рейтинг</div>
-            <div className="text-3xl font-bold text-yellow-600 flex items-center gap-2">
-              <Star size={32} className="fill-current" />
-              {profile?.rating.toFixed(1) || '0.0'}
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="text-sm text-gray-600 mb-1">Выполнено задач</div>
-            <div className="text-3xl font-bold text-gray-900">
-              {profile?.completed_tasks || 0}
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="text-sm text-gray-600 mb-1">Опыт</div>
-            <div className="text-3xl font-bold text-blue-600">
-              {profile?.experience_years || 0} лет
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="text-sm text-gray-600 mb-1">Статус</div>
-            <div className="text-lg font-semibold text-green-600">
-              {profile?.verified ? '✓ Верифицирован' : 'На проверке'}
-            </div>
-          </div>
-        </div>
-
-        {/* Filter */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                filter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Все задачи
+      {/* Mobile nav */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-40">
+        <div className="grid grid-cols-4 h-16">
+          {navItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              className={`flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors ${activeTab === item.id ? 'text-blue-600' : 'text-gray-400'}`}>
+              <item.icon className="w-5 h-5" />{item.label}
             </button>
-            {Object.entries(TASK_CATEGORIES).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key as TaskCategory)}
-                className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                  filter === key
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
-
-        {/* Tasks List */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Доступные задачи ({filteredTasks.length})
-            </h2>
-          </div>
-
-          {loading ? (
-            <div className="p-12 text-center text-gray-500">Загрузка...</div>
-          ) : filteredTasks.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              Нет доступных задач
-            </div>
-          ) : (
-            <div className="divide-y">
-              {filteredTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="p-6 hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => router.push(`/dashboard/accountant/tasks/${task.id}`)}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
-                    {task.budget && (
-                      <div className="text-xl font-bold text-green-600">
-                        {task.budget.toLocaleString()} ₸
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-gray-600 mb-3 line-clamp-2">{task.description}</p>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
-                      {TASK_CATEGORIES[task.category]}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin size={14} />
-                      {task.city}
-                    </span>
-                    {task.deadline && (
-                      <span>
-                        📅 до {new Date(task.deadline).toLocaleDateString('ru-RU')}
-                      </span>
-                    )}
-                    <span className="text-xs text-gray-400">
-                      {new Date(task.created_at).toLocaleDateString('ru-RU')}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
+      </nav>
     </div>
   );
 }
