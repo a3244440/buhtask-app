@@ -83,7 +83,7 @@ export default function AuthPage() {
     setLoading(true);
     try {
       const { error: e } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset`,
+        redirectTo: `https://buhtask.kz/auth/reset`,
       });
       if (e) { setError(e.message); return; }
       setSuccess('Письмо со ссылкой для сброса пароля отправлено на ' + email);
