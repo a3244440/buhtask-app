@@ -2,23 +2,13 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 
-// Support both old (anon key JWT) and new (publishable key) Supabase formats
+// Supabase новых версий использует PUBLISHABLE_KEY вместо ANON_KEY
 const supabaseKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  'placeholder-key';
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  'placeholder';
 
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-  global: {
-    headers: {
-      'x-client-info': 'buhtask-web',
-    },
-  },
-});
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export type UserRole = 'client' | 'accountant' | 'admin';
 
@@ -37,13 +27,10 @@ export interface UserProfile {
   avatar_url?: string;
   experience_years?: number;
   specialization?: string[];
-  languages?: string[];
-  work_format?: string;
   min_price?: number;
   availability?: 'free' | 'busy' | 'vacation';
   completed_tasks: number;
   verification_status: 'not_verified' | 'pending' | 'verified';
-  last_login?: string;
 }
 
 export interface AccountantProfile extends UserProfile {
