@@ -28,6 +28,7 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
   const [userId, setUserId] = useState('');
   const [accepting, setAccepting] = useState('');
   const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
 
   useEffect(() => {
     init();
@@ -38,7 +39,6 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
 
-    // Load task - try without RLS restrictions
     const { data: taskData, error: taskErr } = await supabase
       .from('tasks')
       .select('*')
@@ -46,25 +46,15 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
       .maybeSingle();
 
     if (taskErr) {
-      console.error('Task error:', taskErr);
+      setDebugInfo(`Ошибка БД: ${taskErr.message} (код: ${taskErr.code})`);
       setLoading(false);
       return;
     }
-
     if (!taskData) {
-      // Try loading as client_id match
-      const { data: myTask } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('id', params.id)
-        .eq('client_id', user.id)
-        .maybeSingle();
-      
-      if (myTask) setTask(myTask);
+      setDebugInfo(`Задача ${params.id} не найдена в базе или RLS блокирует доступ.`);
       setLoading(false);
       return;
     }
-    
     setTask(taskData);
 
     // Load proposals with accountant profile
@@ -116,9 +106,8 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
         <div className="bg-white rounded-2xl border border-gray-100 p-10 shadow-sm">
           <p className="text-4xl mb-4">🔍</p>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Задача не найдена</h2>
-          <p className="text-sm text-gray-500 mb-6">
-            Возможно, нет доступа к задаче. Выполните в Supabase SQL Editor:
-          </p>
+          <p className="text-sm text-gray-500 mb-4">Возможно, нет доступа к задаче.</p>
+          {debugInfo && <p className="text-xs text-red-500 bg-red-50 rounded-lg p-3 mb-4 break-words">{debugInfo}</p>}
           <pre className="bg-gray-50 rounded-xl p-4 text-xs text-left text-gray-600 mb-6 overflow-x-auto">{`ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "tasks_select" ON tasks;
 CREATE POLICY "tasks_select" ON tasks
