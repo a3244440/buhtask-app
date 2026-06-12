@@ -81,14 +81,11 @@ export default function CreateTask() {
         payload.deadline = deadline;
       }
 
-      const { data, error: e } = await supabase
+      const { error: e } = await supabase
         .from('tasks')
-        .insert(payload)
-        .select()
-        .single();
+        .insert(payload);
 
       if (e) {
-        // Показываем детальную ошибку для отладки
         const errMsg = e.message || e.details || e.hint || JSON.stringify(e);
         console.error('Supabase error:', e);
         setError(`Ошибка: ${errMsg}`);
