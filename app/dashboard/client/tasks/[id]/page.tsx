@@ -1,255 +1,182 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
-import { Task, Proposal, TASK_CATEGORIES } from '@/types';
-import { ArrowLeft, MapPin, Calendar, User } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Star, CheckCircle, Clock, User } from 'lucide-react';
+import DashboardHeader from '../../../../components/DashboardHeader';
 
-interface ProposalWithAccountant extends Proposal {
-  accountant: {
-    full_name: string;
-    rating: number;
-    completed_tasks: number;
-    verified: boolean;
-  };
+const CATS: Record<string, string> = {
+  tax: 'Налоги и НДС', salary: 'Расчёт зарплаты', register: 'Регистрация ИП/ТОО',
+  audit: 'Аудит', report: 'Отчётность', other: 'Прочее',
+};
+
+interface Task {
+  id: string; title: string; description: string; status: string;
+  category: string; city: string; budget?: number; deadline?: string; created_at: string;
+}
+interface Proposal {
+  id: string; accountant_id: string; proposed_price: number;
+  description: string; estimated_days?: number; created_at: string;
+  accountant_name?: string; accountant_rating?: number; accountant_tasks?: number;
 }
 
-export default function TaskDetailClient({ params }: { params: { id: string } }) {
-  const { user } = useAuthStore();
+export default function ClientTaskDetail({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [task, setTask] = useState<Task | null>(null);
-  const [proposals, setProposals] = useState<ProposalWithAccountant[]>([]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState('');
+  const [accepting, setAccepting] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchTask();
-    fetchProposals();
+    init();
   }, [params.id]);
 
-  const fetchTask = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('id', params.id)
-        .single();
+  const init = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push('/auth'); return; }
+    setUserId(user.id);
 
-      if (error) throw error;
-      setTask(data);
-    } catch (err) {
-      console.error('Error fetching task:', err);
-    } finally {
-      setLoading(false);
+    // Load task
+    const { data: taskData, error: taskErr } = await supabase
+      .from('tasks').select('*').eq('id', params.id).single();
+    if (taskErr || !taskData) { setLoading(false); return; }
+    setTask(taskData);
+
+    // Load proposals with accountant profile
+    const { data: propData } = await supabase
+      .from('proposals').select('*').eq('task_id', params.id).order('created_at', { ascending: false });
+
+    if (propData && propData.length > 0) {
+      const withProfiles = await Promise.all(propData.map(async (p: any) => {
+        const { data: profile } = await supabase
+          .from('profiles').select('full_name,rating,completed_tasks').eq('id', p.accountant_id).single();
+        return {
+          ...p,
+          accountant_name: profile?.full_name || 'Бухгалтер',
+          accountant_rating: profile?.rating || 0,
+          accountant_tasks: profile?.completed_tasks || 0,
+        };
+      }));
+      setProposals(withProfiles);
     }
+    setLoading(false);
   };
 
-  const fetchProposals = async () => {
+  const acceptProposal = async (proposal: Proposal) => {
+    if (!confirm('Принять отклик этого бухгалтера?')) return;
+    setAccepting(proposal.id);
+    setError('');
     try {
-      const { data, error } = await supabase
-        .from('proposals')
-        .select(`
-          *,
-          accountants!inner(
-            id,
-            rating,
-            completed_tasks,
-            verified,
-            profiles!inner(full_name)
-          )
-        `)
-        .eq('task_id', params.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const formattedProposals = data?.map((p: any) => ({
-        ...p,
-        accountant: {
-          full_name: p.accountants.profiles.full_name || 'Бухгалтер',
-          rating: p.accountants.rating,
-          completed_tasks: p.accountants.completed_tasks,
-          verified: p.accountants.verified,
-        },
-      })) || [];
-
-      setProposals(formattedProposals);
-    } catch (err) {
-      console.error('Error fetching proposals:', err);
-    }
-  };
-
-  const acceptProposal = async (proposalId: string, accountantId: string, price: number) => {
-    if (!confirm('Принять этот отклик?')) return;
-
-    try {
-      const commission = price * 0.1;
-
-      // Создаем заказ
-      const { error: orderError } = await supabase.from('orders').insert({
-        task_id: params.id,
-        client_id: user?.id,
-        accountant_id: accountantId,
-        proposal_id: proposalId,
-        price: price,
-        commission: commission,
-        status: 'in_progress',
-      });
-
-      if (orderError) throw orderError;
-
-      // Обновляем статус задачи
-      const { error: taskError } = await supabase
-        .from('tasks')
-        .update({ status: 'in_progress' })
-        .eq('id', params.id);
-
-      if (taskError) throw taskError;
-
-      alert('Отклик принят! Задача передана в работу.');
+      await supabase.from('tasks').update({ status: 'in_progress', accountant_id: proposal.accountant_id }).eq('id', params.id);
+      await supabase.from('proposals').update({ status: 'accepted' }).eq('id', proposal.id);
       router.push('/dashboard/client');
     } catch (err: any) {
-      alert(err.message || 'Ошибка принятия отклика');
+      setError(err.message || 'Ошибка');
+    } finally {
+      setAccepting('');
     }
   };
 
-  if (loading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Загрузка...</div>;
-  }
+  const cancelTask = async () => {
+    if (!confirm('Отменить задачу?')) return;
+    await supabase.from('tasks').update({ status: 'cancelled' }).eq('id', params.id);
+    router.push('/dashboard/client');
+  };
 
-  if (!task) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Задача не найдена</div>;
-  }
+  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"/></div>;
+  if (!task) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-500">Задача не найдена</p></div>;
+
+  const statusConfig: Record<string, {label: string; color: string}> = {
+    open: { label: 'Открыта', color: 'bg-emerald-100 text-emerald-700' },
+    in_progress: { label: 'В работе', color: 'bg-blue-100 text-blue-700' },
+    completed: { label: 'Завершена', color: 'bg-gray-100 text-gray-500' },
+    cancelled: { label: 'Отменена', color: 'bg-red-100 text-red-500' },
+  };
+  const sc = statusConfig[task.status] || statusConfig.open;
+  const inp = "w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-2"
-          >
-            <ArrowLeft size={20} />
-            Назад
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900">Детали задачи</h1>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <DashboardHeader />
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <button onClick={() => router.push('/dashboard/client')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6">
+          <ArrowLeft className="w-4 h-4"/> Назад к задачам
+        </button>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-start justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">{task.title}</h2>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              task.status === 'open' ? 'bg-green-100 text-green-800' :
-              task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-              task.status === 'completed' ? 'bg-gray-100 text-gray-800' :
-              'bg-red-100 text-red-800'
-            }`}>
-              {task.status === 'open' ? 'Открыта' :
-               task.status === 'in_progress' ? 'В работе' :
-               task.status === 'completed' ? 'Завершена' : 'Отменена'}
-            </span>
+        {/* Task card */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <h1 className="text-xl font-bold text-gray-900">{task.title}</h1>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${sc.color}`}>{sc.label}</span>
           </div>
+          <div className="flex flex-wrap gap-2 mb-5 text-xs">
+            <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full font-medium">{CATS[task.category] || task.category}</span>
+            {task.city && <span className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full"><MapPin className="w-3 h-3"/>{task.city}</span>}
+            {task.budget && <span className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full font-medium">💰 {task.budget.toLocaleString()} ₸</span>}
+            {task.deadline && <span className="flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-full"><Calendar className="w-3 h-3"/>до {new Date(task.deadline).toLocaleDateString('ru-RU')}</span>}
+          </div>
+          <div className="mb-5">
+            <p className="text-sm font-semibold text-gray-700 mb-2">Описание</p>
+            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{task.description}</p>
+          </div>
+          <p className="text-xs text-gray-400">Опубликовано: {new Date(task.created_at).toLocaleDateString('ru-RU', { year:'numeric',month:'long',day:'numeric' })}</p>
 
-          <div className="flex items-center gap-4 mb-6">
-            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-              {TASK_CATEGORIES[task.category]}
-            </span>
-            <span className="flex items-center gap-1 text-gray-600">
-              <MapPin size={16} />
-              {task.city}
-            </span>
-            {task.deadline && (
-              <span className="flex items-center gap-1 text-gray-600">
-                <Calendar size={16} />
-                до {new Date(task.deadline).toLocaleDateString('ru-RU')}
-              </span>
-            )}
-            {task.budget && (
-              <span className="text-green-600 font-semibold">
-                💰 {task.budget.toLocaleString()} ₸
-              </span>
-            )}
-          </div>
-
-          <div className="mb-6">
-            <h3 className="font-semibold text-gray-900 mb-2">Описание</h3>
-            <p className="text-gray-700 whitespace-pre-wrap">{task.description}</p>
-          </div>
-
-          <div className="text-sm text-gray-500">
-            Опубликовано: {new Date(task.created_at).toLocaleDateString('ru-RU', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </div>
+          {task.status === 'open' && (
+            <button onClick={cancelTask} className="mt-4 text-xs text-red-500 hover:underline">Отменить задачу</button>
+          )}
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">
-            Отклики бухгалтеров ({proposals.length})
-          </h3>
+        {/* Proposals */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="px-6 py-5 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-900">Отклики бухгалтеров</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{proposals.length} откликов</p>
+          </div>
 
           {proposals.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              Пока нет откликов на эту задачу
+            <div className="py-16 text-center">
+              <Clock className="w-10 h-10 text-gray-200 mx-auto mb-3"/>
+              <p className="text-gray-400 text-sm">Пока нет откликов</p>
+              <p className="text-gray-300 text-xs mt-1">Бухгалтеры увидят вашу задачу и откликнутся</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {proposals.map((proposal) => (
-                <div key={proposal.id} className="border rounded-lg p-5 hover:border-blue-300 transition-colors">
-                  <div className="flex items-start justify-between mb-3">
+            <div className="divide-y divide-gray-50">
+              {proposals.map(p => (
+                <div key={p.id} className="p-6">
+                  <div className="flex items-start justify-between gap-4 mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-lg">
-                        {proposal.accountant.full_name[0]}
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm flex-shrink-0">
+                        {p.accountant_name?.[0]?.toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-semibold text-gray-900 flex items-center gap-2">
-                          {proposal.accountant.full_name}
-                          {proposal.accountant.verified && (
-                            <span className="text-blue-500" title="Верифицирован">✓</span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          ⭐ {proposal.accountant.rating.toFixed(1)} · {proposal.accountant.completed_tasks} задач
+                        <p className="font-semibold text-sm text-gray-900">{p.accountant_name}</p>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-amber-400 fill-amber-400"/>{(p.accountant_rating||0).toFixed(1)}</span>
+                          <span>·</span>
+                          <span>{p.accountant_tasks || 0} задач</span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-green-600">
-                        {proposal.proposed_price.toLocaleString()} ₸
-                      </div>
-                      {proposal.estimated_days && (
-                        <div className="text-sm text-gray-600">{proposal.estimated_days} дней</div>
-                      )}
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xl font-extrabold text-emerald-600">{p.proposed_price.toLocaleString()} ₸</p>
+                      {p.estimated_days && <p className="text-xs text-gray-400">{p.estimated_days} дней</p>}
                     </div>
                   </div>
-
-                  <p className="text-gray-700 mb-4">{proposal.description}</p>
-
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-500">
-                      {new Date(proposal.created_at).toLocaleDateString('ru-RU')}
-                    </div>
-                    {task.status === 'open' && (
-                      <button
-                        onClick={() => acceptProposal(proposal.id, proposal.accountant_id, proposal.proposed_price)}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                      >
-                        Принять отклик
-                      </button>
-                    )}
-                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed mb-4">{p.description}</p>
+                  {task.status === 'open' && (
+                    <button onClick={() => acceptProposal(p)} disabled={accepting === p.id}
+                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-semibold rounded-xl transition-colors">
+                      {accepting === p.id ? 'Принимаем...' : '✓ Принять отклик'}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
+        {error && <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
       </main>
     </div>
   );
