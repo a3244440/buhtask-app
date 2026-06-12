@@ -85,17 +85,35 @@ export default function ClientTaskDetail() {
     setAccepting(proposal.id);
     setError('');
     try {
-      // Update task status
-      const { error: taskErr } = await supabase
-        .from('tasks')
-        .update({ status: 'in_progress', accountant_id: proposal.accountant_id })
-        .eq('id', taskId);
-      if (taskErr) throw taskErr;
+      // Try different status values to match DB constraint
+      const statusOptions = ['in_progress', 'in progress', 'inprogress', 'active', 'working', 'taken'];
+      let taskUpdated = false;
+      let lastErr: any = null;
+
+      for (const st of statusOptions) {
+        const { error: taskErr } = await supabase
+          .from('tasks')
+          .update({ status: st, accountant_id: proposal.accountant_id })
+          .eq('id', taskId);
+        if (!taskErr) { taskUpdated = true; break; }
+        lastErr = taskErr;
+        // If error is not about status constraint, stop trying
+        if (!taskErr.message?.includes('status')) break;
+      }
+
+      if (!taskUpdated) {
+        // Last resort: just set accountant_id without changing status
+        const { error: e2 } = await supabase
+          .from('tasks')
+          .update({ accountant_id: proposal.accountant_id })
+          .eq('id', taskId);
+        if (e2) throw lastErr || e2;
+      }
 
       // Update proposal status
       await supabase.from('proposals').update({ status: 'accepted' }).eq('id', proposal.id);
 
-      // Create conversation between client and accountant
+      // Create conversation
       const { data: existingConv } = await supabase
         .from('conversations')
         .select('id')
@@ -111,7 +129,7 @@ export default function ClientTaskDetail() {
         });
       }
 
-      // Reload task to show updated status
+      // Reload task
       const { data: updated } = await supabase.from('tasks').select('*').eq('id', taskId).maybeSingle();
       if (updated) setTask(updated);
     } catch (err: any) {

@@ -161,20 +161,6 @@ export default function CreateTask() {
             {loading ? 'Публикуем задачу...' : 'Опубликовать задачу'}
           </button>
         </div>
-
-        {/* SQL hint for RLS */}
-        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-700">
-          <p className="font-semibold mb-1">⚙️ Если задача не сохраняется — выполни в Supabase SQL Editor:</p>
-          <pre className="bg-amber-100 rounded-lg p-2 mt-2 overflow-x-auto text-[10px] leading-relaxed">{`-- Разрешить создание задач авторизованным пользователям
-DROP POLICY IF EXISTS "tasks_insert" ON tasks;
-CREATE POLICY "tasks_insert" ON tasks
-  FOR INSERT WITH CHECK (auth.uid() = client_id);
-
--- Разрешить чтение всех задач
-DROP POLICY IF EXISTS "tasks_select" ON tasks;
-CREATE POLICY "tasks_select" ON tasks
-  FOR SELECT USING (true);`}</pre>
-        </div>
       </main>
     </div>
   );
