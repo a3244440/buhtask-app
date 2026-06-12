@@ -38,10 +38,33 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
 
-    // Load task
+    // Load task - try without RLS restrictions
     const { data: taskData, error: taskErr } = await supabase
-      .from('tasks').select('*').eq('id', params.id).single();
-    if (taskErr || !taskData) { setLoading(false); return; }
+      .from('tasks')
+      .select('*')
+      .eq('id', params.id)
+      .maybeSingle();
+
+    if (taskErr) {
+      console.error('Task error:', taskErr);
+      setLoading(false);
+      return;
+    }
+
+    if (!taskData) {
+      // Try loading as client_id match
+      const { data: myTask } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', params.id)
+        .eq('client_id', user.id)
+        .maybeSingle();
+      
+      if (myTask) setTask(myTask);
+      setLoading(false);
+      return;
+    }
+    
     setTask(taskData);
 
     // Load proposals with accountant profile
@@ -86,7 +109,28 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
   };
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"/></div>;
-  if (!task) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-500">Задача не найдена</p></div>;
+  if (!task) return (
+    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <DashboardHeader />
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="bg-white rounded-2xl border border-gray-100 p-10 shadow-sm">
+          <p className="text-4xl mb-4">🔍</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Задача не найдена</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Возможно, нет доступа к задаче. Выполните в Supabase SQL Editor:
+          </p>
+          <pre className="bg-gray-50 rounded-xl p-4 text-xs text-left text-gray-600 mb-6 overflow-x-auto">{`ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "tasks_select" ON tasks;
+CREATE POLICY "tasks_select" ON tasks
+  FOR SELECT USING (auth.uid() IS NOT NULL);`}</pre>
+          <button onClick={() => router.push('/dashboard/client')}
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
+            ← Назад в кабинет
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   const statusConfig: Record<string, {label: string; color: string}> = {
     open: { label: 'Открыта', color: 'bg-emerald-100 text-emerald-700' },

@@ -37,7 +37,7 @@ export default function AccountantTaskDetail({ params }: { params: { id: string 
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
 
-    const { data: taskData } = await supabase.from('tasks').select('*').eq('id', params.id).single();
+    const { data: taskData } = await supabase.from('tasks').select('*').eq('id', params.id).maybeSingle();
     setTask(taskData || null);
 
     // Check if already applied
