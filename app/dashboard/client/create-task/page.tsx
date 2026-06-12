@@ -74,13 +74,6 @@ export default function CreateTask() {
         status: 'open',
       };
 
-      if (budget && !isNaN(parseFloat(budget))) {
-        payload.budget = parseFloat(budget);
-      }
-      if (deadline) {
-        payload.deadline = deadline;
-      }
-
       const { error: e } = await supabase
         .from('tasks')
         .insert(payload);
