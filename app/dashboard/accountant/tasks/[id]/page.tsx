@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, MapPin, Calendar, Send, CheckCircle } from 'lucide-react';
 import DashboardHeader from '../../../../components/DashboardHeader';
 
@@ -15,7 +15,9 @@ interface Task {
   category: string; city: string; budget?: number; deadline?: string; created_at: string;
 }
 
-export default function AccountantTaskDetail({ params }: { params: { id: string } }) {
+export default function AccountantTaskDetail() {
+  const routeParams = useParams();
+  const taskId = routeParams?.id as string;
   const router = useRouter();
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,25 +31,26 @@ export default function AccountantTaskDetail({ params }: { params: { id: string 
   const [days, setDays] = useState('');
   const [letter, setLetter] = useState('');
 
-  useEffect(() => { init(); }, [params.id]);
+  useEffect(() => { init(); }, [taskId]);
 
   const init = async () => {
+    if (!taskId) { return; }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
 
     const { data: taskData, error: taskErr } = await supabase
-      .from('tasks').select('*').eq('id', params.id).maybeSingle();
+      .from('tasks').select('*').eq('id', taskId).maybeSingle();
 
     if (taskErr) {
       setDebugInfo(`Ошибка БД: ${taskErr.message} (код: ${taskErr.code})`);
     } else if (!taskData) {
-      setDebugInfo(`Задача с ID ${params.id} не существует в базе или RLS блокирует доступ.`);
+      setDebugInfo(`Задача с ID ${taskId} не существует в базе или RLS блокирует доступ.`);
     } else {
       setTask(taskData);
     }
 
-    const { data: existing } = await supabase.from('proposals').select('id').eq('task_id', params.id).eq('accountant_id', user.id).maybeSingle();
+    const { data: existing } = await supabase.from('proposals').select('id').eq('task_id', taskId).eq('accountant_id', user.id).maybeSingle();
     if (existing) setAlreadyApplied(true);
     setLoading(false);
   };
@@ -59,7 +62,7 @@ export default function AccountantTaskDetail({ params }: { params: { id: string 
     setSubmitting(true);
     try {
       const { error: e } = await supabase.from('proposals').insert({
-        task_id: params.id, accountant_id: userId,
+        task_id: taskId, accountant_id: userId,
         proposed_price: parseFloat(price), description: letter.trim(),
         estimated_days: days ? parseInt(days) : null, status: 'pending',
       });

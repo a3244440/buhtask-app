@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, MapPin, Calendar, Star, CheckCircle, Clock, User } from 'lucide-react';
 import DashboardHeader from '../../../../components/DashboardHeader';
 
@@ -20,7 +20,9 @@ interface Proposal {
   accountant_name?: string; accountant_rating?: number; accountant_tasks?: number;
 }
 
-export default function ClientTaskDetail({ params }: { params: { id: string } }) {
+export default function ClientTaskDetail() {
+  const routeParams = useParams();
+  const taskId = routeParams?.id as string;
   const router = useRouter();
   const [task, setTask] = useState<Task | null>(null);
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -32,9 +34,10 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
 
   useEffect(() => {
     init();
-  }, [params.id]);
+  }, [taskId]);
 
   const init = async () => {
+    if (!taskId) { return; }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
@@ -42,7 +45,7 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
     const { data: taskData, error: taskErr } = await supabase
       .from('tasks')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', taskId)
       .maybeSingle();
 
     if (taskErr) {
@@ -51,7 +54,7 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
       return;
     }
     if (!taskData) {
-      setDebugInfo(`Задача ${params.id} не найдена в базе или RLS блокирует доступ.`);
+      setDebugInfo(`Задача ${taskId} не найдена в базе или RLS блокирует доступ.`);
       setLoading(false);
       return;
     }
@@ -59,7 +62,7 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
 
     // Load proposals with accountant profile
     const { data: propData } = await supabase
-      .from('proposals').select('*').eq('task_id', params.id).order('created_at', { ascending: false });
+      .from('proposals').select('*').eq('task_id', taskId).order('created_at', { ascending: false });
 
     if (propData && propData.length > 0) {
       const withProfiles = await Promise.all(propData.map(async (p: any) => {
@@ -82,7 +85,7 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
     setAccepting(proposal.id);
     setError('');
     try {
-      await supabase.from('tasks').update({ status: 'in_progress', accountant_id: proposal.accountant_id }).eq('id', params.id);
+      await supabase.from('tasks').update({ status: 'in_progress', accountant_id: proposal.accountant_id }).eq('id', taskId);
       await supabase.from('proposals').update({ status: 'accepted' }).eq('id', proposal.id);
       router.push('/dashboard/client');
     } catch (err: any) {
@@ -94,7 +97,7 @@ export default function ClientTaskDetail({ params }: { params: { id: string } })
 
   const cancelTask = async () => {
     if (!confirm('Отменить задачу?')) return;
-    await supabase.from('tasks').update({ status: 'cancelled' }).eq('id', params.id);
+    await supabase.from('tasks').update({ status: 'cancelled' }).eq('id', taskId);
     router.push('/dashboard/client');
   };
 
