@@ -12,7 +12,7 @@ const CATS: Record<string, string> = {
 
 interface Task {
   id: string; title: string; description: string; status: string;
-  category: string; city: string; budget?: number; deadline?: string; created_at: string;
+  category: string; city: string; budget?: number; deadline?: string; created_at: string; accountant_id?: string;
 }
 interface Proposal {
   id: string; accountant_id: string; proposed_price: number;
@@ -85,11 +85,37 @@ export default function ClientTaskDetail() {
     setAccepting(proposal.id);
     setError('');
     try {
-      await supabase.from('tasks').update({ status: 'in_progress', accountant_id: proposal.accountant_id }).eq('id', taskId);
+      // Update task status
+      const { error: taskErr } = await supabase
+        .from('tasks')
+        .update({ status: 'in_progress', accountant_id: proposal.accountant_id })
+        .eq('id', taskId);
+      if (taskErr) throw taskErr;
+
+      // Update proposal status
       await supabase.from('proposals').update({ status: 'accepted' }).eq('id', proposal.id);
-      router.push('/dashboard/client');
+
+      // Create conversation between client and accountant
+      const { data: existingConv } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`and(participant1_id.eq.${userId},participant2_id.eq.${proposal.accountant_id}),and(participant1_id.eq.${proposal.accountant_id},participant2_id.eq.${userId})`)
+        .maybeSingle();
+
+      if (!existingConv) {
+        await supabase.from('conversations').insert({
+          participant1_id: userId,
+          participant2_id: proposal.accountant_id,
+          task_id: taskId,
+          last_message: 'Задача принята в работу',
+        });
+      }
+
+      // Reload task to show updated status
+      const { data: updated } = await supabase.from('tasks').select('*').eq('id', taskId).maybeSingle();
+      if (updated) setTask(updated);
     } catch (err: any) {
-      setError(err.message || 'Ошибка');
+      setError(err.message || 'Ошибка принятия отклика');
     } finally {
       setAccepting('');
     }
@@ -206,6 +232,20 @@ CREATE POLICY "tasks_select" ON tasks
                       className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-semibold rounded-xl transition-colors">
                       {accepting === p.id ? 'Принимаем...' : '✓ Принять отклик'}
                     </button>
+                  )}
+                  {task.status !== 'open' && task.accountant_id === p.accountant_id && (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 text-sm font-semibold rounded-xl">
+                        <CheckCircle className="w-4 h-4" /> Исполнитель выбран
+                      </span>
+                      <button onClick={() => router.push('/dashboard/client')}
+                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors">
+                        Перейти в чат →
+                      </button>
+                    </div>
+                  )}
+                  {task.status !== 'open' && task.accountant_id !== p.accountant_id && (
+                    <span className="text-xs text-gray-400">Выбран другой исполнитель</span>
                   )}
                 </div>
               ))}

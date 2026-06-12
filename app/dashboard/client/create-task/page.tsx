@@ -25,7 +25,6 @@ export default function CreateTask() {
   const [category, setCategory] = useState('tax');
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('Астана');
-  const [budget, setBudget] = useState('');
   const [deadline, setDeadline] = useState('');
 
   useEffect(() => {
@@ -72,6 +71,7 @@ export default function CreateTask() {
         city,
         status: 'open',
       };
+      if (deadline) payload.deadline = deadline;
 
       const { error: e } = await supabase
         .from('tasks')
@@ -130,17 +130,11 @@ export default function CreateTask() {
               className={inp + ' resize-none'} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Бюджет (₸)</label>
-              <input type="number" value={budget} onChange={e => setBudget(e.target.value)}
-                placeholder="15000" className={inp} min="0" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Срок выполнения</label>
-              <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
-                className={inp} min={new Date().toISOString().split('T')[0]} />
-            </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Желаемый срок выполнения</label>
+            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
+              className={inp} min={new Date().toISOString().split('T')[0]} />
+            <p className="text-xs text-gray-400 mt-1.5">💡 Цену предложат бухгалтеры в своих откликах</p>
           </div>
 
           <div>
