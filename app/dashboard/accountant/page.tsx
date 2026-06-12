@@ -47,11 +47,29 @@ export default function AccountantDashboard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
-    const [{ data: openTasks }, { data: convData }] = await Promise.all([
+    const [{ data: openTasks }, { data: convData }, { data: myProposals }] = await Promise.all([
       supabase.from('tasks').select('*').eq('status', 'open').order('created_at', { ascending: false }),
       supabase.from('conversations').select('*').or(`participant1_id.eq.${user.id},participant2_id.eq.${user.id}`).order('updated_at', { ascending: false }),
+      supabase.from('proposals').select('task_id').eq('accountant_id', user.id),
     ]);
-    setTasks(openTasks || []);
+
+    // IDs задач на которые уже откликнулся
+    const respondedTaskIds = new Set((myProposals || []).map((p: any) => p.task_id));
+
+    // Показываем только открытые задачи БЕЗ моего отклика
+    const availableTasks = (openTasks || []).filter((t: any) => !respondedTaskIds.has(t.id));
+    setTasks(availableTasks);
+
+    // Загружаем мои заказы (задачи где я откликнулся)
+    if (respondedTaskIds.size > 0) {
+      const { data: allMyTasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .in('id', Array.from(respondedTaskIds))
+        .order('created_at', { ascending: false });
+      setMyOrders(allMyTasks || []);
+    }
+
     // Build conversations with other user info
     if (convData && convData.length > 0) {
       const convs: Conversation[] = [];
@@ -159,14 +177,44 @@ export default function AccountantDashboard() {
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
                   <div className="px-6 py-5 border-b border-gray-100">
                     <h2 className="font-semibold text-gray-900">Мои заказы</h2>
+                    <p className="text-xs text-gray-400 mt-0.5">Задачи, на которые вы откликнулись</p>
                   </div>
-                  <div className="py-16 text-center">
-                    <TrendingUp className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                    <p className="text-gray-400">У вас пока нет активных заказов</p>
-                    <button onClick={() => setTab('tasks')} className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">
-                      Найти задачи
-                    </button>
-                  </div>
+                  {myOrders.length === 0 ? (
+                    <div className="py-16 text-center">
+                      <TrendingUp className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                      <p className="text-gray-400">У вас пока нет откликов</p>
+                      <button onClick={() => setTab('tasks')} className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">
+                        Найти задачи
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-50">
+                      {myOrders.map(task => {
+                        const statusLabels: Record<string, {label: string; color: string}> = {
+                          open: { label: 'Ожидает ответа', color: 'bg-amber-100 text-amber-700' },
+                          in_progress: { label: '✓ Вы выбраны!', color: 'bg-emerald-100 text-emerald-700' },
+                          completed: { label: 'Завершена', color: 'bg-gray-100 text-gray-500' },
+                          cancelled: { label: 'Отменена', color: 'bg-red-100 text-red-500' },
+                        };
+                        const sl = statusLabels[task.status] || statusLabels.open;
+                        return (
+                          <div key={task.id} onClick={() => router.push(`/dashboard/accountant/tasks/${task.id}`)}
+                            className="px-6 py-4 hover:bg-gray-50 cursor-pointer group transition-colors">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-gray-900 group-hover:text-blue-600 text-sm mb-1">{task.title}</h3>
+                                <div className="flex gap-2 text-xs text-gray-400 flex-wrap">
+                                  <span className="text-blue-600 font-medium">{CATS[task.category]}</span>
+                                  {task.city && <span>📍 {task.city}</span>}
+                                </div>
+                              </div>
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${sl.color}`}>{sl.label}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
               {tab === 'home' && (
