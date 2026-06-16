@@ -71,9 +71,15 @@ export default function ClientDashboard() {
     setActiveConv(conv);
     const { data } = await supabase.from('messages').select('*').eq('conversation_id', conv.id).order('created_at', { ascending: true });
     setMessages(data || []);
+    // Remove old channels to prevent duplicate messages
+    supabase.removeAllChannels();
     supabase.channel(`conv-${conv.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conv.id}` },
-        (payload) => setMessages(m => [...m, payload.new as Message]))
+        (payload) => setMessages(m => {
+          // Prevent duplicates
+          if (m.some(msg => msg.id === (payload.new as Message).id)) return m;
+          return [...m, payload.new as Message];
+        }))
       .subscribe();
   };
 

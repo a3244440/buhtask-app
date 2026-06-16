@@ -16,17 +16,26 @@ export default function NavWrapper({ dark = false }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState('client');
   const router = useRouter();
   const pathname = usePathname();
   const isLanding = pathname === "/";
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(async ({ data }) => {
+      setUser(data.user);
+      if (data.user) {
+        const { data: p } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+        if (p?.role) setUserRole(p.role);
+      }
+    });
     if (!isLanding) return;
     const handler = () => setScrolled(window.scrollY > 32);
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, [isLanding]);
+
+  const dashHref = userRole === 'accountant' ? '/dashboard/accountant' : '/dashboard/client';
 
   const scrolledStyle = dark
     ? { background: "rgba(3,7,18,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.08)" }
@@ -57,7 +66,7 @@ export default function NavWrapper({ dark = false }: Props) {
 
         <div className="hidden md:flex items-center gap-3">
           {user ? (
-            <button onClick={() => router.push("/dashboard/client")}
+            <button onClick={() => router.push(dashHref)}
               className="text-sm font-semibold text-white px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors">
               Личный кабинет
             </button>

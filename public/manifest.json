@@ -1,0 +1,38 @@
+{
+  "name": "BuhTask - Маркетплейс бухгалтерских услуг",
+  "short_name": "BuhTask",
+  "description": "Найдите бухгалтера или получайте заказы онлайн в Казахстане",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2F80ED",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "finance", "productivity"],
+  "lang": "ru",
+  "shortcuts": [
+    {
+      "name": "Создать задачу",
+      "url": "/dashboard/client/create-task",
+      "description": "Быстро создать новую задачу"
+    },
+    {
+      "name": "Мои задачи",
+      "url": "/dashboard/client",
+      "description": "Открыть кабинет"
+    }
+  ]
+}
