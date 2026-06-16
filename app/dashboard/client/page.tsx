@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
-import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; }
@@ -30,7 +30,7 @@ const NAV = [
   { id: 'profile', icon: User, label: 'Профиль' },
 ];
 
-export default function ClientDashboard() {
+function ClientDashboardInner() {
   const [tab, setTab] = useState('home');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -38,10 +38,13 @@ export default function ClientDashboard() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState('');
   const [sending, setSending] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const messagesEnd = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { init(); }, []);
   useEffect(() => { messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -63,6 +66,19 @@ export default function ClientDashboard() {
         convs.push({ id: c.id, other_id: otherId, other_name: p?.full_name || p?.email || 'Бухгалтер', last_message: c.last_message || '', updated_at: c.updated_at });
       }
       setConversations(convs);
+
+      // Open chat from URL param
+      const tabParam = searchParams.get('tab');
+      const withParam = searchParams.get('with');
+      if (tabParam === 'messages') {
+        setTab('messages');
+        if (withParam) {
+          const targetConv = convs.find(cv => cv.other_id === withParam);
+          if (targetConv) {
+            setTimeout(() => openConversation(targetConv), 100);
+          }
+        }
+      }
     }
     setLoading(false);
   };
@@ -84,14 +100,49 @@ export default function ClientDashboard() {
   };
 
   const sendMessage = async () => {
-    if (!newMsg.trim() || !activeConv || !userId) return;
+    if ((!newMsg.trim() && !attachedFile) || !activeConv || !userId) return;
     setSending(true);
     const content = newMsg.trim();
     setNewMsg('');
+
+    // Optimistic update - show message immediately
+    const tempId = 'temp-' + Date.now();
+    let fileData = '';
+    let fileName = '';
+    if (attachedFile) {
+      fileName = attachedFile.name;
+      fileData = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target?.result as string);
+        reader.readAsDataURL(attachedFile);
+      });
+    }
+    const fullContent = fileData ? `${content}\n[file:${fileName}]${fileData}` : content;
+
+    const optimisticMsg: Message = {
+      id: tempId, sender_id: userId, content: fullContent,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(m => [...m, optimisticMsg]);
+    const fileToReset = attachedFile;
+    setAttachedFile(null);
+
     try {
-      await supabase.from('messages').insert({ conversation_id: activeConv.id, sender_id: userId, content });
-      await supabase.from('conversations').update({ last_message: content, updated_at: new Date().toISOString() }).eq('id', activeConv.id);
-    } catch { setNewMsg(content); }
+      const { data, error } = await supabase.from('messages')
+        .insert({ conversation_id: activeConv.id, sender_id: userId, content: fullContent })
+        .select().single();
+      if (error) throw error;
+      // Replace temp message with real one
+      if (data) {
+        setMessages(m => m.map(msg => msg.id === tempId ? data as Message : msg));
+      }
+      await supabase.from('conversations').update({ last_message: content || '📎 Файл', updated_at: new Date().toISOString() }).eq('id', activeConv.id);
+    } catch {
+      // Revert on error
+      setMessages(m => m.filter(msg => msg.id !== tempId));
+      setNewMsg(content);
+      setAttachedFile(fileToReset);
+    }
     setSending(false);
   };
 
@@ -237,22 +288,62 @@ export default function ClientDashboard() {
                     {messages.map(msg => (
                       <div key={msg.id} className={`flex ${msg.sender_id === userId ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${msg.sender_id === userId ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-900 rounded-bl-sm'}`}>
-                          <p>{msg.content}</p>
+                          {(() => {
+                            const fileMatch = msg.content.match(/\[file:([^\]]+)\](data:[^\s]+)/);
+                            if (fileMatch) {
+                              const fName = fileMatch[1];
+                              const fData = fileMatch[2];
+                              const textPart = msg.content.replace(/\n?\[file:[^\]]+\]data:[^\s]+/, '').trim();
+                              const isImage = fData.startsWith('data:image');
+                              return (
+                                <>
+                                  {textPart && <p className="mb-2">{textPart}</p>}
+                                  {isImage ? (
+                                    <a href={fData} target="_blank" rel="noopener noreferrer">
+                                      <img src={fData} alt={fName} className="max-w-full rounded-lg max-h-48 object-cover" />
+                                    </a>
+                                  ) : (
+                                    <a href={fData} download={fName} className={`flex items-center gap-2 px-3 py-2 rounded-lg ${msg.sender_id === userId ? 'bg-blue-700' : 'bg-gray-200'}`}>
+                                      📎 <span className="text-xs underline truncate max-w-[150px]">{fName}</span>
+                                    </a>
+                                  )}
+                                </>
+                              );
+                            }
+                            return <p className="whitespace-pre-wrap break-words">{msg.content}</p>;
+                          })()}
                           <p className={`text-[10px] mt-1 ${msg.sender_id === userId ? 'text-blue-200' : 'text-gray-400'}`}>{new Date(msg.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                       </div>
                     ))}
                     <div ref={messagesEnd} />
                   </div>
-                  <div className="px-4 py-3 border-t border-gray-100 flex gap-2 flex-shrink-0">
-                    <input type="text" value={newMsg} onChange={e => setNewMsg(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                      placeholder="Напишите сообщение..." disabled={sending}
-                      className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
-                    <button onClick={sendMessage} disabled={!newMsg.trim() || sending}
-                      className="p-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white rounded-xl transition-colors">
-                      <Send className="w-4 h-4" />
-                    </button>
+                  <div className="border-t border-gray-100 flex-shrink-0">
+                    {attachedFile && (
+                      <div className="px-4 pt-3 flex items-center gap-2">
+                        <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 text-xs text-blue-700">
+                          📎 <span className="truncate max-w-[200px]">{attachedFile.name}</span>
+                          <button onClick={() => setAttachedFile(null)} className="text-blue-400 hover:text-blue-600 ml-1">✕</button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="px-4 py-3 flex gap-2">
+                      <button onClick={() => fileInputRef.current?.click()} disabled={sending}
+                        className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-gray-50 rounded-xl transition-colors flex-shrink-0" title="Прикрепить файл">
+                        <Paperclip className="w-4 h-4" />
+                      </button>
+                      <input ref={fileInputRef} type="file" className="hidden"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) { if (f.size > 3*1024*1024) { alert('Файл слишком большой (макс 3MB)'); return; } setAttachedFile(f); } }} />
+                      <input type="text" value={newMsg} onChange={e => setNewMsg(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                        placeholder="Напишите сообщение..." disabled={sending}
+                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                      <button onClick={sendMessage} disabled={(!newMsg.trim() && !attachedFile) || sending}
+                        className="p-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white rounded-xl transition-colors flex-shrink-0">
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -275,4 +366,13 @@ export default function ClientDashboard() {
     </div>
   );
 }
+
+export default function ClientDashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>}>
+      <ClientDashboardInner />
+    </Suspense>
+  );
+}
+
 export const dynamic = 'force-dynamic';

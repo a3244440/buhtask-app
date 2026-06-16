@@ -256,7 +256,7 @@ CREATE POLICY "tasks_select" ON tasks
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 text-sm font-semibold rounded-xl">
                         <CheckCircle className="w-4 h-4" /> Исполнитель выбран
                       </span>
-                      <button onClick={() => router.push('/dashboard/client')}
+                      <button onClick={() => router.push(`/dashboard/client?tab=messages&with=${p.accountant_id}`)}
                         className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors">
                         Перейти в чат →
                       </button>

@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
-import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; }
@@ -25,7 +25,7 @@ const NAV = [
   { id: 'profile', icon: User, label: 'Профиль' },
 ];
 
-export default function AccountantDashboard() {
+function AccountantDashboardInner() {
   const [tab, setTab] = useState('home');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [myOrders, setMyOrders] = useState<Task[]>([]);
@@ -34,11 +34,14 @@ export default function AccountantDashboard() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState('');
   const [sending, setSending] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [userId, setUserId] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const messagesEnd = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { init(); }, []);
   useEffect(() => { messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -375,4 +378,13 @@ export default function AccountantDashboard() {
     </div>
   );
 }
+
+export default function AccountantDashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>}>
+      <AccountantDashboardInner />
+    </Suspense>
+  );
+}
+
 export const dynamic = 'force-dynamic';
