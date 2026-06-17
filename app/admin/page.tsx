@@ -293,13 +293,30 @@ function DocLink({ label, url }: { label: string; url?: string }) {
     if (!url) return;
     setLoading(true);
     try {
-      // url is actually a storage path now — generate signed URL
+      // url format: "path::base64name" or just "path"
+      const [path, encodedName] = url.split('::');
+      let fileName = label;
+      if (encodedName) {
+        try { fileName = decodeURIComponent(atob(encodedName)); } catch {}
+      }
       const { data, error } = await supabase.storage
         .from('verification-docs')
-        .createSignedUrl(url, 300); // 5 minutes
+        .createSignedUrl(path, 300);
       if (error) throw error;
       if (!data?.signedUrl) throw new Error('Нет ссылки');
-      window.open(data.signedUrl, '_blank');
+
+      // Download with original filename and extension
+      const res = await fetch(data.signedUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
     } catch (err: any) {
       alert('Не удалось открыть документ: ' + (err?.message || 'нет доступа. Проверьте политики Storage в Supabase'));
     } finally {
