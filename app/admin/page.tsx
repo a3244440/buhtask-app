@@ -77,6 +77,7 @@ export default function AdminPanel() {
       identity_verified: true, documents_verified: true, experience_verified: true,
       verification_status: 'verified',
     });
+    setSelected(null);
   };
 
   const rejectAll = async (acc: Accountant) => {
@@ -84,6 +85,7 @@ export default function AdminPanel() {
       identity_verified: false, documents_verified: false, experience_verified: false,
       verification_status: 'not_verified',
     });
+    setSelected(null);
   };
 
   const filtered = accountants.filter(a => {
@@ -295,10 +297,11 @@ function DocLink({ label, url }: { label: string; url?: string }) {
       const { data, error } = await supabase.storage
         .from('verification-docs')
         .createSignedUrl(url, 300); // 5 minutes
-      if (error || !data) throw error;
+      if (error) throw error;
+      if (!data?.signedUrl) throw new Error('Нет ссылки');
       window.open(data.signedUrl, '_blank');
-    } catch {
-      alert('Не удалось открыть документ');
+    } catch (err: any) {
+      alert('Не удалось открыть документ: ' + (err?.message || 'нет доступа. Проверьте политики Storage в Supabase'));
     } finally {
       setLoading(false);
     }
