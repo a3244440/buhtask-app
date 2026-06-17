@@ -40,6 +40,7 @@ function ClientDashboardInner() {
   const [sending, setSending] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [chatError, setChatError] = useState('');
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState('');
   const router = useRouter();
@@ -105,7 +106,7 @@ function ClientDashboardInner() {
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { alert('Файл слишком большой (макс 10MB)'); return; }
+      if (file.size > 3 * 1024 * 1024) { alert('Файл слишком большой (макс 3MB)'); return; }
       setAttachedFile(file);
     }
   };
@@ -113,23 +114,39 @@ function ClientDashboardInner() {
   const sendMessage = async () => {
     if ((!newMsg.trim() && !attachedFile) || !activeConv || !userId) return;
     setSending(true);
+    setChatError('');
     const content = newMsg.trim();
-    setNewMsg('');
 
-    // Optimistic update - show message immediately
-    const tempId = 'temp-' + Date.now();
+    // Convert file to base64
     let fileData = '';
     let fileName = '';
     if (attachedFile) {
       fileName = attachedFile.name;
-      fileData = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => resolve(ev.target?.result as string);
-        reader.readAsDataURL(attachedFile);
-      });
+      try {
+        fileData = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target?.result as string);
+          reader.onerror = () => reject(new Error('read error'));
+          reader.readAsDataURL(attachedFile);
+        });
+      } catch {
+        setChatError('Не удалось прочитать файл');
+        setSending(false);
+        return;
+      }
     }
+
     const fullContent = fileData ? `${content}\n[file:${fileName}]${fileData}` : content;
 
+    // Check size limit (Supabase text field — keep under ~4MB to be safe)
+    if (fullContent.length > 4_000_000) {
+      setChatError('Файл слишком большой для отправки. Максимум ~3MB.');
+      setSending(false);
+      return;
+    }
+
+    setNewMsg('');
+    const tempId = 'temp-' + Date.now();
     const optimisticMsg: Message = {
       id: tempId, sender_id: userId, content: fullContent,
       created_at: new Date().toISOString(),
@@ -143,16 +160,16 @@ function ClientDashboardInner() {
         .insert({ conversation_id: activeConv.id, sender_id: userId, content: fullContent })
         .select().single();
       if (error) throw error;
-      // Replace temp message with real one
       if (data) {
         setMessages(m => m.map(msg => msg.id === tempId ? data as Message : msg));
       }
       await supabase.from('conversations').update({ last_message: content || '📎 Файл', updated_at: new Date().toISOString() }).eq('id', activeConv.id);
-    } catch {
-      // Revert on error
+    } catch (err: any) {
+      // Revert on error and show message
       setMessages(m => m.filter(msg => msg.id !== tempId));
       setNewMsg(content);
       setAttachedFile(fileToReset);
+      setChatError(err?.message || 'Ошибка отправки. Возможно, файл слишком большой.');
     }
     setSending(false);
   };
@@ -341,6 +358,14 @@ function ClientDashboardInner() {
                     <div ref={messagesEnd} />
                   </div>
                   <div className="border-t border-gray-100 flex-shrink-0">
+                    {chatError && (
+                      <div className="px-4 pt-3">
+                        <div className="bg-red-50 border border-red-200 text-red-600 text-xs px-3 py-2 rounded-lg flex items-center justify-between">
+                          <span>{chatError}</span>
+                          <button onClick={() => setChatError('')} className="text-red-400 hover:text-red-600">✕</button>
+                        </div>
+                      </div>
+                    )}
                     {attachedFile && (
                       <div className="px-4 pt-3 flex items-center gap-2">
                         <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 text-xs text-blue-700">
@@ -355,7 +380,7 @@ function ClientDashboardInner() {
                         <Paperclip className="w-4 h-4" />
                       </button>
                       <input ref={fileInputRef} type="file" className="hidden"
-                        onChange={e => { const f = e.target.files?.[0]; if (f) { if (f.size > 10*1024*1024) { alert('Файл слишком большой (макс 10MB)'); return; } setAttachedFile(f); } }} />
+                        onChange={e => { const f = e.target.files?.[0]; if (f) { if (f.size > 3*1024*1024) { alert('Файл слишком большой (макс 3MB)'); return; } setAttachedFile(f); } }} />
                       <input type="text" value={newMsg} onChange={e => setNewMsg(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                         placeholder="Напишите сообщение..." disabled={sending}

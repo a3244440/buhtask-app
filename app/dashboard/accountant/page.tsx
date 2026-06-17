@@ -36,6 +36,7 @@ function AccountantDashboardInner() {
   const [sending, setSending] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [chatError, setChatError] = useState('');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [userId, setUserId] = useState('');
@@ -109,7 +110,7 @@ function AccountantDashboardInner() {
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { alert('Файл слишком большой (макс 10MB)'); return; }
+      if (file.size > 3 * 1024 * 1024) { alert('Файл слишком большой (макс 3MB)'); return; }
       setAttachedFile(file);
     }
   };
