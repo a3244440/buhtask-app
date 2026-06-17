@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Camera, Save, ArrowLeft, User, Phone, MapPin, Briefcase, FileText } from 'lucide-react';
+import { Camera, Save, ArrowLeft, User, Phone, MapPin, Briefcase, FileText, ShieldCheck, BadgeCheck, Upload, CheckCircle2, Clock, CreditCard } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 
 const CITIES = ['Астана','Алматы','Шымкент','Актобе','Тараз','Павлодар','Усть-Каменогорск','Семей','Атырау','Костанай','Кызылорда','Уральск','Петропавловск','Актау','Темиртау','Туркестан','Кокшетау','Талдыкорган'];
@@ -22,6 +22,10 @@ export default function ProfilePage() {
     full_name: '', phone: '', city: 'Астана', role: 'client',
     bio: '', avatar_url: '', experience_years: 0, min_price: 0,
     specialization: [] as string[], email: '',
+    iin: '', id_card_url: '', selfie_url: '',
+    diploma_urls: [] as string[], certificate_urls: [] as string[],
+    identity_verified: false, documents_verified: false, experience_verified: false,
+    verification_status: 'not_verified', completed_tasks: 0, rating: 0,
   });
 
   useEffect(() => { load(); }, []);
@@ -64,6 +68,30 @@ export default function ProfilePage() {
     } catch { setError('Ошибка загрузки фото'); setUploading(false); }
   };
 
+  const uploadDoc = async (file: File, field: 'id_card_url' | 'selfie_url' | 'diploma_urls' | 'certificate_urls') => {
+    if (!userId) return;
+    if (file.size > 10 * 1024 * 1024) { setError('Файл слишком большой (макс 10MB)'); return; }
+    setUploading(true);
+    setError('');
+    try {
+      const safeId = `${Date.now()}${Math.random().toString(36).slice(2)}`;
+      const path = `${userId}/${field}_${safeId}.dat`;
+      const blob = new Blob([file], { type: 'application/octet-stream' });
+      const { error: upErr } = await supabase.storage.from('verification-docs').upload(path, blob);
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from('verification-docs').getPublicUrl(path);
+      if (field === 'diploma_urls' || field === 'certificate_urls') {
+        setProfile(p => ({ ...p, [field]: [...(p[field] || []), publicUrl] }));
+      } else {
+        setProfile(p => ({ ...p, [field]: publicUrl }));
+      }
+    } catch (err: any) {
+      setError('Ошибка загрузки: ' + (err?.message || 'попробуйте снова'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const toggleSpec = (s: string) => setProfile(p => ({
     ...p, specialization: p.specialization.includes(s) ? p.specialization.filter(x => x !== s) : [...p.specialization, s],
   }));
@@ -77,10 +105,23 @@ export default function ProfilePage() {
         update.experience_years = profile.experience_years;
         update.min_price = profile.min_price;
         update.specialization = profile.specialization;
+        update.iin = profile.iin;
+        update.id_card_url = profile.id_card_url;
+        update.selfie_url = profile.selfie_url;
+        update.diploma_urls = profile.diploma_urls;
+        update.certificate_urls = profile.certificate_urls;
+        // Если загружены документы — статус "на проверке"
+        const hasDocss = profile.id_card_url && profile.iin;
+        if (hasDocss && profile.verification_status === 'not_verified') {
+          update.verification_status = 'pending';
+        }
       }
       const { error: e } = await supabase.from('profiles').update(update).eq('id', userId);
       if (e) throw e;
       setSuccess('Профиль успешно сохранён!');
+      if (profile.role === 'accountant' && profile.id_card_url && profile.iin && profile.verification_status === 'not_verified') {
+        setProfile(p => ({ ...p, verification_status: 'pending' }));
+      }
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) { setError(err.message || 'Ошибка сохранения'); }
     finally { setSaving(false); }
@@ -179,6 +220,76 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {/* VERIFICATION SECTION - only accountants */}
+        {profile.role === 'accountant' && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
+            <div className="flex items-center gap-2 mb-1">
+              <ShieldCheck className="w-5 h-5 text-blue-600" />
+              <h2 className="font-semibold text-gray-900">Верификация</h2>
+            </div>
+            <p className="text-xs text-gray-500 mb-5">Подтвердите личность и квалификацию — это повышает доверие клиентов</p>
+
+            {/* Status badge */}
+            <div className={`rounded-xl p-4 mb-5 flex items-center gap-3 ${
+              profile.verification_status === 'verified' ? 'bg-emerald-50 border border-emerald-200' :
+              profile.verification_status === 'pending' ? 'bg-amber-50 border border-amber-200' :
+              'bg-gray-50 border border-gray-200'
+            }`}>
+              {profile.verification_status === 'verified' ? (
+                <><BadgeCheck className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                  <div><p className="font-semibold text-emerald-800 text-sm">Верифицированный бухгалтер</p>
+                  <p className="text-xs text-emerald-600">Личность и документы подтверждены</p></div></>
+              ) : profile.verification_status === 'pending' ? (
+                <><Clock className="w-6 h-6 text-amber-600 flex-shrink-0" />
+                  <div><p className="font-semibold text-amber-800 text-sm">На проверке</p>
+                  <p className="text-xs text-amber-600">Документы загружены, ожидают проверки администратором</p></div></>
+              ) : (
+                <><Clock className="w-6 h-6 text-gray-400 flex-shrink-0" />
+                  <div><p className="font-semibold text-gray-700 text-sm">Не верифицирован</p>
+                  <p className="text-xs text-gray-500">Загрузите документы для проверки</p></div></>
+              )}
+            </div>
+
+            {/* Verification checklist */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
+              {[
+                { label: 'Личность подтверждена', done: profile.identity_verified },
+                { label: 'Документы проверены', done: profile.documents_verified },
+                { label: 'Опыт подтверждён', done: profile.experience_verified },
+                { label: `Рейтинг ${(profile.rating || 0).toFixed(1)} · ${profile.completed_tasks || 0} задач`, done: true },
+              ].map(item => (
+                <div key={item.label} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${item.done ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-50 text-gray-400'}`}>
+                  <CheckCircle2 className={`w-4 h-4 ${item.done ? 'text-emerald-500' : 'text-gray-300'}`} />
+                  {item.label}
+                </div>
+              ))}
+            </div>
+
+            {/* IIN */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <CreditCard className="w-4 h-4 inline mr-1.5 text-gray-400" />ИИН
+              </label>
+              <input type="text" value={profile.iin} onChange={e => setProfile(p => ({ ...p, iin: e.target.value }))}
+                placeholder="123456789012" maxLength={12} className={inp} />
+            </div>
+
+            {/* Document uploads */}
+            <div className="space-y-3">
+              <DocUpload label="Удостоверение личности" done={!!profile.id_card_url} uploading={uploading}
+                onFile={(f) => uploadDoc(f, 'id_card_url')} />
+              <DocUpload label="Селфи с удостоверением" done={!!profile.selfie_url} uploading={uploading}
+                onFile={(f) => uploadDoc(f, 'selfie_url')} />
+              <DocUpload label="Дипломы" done={profile.diploma_urls.length > 0} count={profile.diploma_urls.length} uploading={uploading}
+                onFile={(f) => uploadDoc(f, 'diploma_urls')} multi />
+              <DocUpload label="Сертификаты" done={profile.certificate_urls.length > 0} count={profile.certificate_urls.length} uploading={uploading}
+                onFile={(f) => uploadDoc(f, 'certificate_urls')} multi />
+            </div>
+
+            <p className="text-xs text-gray-400 mt-4">🔒 Документы видны только администраторам платформы для проверки</p>
+          </div>
+        )}
+
         {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-4">{error}</div>}
         {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mb-4">{success}</div>}
 
@@ -187,6 +298,30 @@ export default function ProfilePage() {
           <Save className="w-4 h-4" /> {saving ? 'Сохраняем...' : 'Сохранить изменения'}
         </button>
       </main>
+    </div>
+  );
+}
+
+function DocUpload({ label, done, count, uploading, onFile, multi }: {
+  label: string; done: boolean; count?: number; uploading: boolean;
+  onFile: (f: File) => void; multi?: boolean;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div className="flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-xl">
+      <div className="flex items-center gap-3 min-w-0">
+        {done ? <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" /> : <FileText className="w-5 h-5 text-gray-300 flex-shrink-0" />}
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-gray-700 truncate">{label}</p>
+          {done && <p className="text-xs text-emerald-600">{multi && count ? `Загружено: ${count}` : 'Загружено ✓'}</p>}
+        </div>
+      </div>
+      <button onClick={() => ref.current?.click()} disabled={uploading}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition-colors flex-shrink-0">
+        <Upload className="w-3.5 h-3.5" /> {done && !multi ? 'Заменить' : 'Загрузить'}
+      </button>
+      <input ref={ref} type="file" className="hidden" accept="image/*,.pdf"
+        onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); if (ref.current) ref.current.value = ''; }} />
     </div>
   );
 }

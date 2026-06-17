@@ -17,7 +17,7 @@ interface Task {
 interface Proposal {
   id: string; accountant_id: string; proposed_price: number;
   description: string; estimated_days?: number; created_at: string;
-  accountant_name?: string; accountant_rating?: number; accountant_tasks?: number;
+  accountant_name?: string; accountant_rating?: number; accountant_tasks?: number; accountant_verified?: boolean;
 }
 
 export default function ClientTaskDetail() {
@@ -67,12 +67,13 @@ export default function ClientTaskDetail() {
     if (propData && propData.length > 0) {
       const withProfiles = await Promise.all(propData.map(async (p: any) => {
         const { data: profile } = await supabase
-          .from('profiles').select('full_name,rating,completed_tasks').eq('id', p.accountant_id).single();
+          .from('profiles').select('full_name,rating,completed_tasks,verification_status').eq('id', p.accountant_id).single();
         return {
           ...p,
           accountant_name: profile?.full_name || 'Бухгалтер',
           accountant_rating: profile?.rating || 0,
           accountant_tasks: profile?.completed_tasks || 0,
+          accountant_verified: profile?.verification_status === 'verified',
         };
       }));
       setProposals(withProfiles);
@@ -231,7 +232,15 @@ CREATE POLICY "tasks_select" ON tasks
                         {p.accountant_name?.[0]?.toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-semibold text-sm text-gray-900">{p.accountant_name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-semibold text-sm text-gray-900">{p.accountant_name}</p>
+                          {p.accountant_verified && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-medium">
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                              Проверен
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 text-xs text-gray-400">
                           <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-amber-400 fill-amber-400"/>{(p.accountant_rating||0).toFixed(1)}</span>
                           <span>·</span>

@@ -12,6 +12,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [role, setRole] = useState<UserRole>('client');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,7 @@ export default function AuthPage() {
     if (!email || !password) { setError('Заполните все поля'); return; }
     if (password.length < 6) { setError('Пароль минимум 6 символов'); return; }
     if (password !== confirmPassword) { setError('Пароли не совпадают'); return; }
+    if (role === 'accountant' && !termsAccepted) { setError('Подтвердите согласие с условиями ответственности'); return; }
     setLoading(true);
     try {
       const { data, error: e } = await supabase.auth.signUp({
@@ -258,6 +260,22 @@ export default function AuthPage() {
                     <input type="password" placeholder="••••••••" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} />
                   </div>
                   {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+
+                  {role === 'accountant' && (
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0" />
+                      <span className="text-xs text-gray-500 leading-relaxed">
+                        Я подтверждаю, что предоставляю достоверную информацию о квалификации и опыте работы. Я самостоятельно несу ответственность за качество оказанных услуг и соблюдение требований законодательства Республики Казахстан.
+                      </span>
+                    </label>
+                  )}
+                  {role === 'client' && (
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                      Регистрируясь, я понимаю, что выбираю независимого специалиста через платформу BuhTask и самостоятельно принимаю решение о выборе исполнителя.
+                    </p>
+                  )}
+
                   <button onClick={handleRegister} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
                     {loading ? 'Создаём аккаунт...' : 'Создать аккаунт'}
                   </button>
