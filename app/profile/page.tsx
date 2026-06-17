@@ -34,8 +34,36 @@ export default function ProfilePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
-    const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    if (p) setProfile({ ...p, email: user.email || '', specialization: p.specialization || [] });
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    if (p) {
+      setProfile(prev => ({
+        ...prev,
+        ...p,
+        email: user.email || '',
+        specialization: p.specialization || [],
+        diploma_urls: p.diploma_urls || [],
+        certificate_urls: p.certificate_urls || [],
+        iin: p.iin || '',
+        id_card_url: p.id_card_url || '',
+        selfie_url: p.selfie_url || '',
+        bio: p.bio || '',
+        verification_status: p.verification_status || 'not_verified',
+        identity_verified: p.identity_verified || false,
+        documents_verified: p.documents_verified || false,
+        experience_verified: p.experience_verified || false,
+        rating: p.rating || 0,
+        completed_tasks: p.completed_tasks || 0,
+        experience_years: p.experience_years || 0,
+        min_price: p.min_price || 0,
+      }));
+    } else {
+      // Профиль не существует — создаём базовый
+      await supabase.from('profiles').insert({
+        id: user.id, email: user.email, role: 'client',
+        rating: 0, completed_tasks: 0, verification_status: 'not_verified',
+      });
+      setProfile(prev => ({ ...prev, email: user.email || '' }));
+    }
     setLoading(false);
   };
 
@@ -93,7 +121,7 @@ export default function ProfilePage() {
   };
 
   const toggleSpec = (s: string) => setProfile(p => ({
-    ...p, specialization: p.specialization.includes(s) ? p.specialization.filter(x => x !== s) : [...p.specialization, s],
+    ...p, specialization: (p.specialization || []).includes(s) ? (p.specialization || []).filter(x => x !== s) : [...(p.specialization || []), s],
   }));
 
   const handleSave = async () => {
@@ -211,7 +239,7 @@ export default function ProfilePage() {
               <div className="flex flex-wrap gap-2">
                 {SPECS.map(s => (
                   <button key={s} type="button" onClick={() => toggleSpec(s)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${profile.specialization.includes(s) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${(profile.specialization || []).includes(s) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
                     {s}
                   </button>
                 ))}
@@ -280,9 +308,9 @@ export default function ProfilePage() {
                 onFile={(f) => uploadDoc(f, 'id_card_url')} />
               <DocUpload label="Селфи с удостоверением" done={!!profile.selfie_url} uploading={uploading}
                 onFile={(f) => uploadDoc(f, 'selfie_url')} />
-              <DocUpload label="Дипломы" done={profile.diploma_urls.length > 0} count={profile.diploma_urls.length} uploading={uploading}
+              <DocUpload label="Дипломы" done={(profile.diploma_urls?.length || 0) > 0} count={(profile.diploma_urls?.length || 0)} uploading={uploading}
                 onFile={(f) => uploadDoc(f, 'diploma_urls')} multi />
-              <DocUpload label="Сертификаты" done={profile.certificate_urls.length > 0} count={profile.certificate_urls.length} uploading={uploading}
+              <DocUpload label="Сертификаты" done={(profile.certificate_urls?.length || 0) > 0} count={(profile.certificate_urls?.length || 0)} uploading={uploading}
                 onFile={(f) => uploadDoc(f, 'certificate_urls')} multi />
             </div>
 
