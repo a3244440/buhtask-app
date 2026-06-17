@@ -107,11 +107,11 @@ export default function ProfilePage() {
       const blob = new Blob([file], { type: 'application/octet-stream' });
       const { error: upErr } = await supabase.storage.from('verification-docs').upload(path, blob);
       if (upErr) throw upErr;
-      const { data: { publicUrl } } = supabase.storage.from('verification-docs').getPublicUrl(path);
+      // Store the PATH (not public URL) — private bucket uses signed URLs
       if (field === 'diploma_urls' || field === 'certificate_urls') {
-        setProfile(p => ({ ...p, [field]: [...(p[field] || []), publicUrl] }));
+        setProfile(p => ({ ...p, [field]: [...(p[field] || []), path] }));
       } else {
-        setProfile(p => ({ ...p, [field]: publicUrl }));
+        setProfile(p => ({ ...p, [field]: path }));
       }
     } catch (err: any) {
       setError('Ошибка загрузки: ' + (err?.message || 'попробуйте снова'));

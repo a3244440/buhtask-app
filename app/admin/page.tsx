@@ -285,17 +285,36 @@ export default function AdminPanel() {
 }
 
 function DocLink({ label, url }: { label: string; url?: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const openDoc = async () => {
+    if (!url) return;
+    setLoading(true);
+    try {
+      // url is actually a storage path now — generate signed URL
+      const { data, error } = await supabase.storage
+        .from('verification-docs')
+        .createSignedUrl(url, 300); // 5 minutes
+      if (error || !data) throw error;
+      window.open(data.signedUrl, '_blank');
+    } catch {
+      alert('Не удалось открыть документ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!url) return (
     <div className="flex items-center gap-2 p-3 border border-gray-200 rounded-xl text-gray-300 text-xs">
       <FileText className="w-4 h-4" /> {label}: не загружен
     </div>
   );
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer"
-      className="flex items-center justify-between gap-2 p-3 border border-blue-200 bg-blue-50 rounded-xl text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors">
-      <span className="flex items-center gap-2"><FileText className="w-4 h-4" /> {label}</span>
+    <button onClick={openDoc} disabled={loading}
+      className="flex items-center justify-between gap-2 p-3 border border-blue-200 bg-blue-50 rounded-xl text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors w-full text-left">
+      <span className="flex items-center gap-2"><FileText className="w-4 h-4" /> {loading ? 'Открываем...' : label}</span>
       <ExternalLink className="w-3.5 h-3.5" />
-    </a>
+    </button>
   );
 }
 export const dynamic = 'force-dynamic';
