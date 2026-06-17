@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, MapPin, Calendar, Star, CheckCircle, Clock, User } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Star, CheckCircle, Clock, User, Pencil, Trash2 } from 'lucide-react';
 import DashboardHeader from '../../../../components/DashboardHeader';
 
 const CATS: Record<string, string> = {
@@ -31,6 +31,11 @@ export default function ClientTaskDetail() {
   const [accepting, setAccepting] = useState('');
   const [error, setError] = useState('');
   const [debugInfo, setDebugInfo] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCity, setEditCity] = useState('Астана');
+  const [editCategory, setEditCategory] = useState('tax');
 
   useEffect(() => {
     init();
@@ -146,6 +151,36 @@ export default function ClientTaskDetail() {
     router.push('/dashboard/client');
   };
 
+  const deleteTask = async () => {
+    if (!confirm('Удалить задачу навсегда? Это действие необратимо.')) return;
+    setError('');
+    const { error: e } = await supabase.from('tasks').delete().eq('id', taskId);
+    if (e) { setError('Ошибка удаления: ' + e.message); return; }
+    router.push('/dashboard/client');
+  };
+
+  const startEdit = () => {
+    setEditTitle(task?.title || '');
+    setEditDescription(task?.description || '');
+    setEditCity(task?.city || 'Астана');
+    setEditCategory(task?.category || 'tax');
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    if (!editTitle.trim()) { setError('Введите название'); return; }
+    setError('');
+    const { error: e } = await supabase.from('tasks').update({
+      title: editTitle.trim(),
+      description: editDescription.trim(),
+      city: editCity,
+      category: editCategory,
+    }).eq('id', taskId);
+    if (e) { setError('Ошибка сохранения: ' + e.message); return; }
+    setTask(t => t ? { ...t, title: editTitle.trim(), description: editDescription.trim(), city: editCity, category: editCategory } : t);
+    setEditing(false);
+  };
+
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"/></div>;
   if (!task) return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -205,9 +240,62 @@ CREATE POLICY "tasks_select" ON tasks
           <p className="text-xs text-gray-400">Опубликовано: {new Date(task.created_at).toLocaleDateString('ru-RU', { year:'numeric',month:'long',day:'numeric' })}</p>
 
           {task.status === 'open' && (
-            <button onClick={cancelTask} className="mt-4 text-xs text-red-500 hover:underline">Отменить задачу</button>
+            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-50">
+              <button onClick={startEdit} className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium">
+                <Pencil className="w-3.5 h-3.5" /> Редактировать
+              </button>
+              <button onClick={cancelTask} className="text-xs text-amber-600 hover:text-amber-700 font-medium">
+                Отменить задачу
+              </button>
+              <button onClick={deleteTask} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 font-medium ml-auto">
+                <Trash2 className="w-3.5 h-3.5" /> Удалить
+              </button>
+            </div>
+          )}
+          {task.status !== 'open' && (
+            <button onClick={deleteTask} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 font-medium mt-4 pt-4 border-t border-gray-50">
+              <Trash2 className="w-3.5 h-3.5" /> Удалить задачу
+            </button>
           )}
         </div>
+
+        {/* Edit modal */}
+        {editing && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setEditing(false)}>
+            <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="font-bold text-gray-900">Редактировать задачу</h3>
+                <button onClick={() => setEditing(false)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400">✕</button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Категория</label>
+                  <select value={editCategory} onChange={e => setEditCategory(e.target.value)} className={inp}>
+                    {Object.entries(CATS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Название</label>
+                  <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} className={inp} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Описание</label>
+                  <textarea rows={5} value={editDescription} onChange={e => setEditDescription(e.target.value)} className={inp + ' resize-none'} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Город</label>
+                  <select value={editCity} onChange={e => setEditCity(e.target.value)} className={inp}>
+                    {['Астана','Алматы','Шымкент','Актобе','Тараз','Павлодар','Усть-Каменогорск','Семей','Атырау','Костанай','Кызылорда','Уральск','Петропавловск','Актау','Темиртау','Туркестан','Кокшетау','Талдыкорган'].map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button onClick={saveEdit} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors">Сохранить</button>
+                  <button onClick={() => setEditing(false)} className="px-5 py-3 border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-xl font-semibold text-sm transition-colors">Отмена</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Proposals */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">

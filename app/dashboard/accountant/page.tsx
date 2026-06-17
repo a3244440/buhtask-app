@@ -372,7 +372,35 @@ function AccountantDashboardInner() {
                     {messages.map(msg => (
                       <div key={msg.id} className={`flex ${msg.sender_id === userId ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${msg.sender_id === userId ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-900 rounded-bl-sm'}`}>
-                          <p>{msg.content}</p>
+                          {(() => {
+                            const fileMatch = msg.content.match(/\[\[FILE\]\]([^\[]+)\[\[\/FILE\]\]/);
+                            if (fileMatch) {
+                              let fName = 'файл';
+                              let fUrl = '';
+                              try {
+                                const decoded = JSON.parse(decodeURIComponent(atob(fileMatch[1])));
+                                fName = decoded.name || 'файл';
+                                fUrl = decoded.url || '';
+                              } catch {}
+                              const textPart = msg.content.replace(/\n?\[\[FILE\]\][^\[]+\[\[\/FILE\]\]/, '').trim();
+                              const isImage = /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(fName);
+                              return (
+                                <>
+                                  {textPart && <p className="mb-2 whitespace-pre-wrap break-words">{textPart}</p>}
+                                  {isImage ? (
+                                    <a href={fUrl} target="_blank" rel="noopener noreferrer">
+                                      <img src={fUrl} alt={fName} className="max-w-full rounded-lg max-h-60 object-cover" />
+                                    </a>
+                                  ) : (
+                                    <button onClick={() => downloadFile(fUrl, fName)} className={`flex items-center gap-2 px-3 py-2 rounded-lg w-full text-left ${msg.sender_id === userId ? 'bg-blue-700 hover:bg-blue-800' : 'bg-gray-200 hover:bg-gray-300'}`}>
+                                      📎 <span className="text-xs underline truncate max-w-[180px]">{fName}</span>
+                                    </button>
+                                  )}
+                                </>
+                              );
+                            }
+                            return <p className="whitespace-pre-wrap break-words">{msg.content}</p>;
+                          })()}
                           <p className={`text-[10px] mt-1 ${msg.sender_id === userId ? 'text-blue-200' : 'text-gray-400'}`}>
                             {new Date(msg.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                           </p>
