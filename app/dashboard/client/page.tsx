@@ -128,11 +128,16 @@ function ClientDashboardInner() {
         const { error: upErr } = await supabase.storage
           .from('chat-files')
           .upload(path, attachedFile, { contentType: attachedFile.type || 'application/octet-stream' });
-        if (upErr) throw upErr;
+        if (upErr) { throw new Error('[ЭТАП: загрузка файла] ' + (upErr.message || JSON.stringify(upErr))); }
         const { data: { publicUrl } } = supabase.storage.from('chat-files').getPublicUrl(path);
         fileUrl = publicUrl;
       } catch (err: any) {
-        setChatError('Ошибка загрузки: ' + (err?.message || err?.error || JSON.stringify(err) || 'неизвестно') + (err?.statusCode ? ` [${err.statusCode}]` : ''));
+        const msg = err?.message || err?.error || JSON.stringify(err) || '';
+        if (msg.includes('CONTACT_INFO') || msg.includes('BLOCKED')) {
+          setChatError('Этот файл заблокирован системой защиты данных. Попробуйте переименовать файл или заархивировать его в .zip перед отправкой.');
+        } else {
+          setChatError('Ошибка загрузки: ' + msg + (err?.statusCode ? ` [${err.statusCode}]` : ''));
+        }
         setSending(false);
         return;
       }
@@ -164,7 +169,12 @@ function ClientDashboardInner() {
       setMessages(m => m.filter(msg => msg.id !== tempId));
       setNewMsg(content);
       setAttachedFile(fileToReset);
-      setChatError(err?.message || 'Ошибка отправки. Возможно, файл слишком большой.');
+      const m2 = err?.message || '';
+      if (m2.includes('CONTACT_INFO') || m2.includes('BLOCKED')) {
+        setChatError('Сообщение заблокировано системой защиты данных. Уберите из текста номера документов/ИИН или переименуйте файл.');
+      } else {
+        setChatError(m2 || 'Ошибка отправки.');
+      }
     }
     setSending(false);
   };
