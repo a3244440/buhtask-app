@@ -111,6 +111,24 @@ function ClientDashboardInner() {
     }
   };
 
+  const downloadFile = async (url: string, name: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // Fallback: open in new tab
+      window.open(url, '_blank');
+    }
+  };
+
   const sendMessage = async () => {
     if ((!newMsg.trim() && !attachedFile) || !activeConv || !userId) return;
     setSending(true);
@@ -360,9 +378,9 @@ function ClientDashboardInner() {
                                       <img src={fUrl} alt={fName} className="max-w-full rounded-lg max-h-60 object-cover" />
                                     </a>
                                   ) : (
-                                    <a href={fUrl} target="_blank" rel="noopener noreferrer" download={fName} className={`flex items-center gap-2 px-3 py-2 rounded-lg ${msg.sender_id === userId ? 'bg-blue-700' : 'bg-gray-200'}`}>
+                                    <button onClick={() => downloadFile(fUrl, fName)} className={`flex items-center gap-2 px-3 py-2 rounded-lg w-full text-left ${msg.sender_id === userId ? 'bg-blue-700 hover:bg-blue-800' : 'bg-gray-200 hover:bg-gray-300'}`}>
                                       📎 <span className="text-xs underline truncate max-w-[180px]">{fName}</span>
-                                    </a>
+                                    </button>
                                   )}
                                 </>
                               );
