@@ -132,7 +132,7 @@ function ClientDashboardInner() {
         const { data: { publicUrl } } = supabase.storage.from('chat-files').getPublicUrl(path);
         fileUrl = publicUrl;
       } catch (err: any) {
-        setChatError('Не удалось загрузить файл: ' + (err?.message || 'ошибка'));
+        setChatError('Ошибка загрузки: ' + (err?.message || err?.error || JSON.stringify(err) || 'неизвестно') + (err?.statusCode ? ` [${err.statusCode}]` : ''));
         setSending(false);
         return;
       }
