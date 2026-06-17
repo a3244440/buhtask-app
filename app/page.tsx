@@ -116,7 +116,7 @@ export default function HomePage() {
   const bg = D ? "bg-gray-950 text-white" : "bg-[#F8FAFC] text-gray-900";
   const cardBg = D ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200";
   const mutedText = D ? "text-gray-400" : "text-gray-500";
-  const sectionBg = D ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100";
+  const sectionBg = D ? "bg-gray-900 border-transparent" : "bg-white border-gray-100";
 
   return (
     <div className={`min-h-screen ${bg} transition-colors duration-500`} style={{ fontFamily: "Inter, sans-serif" }}>
@@ -174,7 +174,7 @@ export default function HomePage() {
       {/* STATS */}
       <section className={`border-b ${sectionBg}`}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0" style={{ borderColor: D ? '#1f2937' : '#f1f5f9' }}>
+          <div className={`grid grid-cols-2 md:grid-cols-4 ${D ? '' : 'divide-x divide-y md:divide-y-0'}`} style={{ borderColor: D ? 'transparent' : '#f1f5f9' }}>
             {STATS.map(s => (
               <div key={s.label} className="flex flex-col items-center gap-1 py-8 px-4">
                 <span className="text-4xl md:text-5xl font-extrabold text-blue-500">{s.value}</span>
@@ -236,7 +236,7 @@ export default function HomePage() {
       </section>
 
       {/* FOR ACCOUNTANTS */}
-      <section id="for-accountants" className={`py-24 px-4 sm:px-6 border-t ${bg}`}>
+      <section id="for-accountants" className={`py-24 px-4 sm:px-6 ${D ? '' : 'border-t border-gray-100'} ${bg}`}>
         <div className="max-w-5xl mx-auto">
           <div className={`rounded-2xl border p-8 md:p-12 ${cardBg}`}>
             <div className="grid md:grid-cols-2 gap-10 items-center">
