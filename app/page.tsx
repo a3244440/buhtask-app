@@ -142,7 +142,7 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] mb-5">
-            Найти бухгалтера<br />просто и быстро
+            Найти <span className="text-yellow-300">бухгалтера</span><br />просто и быстро
           </h1>
 
           <p className="text-lg text-blue-100 max-w-2xl mx-auto mb-8 leading-relaxed">
