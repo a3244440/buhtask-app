@@ -35,6 +35,7 @@ function AccountantDashboardInner() {
   const [newMsg, setNewMsg] = useState('');
   const [sending, setSending] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [userId, setUserId] = useState('');
@@ -101,6 +102,16 @@ function AccountantDashboardInner() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conv.id}` },
         (payload) => setMessages(m => [...m, payload.new as Message]))
       .subscribe();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { alert('Файл слишком большой (макс 10MB)'); return; }
+      setAttachedFile(file);
+    }
   };
 
   const sendMessage = async () => {
@@ -310,7 +321,18 @@ function AccountantDashboardInner() {
                   ))}
                 </>
               ) : (
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col h-full relative"
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                  onDrop={handleDrop}>
+                  {isDragging && (
+                    <div className="absolute inset-0 z-20 bg-blue-500/10 border-2 border-dashed border-blue-500 rounded-2xl flex items-center justify-center pointer-events-none">
+                      <div className="bg-white rounded-2xl px-6 py-4 shadow-lg flex items-center gap-3">
+                        <Paperclip className="w-5 h-5 text-blue-600" />
+                        <span className="text-sm font-semibold text-blue-700">Отпустите файл, чтобы прикрепить</span>
+                      </div>
+                    </div>
+                  )}
                   {/* Chat header */}
                   <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 flex-shrink-0">
                     <button onClick={() => setActiveConv(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">

@@ -39,6 +39,7 @@ function ClientDashboardInner() {
   const [newMsg, setNewMsg] = useState('');
   const [sending, setSending] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState('');
   const router = useRouter();
@@ -97,6 +98,16 @@ function ClientDashboardInner() {
           return [...m, payload.new as Message];
         }))
       .subscribe();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { alert('Файл слишком большой (макс 10MB)'); return; }
+      setAttachedFile(file);
+    }
   };
 
   const sendMessage = async () => {
@@ -274,7 +285,18 @@ function ClientDashboardInner() {
                   ))}
                 </>
               ) : (
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col h-full relative"
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                  onDrop={handleDrop}>
+                  {isDragging && (
+                    <div className="absolute inset-0 z-20 bg-blue-500/10 border-2 border-dashed border-blue-500 rounded-2xl flex items-center justify-center pointer-events-none">
+                      <div className="bg-white rounded-2xl px-6 py-4 shadow-lg flex items-center gap-3">
+                        <Paperclip className="w-5 h-5 text-blue-600" />
+                        <span className="text-sm font-semibold text-blue-700">Отпустите файл, чтобы прикрепить</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 flex-shrink-0">
                     <button onClick={() => setActiveConv(null)} className="p-1.5 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-4 h-4 text-gray-500" /></button>
                     <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">{activeConv.other_name[0]?.toUpperCase()}</div>
@@ -333,8 +355,7 @@ function ClientDashboardInner() {
                         <Paperclip className="w-4 h-4" />
                       </button>
                       <input ref={fileInputRef} type="file" className="hidden"
-                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-                        onChange={e => { const f = e.target.files?.[0]; if (f) { if (f.size > 3*1024*1024) { alert('Файл слишком большой (макс 3MB)'); return; } setAttachedFile(f); } }} />
+                        onChange={e => { const f = e.target.files?.[0]; if (f) { if (f.size > 10*1024*1024) { alert('Файл слишком большой (макс 10MB)'); return; } setAttachedFile(f); } }} />
                       <input type="text" value={newMsg} onChange={e => setNewMsg(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                         placeholder="Напишите сообщение..." disabled={sending}
