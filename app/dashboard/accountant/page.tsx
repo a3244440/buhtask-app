@@ -6,7 +6,7 @@ import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRig
 import DashboardHeader from '../../components/DashboardHeader';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; }
-interface Conversation { id: string; other_name: string; other_email: string; other_id: string; last_message: string; updated_at: string; }
+interface Conversation { id: string; other_name: string; other_id: string; last_message: string; updated_at: string; }
 interface Message { id: string; sender_id: string; content: string; created_at: string; }
 
 const CATS: Record<string, string> = {
@@ -80,11 +80,10 @@ function AccountantDashboardInner() {
       const convs: Conversation[] = [];
       for (const c of convData) {
         const otherId = c.participant1_id === user.id ? c.participant2_id : c.participant1_id;
-        const { data: otherProfile } = await supabase.from('profiles').select('full_name,email').eq('id', otherId).single();
+        const { data: otherProfile } = await supabase.from('profiles').select('full_name').eq('id', otherId).single();
         convs.push({
           id: c.id, other_id: otherId,
-          other_name: otherProfile?.full_name || otherProfile?.email || 'Пользователь',
-          other_email: otherProfile?.email || '',
+          other_name: otherProfile?.full_name || 'Заказчик',
           last_message: c.last_message || '',
           updated_at: c.updated_at,
         });

@@ -64,8 +64,8 @@ function ClientDashboardInner() {
       const convs: Conversation[] = [];
       for (const c of convData) {
         const otherId = c.participant1_id === user.id ? c.participant2_id : c.participant1_id;
-        const { data: p } = await supabase.from('profiles').select('full_name,email').eq('id', otherId).single();
-        convs.push({ id: c.id, other_id: otherId, other_name: p?.full_name || p?.email || 'Бухгалтер', last_message: c.last_message || '', updated_at: c.updated_at });
+        const { data: p } = await supabase.from('profiles').select('full_name').eq('id', otherId).single();
+        convs.push({ id: c.id, other_id: otherId, other_name: p?.full_name || 'Бухгалтер', last_message: c.last_message || '', updated_at: c.updated_at });
       }
       setConversations(convs);
 

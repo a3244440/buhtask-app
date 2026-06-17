@@ -54,7 +54,7 @@ export default function DashboardHeader({ title, right }: Props) {
               <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{initials}</div>
             )}
             <div className="hidden sm:block text-left min-w-0">
-              <p className="text-xs font-semibold text-gray-900 leading-tight truncate max-w-[120px]">{fullName || email.split('@')[0]}</p>
+              <p className="text-xs font-semibold text-gray-900 leading-tight truncate max-w-[120px]">{fullName || (role === 'accountant' ? 'Бухгалтер' : role === 'admin' ? 'Админ' : 'Заказчик')}</p>
               <p className="text-[10px] text-gray-400">{role === 'accountant' ? 'Бухгалтер' : 'Заказчик'}</p>
             </div>
             <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
