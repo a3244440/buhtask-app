@@ -59,16 +59,26 @@ export default function AdminPanel() {
       const merged = { ...acc, ...updates };
       // Auto-set status based on checks
       let status = merged.verification_status;
-      if (merged.identity_verified && merged.documents_verified && merged.experience_verified) {
+      const allChecked = merged.identity_verified && merged.documents_verified && merged.experience_verified;
+      if (allChecked) {
         status = 'verified';
-      } else if (acc.verification_status === 'verified' && !(merged.identity_verified && merged.documents_verified && merged.experience_verified)) {
+      } else if (merged.identity_verified || merged.documents_verified || merged.experience_verified) {
         status = 'pending';
+      } else {
+        status = 'not_verified';
       }
       const finalUpdates = { ...updates, verification_status: status };
-      await supabase.from('profiles').update(finalUpdates).eq('id', acc.id);
+      const { error } = await supabase.from('profiles').update(finalUpdates).eq('id', acc.id);
+      if (error) {
+        alert('Ошибка сохранения: ' + error.message + '\n\nВозможно нужна RLS политика для админа.');
+        setSaving(false);
+        return;
+      }
       setAccountants(prev => prev.map(a => a.id === acc.id ? { ...a, ...finalUpdates } : a));
       setSelected(prev => prev && prev.id === acc.id ? { ...prev, ...finalUpdates } : prev);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      alert('Ошибка: ' + (e?.message || 'неизвестно'));
+    }
     setSaving(false);
   };
 
