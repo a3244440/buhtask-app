@@ -110,7 +110,7 @@ function AccountantDashboardInner() {
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      if (file.size > 3 * 1024 * 1024) { alert('Файл слишком большой (макс 3MB)'); return; }
+      if (file.size > 50 * 1024 * 1024) { alert('Файл слишком большой (макс 50MB)'); return; }
       setAttachedFile(file);
     }
   };

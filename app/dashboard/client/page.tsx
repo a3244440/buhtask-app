@@ -106,7 +106,7 @@ function ClientDashboardInner() {
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      if (file.size > 3 * 1024 * 1024) { alert('Файл слишком большой (макс 3MB)'); return; }
+      if (file.size > 50 * 1024 * 1024) { alert('Файл слишком большой (макс 50MB)'); return; }
       setAttachedFile(file);
     }
   };
@@ -117,33 +117,28 @@ function ClientDashboardInner() {
     setChatError('');
     const content = newMsg.trim();
 
-    // Convert file to base64
-    let fileData = '';
+    // Upload file to Supabase Storage
+    let fileUrl = '';
     let fileName = '';
     if (attachedFile) {
       fileName = attachedFile.name;
       try {
-        fileData = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (ev) => resolve(ev.target?.result as string);
-          reader.onerror = () => reject(new Error('read error'));
-          reader.readAsDataURL(attachedFile);
-        });
-      } catch {
-        setChatError('Не удалось прочитать файл');
+        const ext = attachedFile.name.split('.').pop() || 'bin';
+        const path = `${activeConv.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('chat-files')
+          .upload(path, attachedFile, { contentType: attachedFile.type || 'application/octet-stream' });
+        if (upErr) throw upErr;
+        const { data: { publicUrl } } = supabase.storage.from('chat-files').getPublicUrl(path);
+        fileUrl = publicUrl;
+      } catch (err: any) {
+        setChatError('Не удалось загрузить файл: ' + (err?.message || 'ошибка'));
         setSending(false);
         return;
       }
     }
 
-    const fullContent = fileData ? `${content}\n[file:${fileName}]${fileData}` : content;
-
-    // Check size limit (Supabase text field — keep under ~4MB to be safe)
-    if (fullContent.length > 4_000_000) {
-      setChatError('Файл слишком большой для отправки. Максимум ~3MB.');
-      setSending(false);
-      return;
-    }
+    const fullContent = fileUrl ? `${content}\n[file:${fileName}]${fileUrl}` : content;
 
     setNewMsg('');
     const tempId = 'temp-' + Date.now();
@@ -328,22 +323,22 @@ function ClientDashboardInner() {
                       <div key={msg.id} className={`flex ${msg.sender_id === userId ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${msg.sender_id === userId ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-900 rounded-bl-sm'}`}>
                           {(() => {
-                            const fileMatch = msg.content.match(/\[file:([^\]]+)\](data:[^\s]+)/);
+                            const fileMatch = msg.content.match(/\[file:([^\]]+)\](https?:[^\s]+)/);
                             if (fileMatch) {
                               const fName = fileMatch[1];
-                              const fData = fileMatch[2];
-                              const textPart = msg.content.replace(/\n?\[file:[^\]]+\]data:[^\s]+/, '').trim();
-                              const isImage = fData.startsWith('data:image');
+                              const fUrl = fileMatch[2];
+                              const textPart = msg.content.replace(/\n?\[file:[^\]]+\]https?:[^\s]+/, '').trim();
+                              const isImage = /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(fName);
                               return (
                                 <>
-                                  {textPart && <p className="mb-2">{textPart}</p>}
+                                  {textPart && <p className="mb-2 whitespace-pre-wrap break-words">{textPart}</p>}
                                   {isImage ? (
-                                    <a href={fData} target="_blank" rel="noopener noreferrer">
-                                      <img src={fData} alt={fName} className="max-w-full rounded-lg max-h-48 object-cover" />
+                                    <a href={fUrl} target="_blank" rel="noopener noreferrer">
+                                      <img src={fUrl} alt={fName} className="max-w-full rounded-lg max-h-60 object-cover" />
                                     </a>
                                   ) : (
-                                    <a href={fData} download={fName} className={`flex items-center gap-2 px-3 py-2 rounded-lg ${msg.sender_id === userId ? 'bg-blue-700' : 'bg-gray-200'}`}>
-                                      📎 <span className="text-xs underline truncate max-w-[150px]">{fName}</span>
+                                    <a href={fUrl} target="_blank" rel="noopener noreferrer" download={fName} className={`flex items-center gap-2 px-3 py-2 rounded-lg ${msg.sender_id === userId ? 'bg-blue-700' : 'bg-gray-200'}`}>
+                                      📎 <span className="text-xs underline truncate max-w-[180px]">{fName}</span>
                                     </a>
                                   )}
                                 </>
@@ -380,7 +375,7 @@ function ClientDashboardInner() {
                         <Paperclip className="w-4 h-4" />
                       </button>
                       <input ref={fileInputRef} type="file" className="hidden"
-                        onChange={e => { const f = e.target.files?.[0]; if (f) { if (f.size > 3*1024*1024) { alert('Файл слишком большой (макс 3MB)'); return; } setAttachedFile(f); } }} />
+                        onChange={e => { const f = e.target.files?.[0]; if (f) { if (f.size > 50*1024*1024) { alert('Файл слишком большой (макс 50MB)'); return; } setAttachedFile(f); } }} />
                       <input type="text" value={newMsg} onChange={e => setNewMsg(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                         placeholder="Напишите сообщение..." disabled={sending}
