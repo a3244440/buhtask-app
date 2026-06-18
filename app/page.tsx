@@ -26,12 +26,18 @@ const STATS = [
   { value: "17", label: "Регионов Казахстана" },
 ];
 const CATEGORIES = [
-  { icon: FileText, title: "Налоговая отчётность", desc: "Декларации, НДС, КПН, ИПН — сдача отчётности в срок", color: "text-blue-600", bg: "bg-blue-50", darkBg: "dark:bg-blue-900/30" },
-  { icon: DollarSign, title: "Расчёт зарплаты", desc: "Расчёт ЗП, социальных отчислений и налогов", color: "text-emerald-600", bg: "bg-emerald-50", darkBg: "dark:bg-emerald-900/30" },
-  { icon: Building2, title: "Регистрация ИП/ТОО", desc: "Открытие бизнеса под ключ: документы, постановка на учёт", color: "text-violet-600", bg: "bg-violet-50", darkBg: "dark:bg-violet-900/30" },
-  { icon: BarChart2, title: "Аудит", desc: "Проверка финансовой отчётности, выявление ошибок", color: "text-amber-600", bg: "bg-amber-50", darkBg: "dark:bg-amber-900/30" },
-  { icon: Users, title: "Консультация", desc: "Разовый вопрос или регулярное налоговое сопровождение", color: "text-cyan-600", bg: "bg-cyan-50", darkBg: "dark:bg-cyan-900/30" },
-  { icon: Calculator, title: "Ведение бухгалтерии", desc: "Полное ведение учёта: первичка, проводки, отчётность", color: "text-rose-600", bg: "bg-rose-50", darkBg: "dark:bg-rose-900/30" },
+  { icon: FileText, title: "Налоговая отчётность", desc: "Декларации, НДС, КПН, ИПН — сдача отчётности в срок", color: "text-blue-600", bg: "bg-blue-50", darkBg: "dark:bg-blue-900/30", hot: false },
+  { icon: Building2, title: "КС-2 и КС-3 (строительство)", desc: "Акты выполненных работ и справки о стоимости для строительных фирм", color: "text-orange-600", bg: "bg-orange-50", darkBg: "dark:bg-orange-900/30", hot: true },
+  { icon: DollarSign, title: "Декретные и пособия", desc: "Расчёт декретных, пособий по уходу, больничных для сотрудников и ИП", color: "text-pink-600", bg: "bg-pink-50", darkBg: "dark:bg-pink-900/30", hot: true },
+  { icon: DollarSign, title: "Расчёт зарплаты", desc: "Расчёт ЗП, ОПВ, соцотчислений, ИПН и налогов", color: "text-emerald-600", bg: "bg-emerald-50", darkBg: "dark:bg-emerald-900/30", hot: false },
+  { icon: Building2, title: "Регистрация ИП/ТОО", desc: "Открытие бизнеса под ключ: документы, постановка на учёт", color: "text-violet-600", bg: "bg-violet-50", darkBg: "dark:bg-violet-900/30", hot: false },
+  { icon: BarChart2, title: "Аудит", desc: "Проверка финансовой отчётности, выявление ошибок", color: "text-amber-600", bg: "bg-amber-50", darkBg: "dark:bg-amber-900/30", hot: false },
+  { icon: FileText, title: "Ответ на уведомление КГД", desc: "Камеральный контроль, ответы на уведомления налоговой, разблокировка счетов", color: "text-red-600", bg: "bg-red-50", darkBg: "dark:bg-red-900/30", hot: true },
+  { icon: BarChart2, title: "Возврат НДС", desc: "Возврат превышения НДС, работа с КГД по возврату", color: "text-teal-600", bg: "bg-teal-50", darkBg: "dark:bg-teal-900/30", hot: true },
+  { icon: Building2, title: "Закрытие ИП/ТОО", desc: "Ликвидация без штрафов, прохождение камерального контроля", color: "text-slate-600", bg: "bg-slate-50", darkBg: "dark:bg-slate-900/30", hot: false },
+  { icon: FileText, title: "Декларация 250/270", desc: "Декларация об активах и обязательствах, всеобщее декларирование", color: "text-indigo-600", bg: "bg-indigo-50", darkBg: "dark:bg-indigo-900/30", hot: true },
+  { icon: Users, title: "Консультация", desc: "Разовый вопрос или регулярное налоговое сопровождение", color: "text-cyan-600", bg: "bg-cyan-50", darkBg: "dark:bg-cyan-900/30", hot: false },
+  { icon: Calculator, title: "Ведение бухгалтерии", desc: "Полное ведение учёта: первичка, проводки, отчётность", color: "text-rose-600", bg: "bg-rose-50", darkBg: "dark:bg-rose-900/30", hot: false },
 ];
 const STEPS = [
   { num: "01", title: "Зарегистрируйтесь", desc: "Создайте аккаунт как заказчик или бухгалтер" },
@@ -195,7 +201,12 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {CATEGORIES.map(cat => (
               <div key={cat.title} onClick={() => router.push("/auth")}
-                className={`group rounded-2xl border p-6 flex flex-col gap-4 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer ${cardBg}`}>
+                className={`group relative rounded-2xl border p-6 flex flex-col gap-4 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer ${cardBg}`}>
+                {cat.hot && (
+                  <span className="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full text-[10px] font-bold">
+                    🔥 Высокий спрос
+                  </span>
+                )}
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${D ? 'bg-white/10' : cat.bg}`}>
                   <cat.icon className={`w-5 h-5 ${cat.color}`} />
                 </div>

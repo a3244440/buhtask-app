@@ -6,9 +6,15 @@ import { ArrowLeft, FileText } from 'lucide-react';
 import DashboardHeader from '../../../components/DashboardHeader';
 
 const CATEGORIES = [
-  { value: 'tax', label: 'Налоги и НДС' },
+  { value: 'tax', label: 'Налоговая отчётность' },
+  { value: 'construction', label: '🔥 КС-2 / КС-3 (строительство)' },
+  { value: 'maternity', label: '🔥 Декретные и пособия' },
+  { value: 'kgd_notice', label: '🔥 Ответ на уведомление КГД' },
+  { value: 'vat_return', label: '🔥 Возврат НДС' },
+  { value: 'declaration_250', label: '🔥 Декларация 250 / 270' },
   { value: 'salary', label: 'Расчёт зарплаты' },
   { value: 'register', label: 'Регистрация ИП / ТОО' },
+  { value: 'closing', label: 'Закрытие ИП / ТОО' },
   { value: 'audit', label: 'Аудит' },
   { value: 'report', label: 'Отчётность (910, 700 ФНО)' },
   { value: 'other', label: 'Прочее' },

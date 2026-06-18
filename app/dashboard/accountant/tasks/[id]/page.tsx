@@ -6,8 +6,18 @@ import { ArrowLeft, MapPin, Calendar, Send, CheckCircle } from 'lucide-react';
 import DashboardHeader from '../../../../components/DashboardHeader';
 
 const CATS: Record<string, string> = {
-  tax: 'Налоги и НДС', salary: 'Расчёт зарплаты', register: 'Регистрация ИП/ТОО',
-  audit: 'Аудит', report: 'Отчётность', other: 'Прочее',
+  tax: 'Налоговая отчётность',
+  construction: 'КС-2 / КС-3 (строительство)',
+  maternity: 'Декретные и пособия',
+  kgd_notice: 'Ответ на уведомление КГД',
+  vat_return: 'Возврат НДС',
+  declaration_250: 'Декларация 250 / 270',
+  salary: 'Расчёт зарплаты',
+  register: 'Регистрация ИП/ТОО',
+  closing: 'Закрытие ИП/ТОО',
+  audit: 'Аудит',
+  report: 'Отчётность',
+  other: 'Прочее',
 };
 
 interface Task {

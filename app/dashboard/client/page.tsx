@@ -10,11 +10,17 @@ interface Conversation { id: string; other_name: string; other_id: string; last_
 interface Message { id: string; sender_id: string; content: string; created_at: string; }
 
 const CATS: Record<string, string> = {
-  tax: 'Налоги и НДС',
+  tax: 'Налоговая отчётность',
+  construction: 'КС-2 / КС-3 (строительство)',
+  maternity: 'Декретные и пособия',
+  kgd_notice: 'Ответ на уведомление КГД',
+  vat_return: 'Возврат НДС',
+  declaration_250: 'Декларация 250 / 270',
   salary: 'Расчёт зарплаты',
   register: 'Регистрация ИП/ТОО',
+  closing: 'Закрытие ИП/ТОО',
   audit: 'Аудит',
-  report: 'Отчётность (910, 700 ФНО)',
+  report: 'Отчётность',
   other: 'Прочее',
 };
 const STATUS: Record<string, { label: string; color: string }> = {
