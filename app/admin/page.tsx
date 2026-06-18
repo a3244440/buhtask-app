@@ -22,6 +22,9 @@ export default function AdminPanel() {
   const [filter, setFilter] = useState<'pending' | 'verified' | 'all'>('pending');
   const [stats, setStats] = useState({ total: 0, accountants: 0, clients: 0, tasks: 0 });
   const [saving, setSaving] = useState(false);
+  const [platformKaspi, setPlatformKaspi] = useState({ number: '', name: 'BuhTask', percent: 10 });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
 
   useEffect(() => { init(); }, []);
 
@@ -50,7 +53,34 @@ export default function AdminPanel() {
     ]);
     setStats({ total: total || 0, accountants: accCount || 0, clients: clientCount || 0, tasks: taskCount || 0 });
 
+    // Платформенные настройки
+    const { data: settings } = await supabase.from('platform_settings').select('*').eq('id', 1).maybeSingle();
+    if (settings) {
+      setPlatformKaspi({
+        number: settings.platform_kaspi_number || '',
+        name: settings.platform_kaspi_name || 'BuhTask',
+        percent: settings.commission_percent || 10,
+      });
+    }
+
     setLoading(false);
+  };
+
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    setSettingsSaved(false);
+    const { error } = await supabase.from('platform_settings').update({
+      platform_kaspi_number: platformKaspi.number,
+      platform_kaspi_name: platformKaspi.name,
+      commission_percent: platformKaspi.percent,
+    }).eq('id', 1);
+    if (error) {
+      alert('Ошибка сохранения: ' + error.message);
+    } else {
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 3000);
+    }
+    setSavingSettings(false);
   };
 
   const updateVerification = async (acc: Accountant, updates: Partial<Accountant>) => {

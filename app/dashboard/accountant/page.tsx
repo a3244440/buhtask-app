@@ -631,29 +631,17 @@ function AccountantDashboardInner() {
                 <p className="text-xs text-gray-400 mt-1">с заказа {(payModal.final_price || 0).toLocaleString()} ₸</p>
               </div>
 
-              {/* Kaspi QR / реквизиты */}
-              <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-100 rounded-2xl p-5 mb-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center text-white font-bold text-sm">K</div>
-                  <p className="font-semibold text-gray-900 text-sm">Kaspi перевод</p>
-                </div>
-                {platformKaspi.number ? (
-                  <>
-                    <p className="text-xs text-gray-500 mb-1">Номер для перевода:</p>
-                    <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2.5 mb-2">
-                      <p className="font-bold text-gray-900 flex-1">{platformKaspi.number}</p>
-                      <button onClick={() => { navigator.clipboard.writeText(platformKaspi.number); }}
-                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><Copy className="w-4 h-4" /></button>
-                    </div>
-                    <p className="text-xs text-gray-500">Получатель: <span className="font-medium text-gray-700">{platformKaspi.name}</span></p>
-                  </>
-                ) : (
-                  <p className="text-xs text-amber-600">Номер Kaspi платформы ещё не настроен администратором. Свяжитесь с поддержкой.</p>
-                )}
+              {/* Kaspi QR карточка платформы */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-5 flex flex-col items-center">
+                <img src="/images/kaspi-qr.png" alt="Kaspi QR BuhTask" className="w-full max-w-[260px] rounded-xl" />
+                <a href="/images/kaspi-qr.png" download="BuhTask-Kaspi-QR.png"
+                  className="mt-3 text-xs text-blue-600 hover:underline flex items-center gap-1">
+                  <Copy className="w-3.5 h-3.5" /> Сохранить QR-код
+                </a>
               </div>
 
               <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-5">
-                <p className="text-xs text-amber-700">⚠️ После перевода нажмите кнопку ниже. Платформа проверит поступление.</p>
+                <p className="text-xs text-amber-700">⚠️ Отсканируйте QR в приложении Kaspi, переведите сумму комиссии <b>{(payModal.commission_amount || 0).toLocaleString()} ₸</b>, затем нажмите кнопку ниже.</p>
               </div>
 
               <button onClick={() => confirmCommissionPaid(payModal)}
