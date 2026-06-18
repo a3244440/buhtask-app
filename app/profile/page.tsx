@@ -12,6 +12,7 @@ const inp = "w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 foc
 export default function ProfilePage() {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const qrRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -22,7 +23,7 @@ export default function ProfilePage() {
     full_name: '', phone: '', city: 'Астана', role: 'client',
     bio: '', avatar_url: '', experience_years: 0, min_price: 0,
     specialization: [] as string[], email: '',
-    iin: '', id_card_url: '', selfie_url: '',
+    iin: '', id_card_url: '', selfie_url: '', kaspi_qr_url: '',
     diploma_urls: [] as string[], certificate_urls: [] as string[],
     identity_verified: false, documents_verified: false, experience_verified: false,
     verification_status: 'not_verified', completed_tasks: 0, rating: 0,
@@ -45,6 +46,7 @@ export default function ProfilePage() {
         certificate_urls: p.certificate_urls || [],
         iin: p.iin || '',
         id_card_url: p.id_card_url || '',
+        kaspi_qr_url: p.kaspi_qr_url || '',
         selfie_url: p.selfie_url || '',
         bio: p.bio || '',
         verification_status: p.verification_status || 'not_verified',
@@ -96,6 +98,24 @@ export default function ProfilePage() {
     } catch { setError('Ошибка загрузки фото'); setUploading(false); }
   };
 
+  const uploadKaspiQR = async (file: File) => {
+    if (!userId) return;
+    if (file.size > 5 * 1024 * 1024) { setError('Файл слишком большой (макс 5MB)'); return; }
+    setUploading(true); setError('');
+    try {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${userId}/kaspi_qr_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+      setProfile(p => ({ ...p, kaspi_qr_url: publicUrl }));
+    } catch (err: any) {
+      setError('Ошибка загрузки QR: ' + (err?.message || 'попробуйте снова'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const uploadDoc = async (file: File, field: 'id_card_url' | 'selfie_url' | 'diploma_urls' | 'certificate_urls') => {
     if (!userId) return;
     if (file.size > 10 * 1024 * 1024) { setError('Файл слишком большой (макс 10MB)'); return; }
@@ -134,6 +154,7 @@ export default function ProfilePage() {
         update.bio = profile.bio;
         update.experience_years = profile.experience_years;
         update.min_price = profile.min_price;
+        update.kaspi_qr_url = profile.kaspi_qr_url;
         update.specialization = profile.specialization;
         update.iin = profile.iin;
         update.id_card_url = profile.id_card_url;
@@ -247,6 +268,38 @@ export default function ProfilePage() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* KASPI QR SECTION - only accountants */}
+        {profile.role === 'accountant' && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
+            <div className="flex items-center gap-2 mb-1">
+              <CreditCard className="w-5 h-5 text-red-500" />
+              <h2 className="font-semibold text-gray-900">Kaspi QR для приёма оплаты</h2>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Загрузите свой Kaspi QR — клиент отсканирует его для оплаты вашей работы</p>
+
+            {profile.kaspi_qr_url ? (
+              <div className="flex items-center gap-4">
+                <img src={profile.kaspi_qr_url} alt="Мой Kaspi QR" className="w-32 h-32 object-contain rounded-xl border border-gray-200" />
+                <div>
+                  <p className="text-sm text-emerald-600 font-medium mb-2">✓ QR загружен</p>
+                  <button onClick={() => qrRef.current?.click()} disabled={uploading}
+                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
+                    {uploading ? 'Загрузка...' : 'Заменить QR'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => qrRef.current?.click()} disabled={uploading}
+                className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 hover:border-blue-300 rounded-xl text-sm text-gray-500 w-full justify-center">
+                <Upload className="w-4 h-4" /> {uploading ? 'Загрузка...' : 'Загрузить Kaspi QR (скриншот из приложения Kaspi)'}
+              </button>
+            )}
+            <input ref={qrRef} type="file" accept="image/*" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) uploadKaspiQR(f); if (qrRef.current) qrRef.current.value = ''; }} />
+            <p className="text-xs text-gray-400 mt-3">💡 Как получить QR: откройте Kaspi → «Платежи» → «Бизнесу» → ваш QR, сделайте скриншот</p>
           </div>
         )}
 
