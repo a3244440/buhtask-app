@@ -2,10 +2,10 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip } from 'lucide-react';
+import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 
-interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; }
+interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; final_price?: number; commission_amount?: number; commission_paid?: boolean; paid_by_client?: boolean; }
 interface Conversation { id: string; other_name: string; other_id: string; last_message: string; updated_at: string; }
 interface Message { id: string; sender_id: string; content: string; created_at: string; }
 
@@ -39,6 +39,9 @@ function AccountantDashboardInner() {
   const [tab, setTab] = useState('home');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [myOrders, setMyOrders] = useState<Task[]>([]);
+  const [myProposalPrices, setMyProposalPrices] = useState<Record<string, number>>({});
+  const [platformKaspi, setPlatformKaspi] = useState({ number: '', name: 'BuhTask', percent: 10 });
+  const [payModal, setPayModal] = useState<Task | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,11 +68,24 @@ function AccountantDashboardInner() {
     const [{ data: openTasks }, { data: convData }, { data: myProposals }] = await Promise.all([
       supabase.from('tasks').select('*').eq('status', 'open').order('created_at', { ascending: false }),
       supabase.from('conversations').select('*').or(`participant1_id.eq.${user.id},participant2_id.eq.${user.id}`).order('updated_at', { ascending: false }),
-      supabase.from('proposals').select('task_id').eq('accountant_id', user.id),
+      supabase.from('proposals').select('task_id,proposed_price').eq('accountant_id', user.id),
     ]);
 
-    // IDs задач на которые уже откликнулся
+    // IDs задач на которые уже откликнулся + цены
     const respondedTaskIds = new Set((myProposals || []).map((p: any) => p.task_id));
+    const priceMap: Record<string, number> = {};
+    (myProposals || []).forEach((p: any) => { if (p.proposed_price) priceMap[p.task_id] = p.proposed_price; });
+    setMyProposalPrices(priceMap);
+
+    // Платформенные настройки (Kaspi номер для оплаты комиссии)
+    const { data: settings } = await supabase.from('platform_settings').select('*').eq('id', 1).maybeSingle();
+    if (settings) {
+      setPlatformKaspi({
+        number: settings.platform_kaspi_number || '',
+        name: settings.platform_kaspi_name || 'BuhTask',
+        percent: settings.commission_percent || 10,
+      });
+    }
 
     // Показываем только открытые задачи БЕЗ моего отклика
     const availableTasks = (openTasks || []).filter((t: any) => !respondedTaskIds.has(t.id));
@@ -124,6 +140,54 @@ function AccountantDashboardInner() {
     }
   };
 
+  // Бухгалтер отмечает что заказ выполнен и оплачен клиентом
+  const markOrderPaid = async (task: Task) => {
+    const price = myProposalPrices[task.id] || task.budget || 0;
+    if (!price) {
+      alert('Не указана цена заказа. Укажите цену в отклике.');
+      return;
+    }
+    const commission = Math.round(price * (platformKaspi.percent / 100));
+    // Обновляем задачу: оплачена клиентом, статус paid, рассчитана комиссия
+    const { error } = await supabase.from('tasks').update({
+      status: 'paid',
+      final_price: price,
+      paid_by_client: true,
+      paid_at: new Date().toISOString(),
+      commission_amount: commission,
+    }).eq('id', task.id);
+    if (error) { alert('Ошибка: ' + error.message); return; }
+
+    // Создаём запись о комиссии к оплате
+    await supabase.from('commission_payments').insert({
+      accountant_id: userId,
+      task_id: task.id,
+      order_amount: price,
+      commission_amount: commission,
+      status: 'pending',
+    });
+
+    // Обновляем локально и открываем модалку оплаты комиссии
+    setMyOrders(prev => prev.map(t => t.id === task.id ? { ...t, status: 'paid', final_price: price, commission_amount: commission } : t));
+    setPayModal({ ...task, status: 'paid', final_price: price, commission_amount: commission });
+  };
+
+  // Бухгалтер подтверждает что оплатил комиссию платформе
+  const confirmCommissionPaid = async (task: Task) => {
+    const { error } = await supabase.from('tasks').update({
+      commission_paid: true,
+      commission_paid_at: new Date().toISOString(),
+    }).eq('id', task.id);
+    if (error) { alert('Ошибка: ' + error.message); return; }
+
+    await supabase.from('commission_payments')
+      .update({ status: 'paid', paid_at: new Date().toISOString() })
+      .eq('task_id', task.id).eq('accountant_id', userId);
+
+    setMyOrders(prev => prev.map(t => t.id === task.id ? { ...t, commission_paid: true } : t));
+    setPayModal(null);
+  };
+
   const downloadFile = async (url: string, name: string) => {
     try {
       const res = await fetch(url);
@@ -167,6 +231,7 @@ function AccountantDashboardInner() {
             { id: 'home', icon: Home, label: 'Главная' },
             { id: 'tasks', icon: Briefcase, label: 'Доступные задачи' },
             { id: 'my_orders', icon: TrendingUp, label: 'Мои заказы' },
+            { id: 'balance', icon: Wallet, label: 'Баланс и комиссии' },
             { id: 'messages', icon: MessageSquare, label: 'Сообщения' },
           ].map(item => (
             <button key={item.id} onClick={() => setTab(item.id)}
@@ -236,22 +301,50 @@ function AccountantDashboardInner() {
                           open: { label: 'Ожидает ответа', color: 'bg-amber-100 text-amber-700' },
                           in_progress: { label: '✓ Вы выбраны!', color: 'bg-emerald-100 text-emerald-700' },
                           completed: { label: 'Завершена', color: 'bg-gray-100 text-gray-500' },
+                          paid: { label: 'Оплачен', color: 'bg-blue-100 text-blue-700' },
                           cancelled: { label: 'Отменена', color: 'bg-red-100 text-red-500' },
                         };
                         const sl = statusLabels[task.status] || statusLabels.open;
+                        const price = myProposalPrices[task.id] || task.budget || 0;
+                        const commission = Math.round(price * (platformKaspi.percent / 100));
                         return (
-                          <div key={task.id} onClick={() => router.push(`/dashboard/accountant/tasks/${task.id}`)}
-                            className="px-6 py-4 hover:bg-gray-50 cursor-pointer group transition-colors">
+                          <div key={task.id}
+                            className="px-6 py-4 hover:bg-gray-50 group transition-colors">
                             <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
+                              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => router.push(`/dashboard/accountant/tasks/${task.id}`)}>
                                 <h3 className="font-medium text-gray-900 group-hover:text-blue-600 text-sm mb-1">{task.title}</h3>
                                 <div className="flex gap-2 text-xs text-gray-400 flex-wrap">
                                   <span className="text-blue-600 font-medium">{CATS[task.category]}</span>
                                   {task.city && <span>📍 {task.city}</span>}
+                                  {price > 0 && <span className="text-emerald-600 font-medium">💰 {price.toLocaleString()} ₸</span>}
                                 </div>
                               </div>
                               <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${sl.color}`}>{sl.label}</span>
                             </div>
+                            {/* Кнопка "Заказ оплачен" для активных заказов */}
+                            {task.status === 'in_progress' && (
+                              <div className="mt-3 flex items-center gap-2">
+                                <button onClick={() => markOrderPaid(task)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors">
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> Заказ выполнен и оплачен
+                                </button>
+                                <span className="text-xs text-gray-400">Комиссия {platformKaspi.percent}%: {commission.toLocaleString()} ₸</span>
+                              </div>
+                            )}
+                            {/* Статус комиссии для оплаченных */}
+                            {task.status === 'paid' && !task.commission_paid && (
+                              <div className="mt-3 flex items-center gap-2">
+                                <button onClick={() => setPayModal(task)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-medium transition-colors">
+                                  <Wallet className="w-3.5 h-3.5" /> Оплатить комиссию {(task.commission_amount || commission).toLocaleString()} ₸
+                                </button>
+                              </div>
+                            )}
+                            {task.status === 'paid' && task.commission_paid && (
+                              <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-600">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Комиссия оплачена ✓
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -259,6 +352,75 @@ function AccountantDashboardInner() {
                   )}
                 </div>
               )}
+              {tab === 'balance' && (() => {
+                const paidOrders = myOrders.filter(t => t.status === 'paid');
+                const totalEarned = paidOrders.reduce((s, t) => s + (t.final_price || 0), 0);
+                const owedCommission = paidOrders.filter(t => !t.commission_paid).reduce((s, t) => s + (t.commission_amount || 0), 0);
+                const paidCommission = paidOrders.filter(t => t.commission_paid).reduce((s, t) => s + (t.commission_amount || 0), 0);
+                return (
+                  <div className="space-y-5">
+                    {/* Stats cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                        <p className="text-xs text-gray-500 mb-1">Заработано всего</p>
+                        <p className="text-2xl font-extrabold text-emerald-600">{totalEarned.toLocaleString()} ₸</p>
+                        <p className="text-xs text-gray-400 mt-1">{paidOrders.length} выполненных заказов</p>
+                      </div>
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                        <p className="text-xs text-gray-500 mb-1">Долг по комиссии</p>
+                        <p className="text-2xl font-extrabold text-amber-600">{owedCommission.toLocaleString()} ₸</p>
+                        <p className="text-xs text-gray-400 mt-1">К оплате платформе</p>
+                      </div>
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                        <p className="text-xs text-gray-500 mb-1">Оплачено комиссии</p>
+                        <p className="text-2xl font-extrabold text-blue-600">{paidCommission.toLocaleString()} ₸</p>
+                        <p className="text-xs text-gray-400 mt-1">Всего за период</p>
+                      </div>
+                    </div>
+
+                    {/* How it works */}
+                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+                      <h3 className="font-semibold text-gray-900 text-sm mb-2 flex items-center gap-2">
+                        <Wallet className="w-4 h-4 text-blue-600" /> Как работает оплата
+                      </h3>
+                      <ol className="text-xs text-gray-600 space-y-1.5 list-decimal list-inside">
+                        <li>Клиент оплачивает вам напрямую за выполненный заказ (Kaspi/перевод)</li>
+                        <li>Вы нажимаете «Заказ выполнен и оплачен» в разделе «Мои заказы»</li>
+                        <li>Система рассчитывает комиссию платформы — {platformKaspi.percent}% от суммы заказа</li>
+                        <li>Вы оплачиваете комиссию платформе через Kaspi QR</li>
+                      </ol>
+                    </div>
+
+                    {/* Orders awaiting commission */}
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+                      <div className="px-6 py-5 border-b border-gray-100">
+                        <h2 className="font-semibold text-gray-900">Комиссии к оплате</h2>
+                      </div>
+                      {paidOrders.filter(t => !t.commission_paid).length === 0 ? (
+                        <div className="py-12 text-center">
+                          <CheckCircle2 className="w-10 h-10 text-emerald-200 mx-auto mb-3" />
+                          <p className="text-gray-400 text-sm">Нет задолженности по комиссии</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-gray-50">
+                          {paidOrders.filter(t => !t.commission_paid).map(task => (
+                            <div key={task.id} className="px-6 py-4 flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-medium text-gray-900 text-sm truncate">{task.title}</p>
+                                <p className="text-xs text-gray-400">Заказ: {(task.final_price || 0).toLocaleString()} ₸ · Комиссия {platformKaspi.percent}%</p>
+                              </div>
+                              <button onClick={() => setPayModal(task)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-medium transition-colors flex-shrink-0">
+                                <Wallet className="w-3.5 h-3.5" /> {(task.commission_amount || 0).toLocaleString()} ₸
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
               {tab === 'home' && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
                   <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
@@ -453,6 +615,55 @@ function AccountantDashboardInner() {
           ))}
         </div>
       </nav>
+
+      {/* Модалка оплаты комиссии через Kaspi QR */}
+      {payModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setPayModal(null)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900">Оплата комиссии платформе</h3>
+              <button onClick={() => setPayModal(null)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6">
+              <div className="text-center mb-5">
+                <p className="text-sm text-gray-500 mb-1">К оплате комиссия {platformKaspi.percent}%</p>
+                <p className="text-4xl font-extrabold text-gray-900">{(payModal.commission_amount || 0).toLocaleString()} ₸</p>
+                <p className="text-xs text-gray-400 mt-1">с заказа {(payModal.final_price || 0).toLocaleString()} ₸</p>
+              </div>
+
+              {/* Kaspi QR / реквизиты */}
+              <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-100 rounded-2xl p-5 mb-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center text-white font-bold text-sm">K</div>
+                  <p className="font-semibold text-gray-900 text-sm">Kaspi перевод</p>
+                </div>
+                {platformKaspi.number ? (
+                  <>
+                    <p className="text-xs text-gray-500 mb-1">Номер для перевода:</p>
+                    <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2.5 mb-2">
+                      <p className="font-bold text-gray-900 flex-1">{platformKaspi.number}</p>
+                      <button onClick={() => { navigator.clipboard.writeText(platformKaspi.number); }}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><Copy className="w-4 h-4" /></button>
+                    </div>
+                    <p className="text-xs text-gray-500">Получатель: <span className="font-medium text-gray-700">{platformKaspi.name}</span></p>
+                  </>
+                ) : (
+                  <p className="text-xs text-amber-600">Номер Kaspi платформы ещё не настроен администратором. Свяжитесь с поддержкой.</p>
+                )}
+              </div>
+
+              <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-5">
+                <p className="text-xs text-amber-700">⚠️ После перевода нажмите кнопку ниже. Платформа проверит поступление.</p>
+              </div>
+
+              <button onClick={() => confirmCommissionPaid(payModal)}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+                Я оплатил комиссию
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
