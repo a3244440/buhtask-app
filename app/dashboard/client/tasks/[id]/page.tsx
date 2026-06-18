@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, MapPin, Calendar, Star, CheckCircle, Clock, User, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Star, CheckCircle, Clock, User, Pencil, Trash2, CreditCard } from 'lucide-react';
 import DashboardHeader from '../../../../components/DashboardHeader';
 
 const CATS: Record<string, string> = {
@@ -27,6 +27,8 @@ const CATS: Record<string, string> = {
 interface Task {
   id: string; title: string; description: string; status: string;
   category: string; city: string; budget?: number; deadline?: string; created_at: string; accountant_id?: string;
+  completion_requested?: boolean; completion_approved?: boolean;
+  final_price?: number;
 }
 interface Proposal {
   id: string; accountant_id: string; proposed_price: number;
@@ -50,6 +52,7 @@ export default function ClientTaskDetail() {
   const [editDescription, setEditDescription] = useState('');
   const [editCity, setEditCity] = useState('Астана');
   const [editCategory, setEditCategory] = useState('tax');
+  const [assignedAccountant, setAssignedAccountant] = useState<{ name: string; kaspiQr: string; phone: string } | null>(null);
 
   useEffect(() => {
     init();
@@ -78,6 +81,13 @@ export default function ClientTaskDetail() {
       return;
     }
     setTask(taskData);
+
+    // Если бухгалтер выбран — загрузим его Kaspi QR и имя для оплаты
+    if (taskData.accountant_id) {
+      const { data: acc } = await supabase.from('profiles')
+        .select('full_name,kaspi_qr_url,phone').eq('id', taskData.accountant_id).maybeSingle();
+      if (acc) setAssignedAccountant({ name: acc.full_name || 'Бухгалтер', kaspiQr: acc.kaspi_qr_url || '', phone: acc.phone || '' });
+    }
 
     // Load proposals with accountant profile
     const { data: propData } = await supabase
@@ -157,6 +167,15 @@ export default function ClientTaskDetail() {
     } finally {
       setAccepting('');
     }
+  };
+
+  const approveCompletion = async () => {
+    const { error: e } = await supabase.from('tasks').update({
+      completion_approved: true,
+      completion_approved_at: new Date().toISOString(),
+    }).eq('id', taskId);
+    if (e) { setError('Ошибка: ' + e.message); return; }
+    setTask(t => t ? { ...t, completion_approved: true } : t);
   };
 
   const cancelTask = async () => {
@@ -272,6 +291,52 @@ CREATE POLICY "tasks_select" ON tasks
             </button>
           )}
         </div>
+
+        {/* Completion request: accountant asks to close, client approves */}
+        {task.status === 'in_progress' && task.completion_requested && !task.completion_approved && (
+          <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-6 mb-5">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle className="w-5 h-5 text-amber-500" />
+              <h2 className="font-semibold text-gray-900">Бухгалтер запросил закрытие задачи</h2>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Бухгалтер отметил, что работа выполнена. Проверьте результат. Если всё устраивает — одобрите закрытие, после чего получите реквизиты для оплаты.</p>
+            <div className="flex gap-3">
+              <button onClick={approveCompletion}
+                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+                <CheckCircle className="w-4 h-4" /> Одобрить закрытие
+              </button>
+              <button onClick={() => router.push(`/dashboard/client?tab=messages&with=${task.accountant_id}`)}
+                className="px-5 py-3 border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-xl font-semibold text-sm transition-colors">
+                Обсудить в чате
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Approved — show payment (accountant Kaspi QR) */}
+        {task.status === 'in_progress' && task.completion_approved && (
+          <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-6 mb-5">
+            <div className="flex items-center gap-2 mb-2">
+              <CreditCard className="w-5 h-5 text-emerald-600" />
+              <h2 className="font-semibold text-gray-900">Оплата бухгалтеру</h2>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Вы одобрили закрытие. Оплатите работу бухгалтеру{assignedAccountant?.name ? ` (${assignedAccountant.name})` : ''} через Kaspi.</p>
+            {assignedAccountant?.kaspiQr ? (
+              <div className="flex flex-col items-center bg-gray-50 rounded-2xl p-5">
+                <img src={assignedAccountant.kaspiQr} alt="Kaspi QR бухгалтера" className="w-56 h-56 object-contain rounded-xl bg-white p-2" />
+                <p className="text-xs text-gray-500 mt-3">Отсканируйте QR в приложении Kaspi для оплаты</p>
+                {assignedAccountant.phone && <p className="text-sm text-gray-700 mt-1">Или по номеру: <b>{assignedAccountant.phone}</b></p>}
+              </div>
+            ) : (
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                <p className="text-sm text-amber-700">Бухгалтер ещё не загрузил Kaspi QR. Запросите реквизиты для оплаты в чате.</p>
+                {assignedAccountant?.phone && <p className="text-sm text-gray-700 mt-2">Телефон бухгалтера: <b>{assignedAccountant.phone}</b></p>}
+                <button onClick={() => router.push(`/dashboard/client?tab=messages&with=${task.accountant_id}`)}
+                  className="mt-3 text-sm text-blue-600 hover:underline">Перейти в чат →</button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Edit modal */}
         {editing && (

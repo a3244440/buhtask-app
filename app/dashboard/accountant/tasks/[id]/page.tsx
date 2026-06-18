@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, MapPin, Calendar, Send, CheckCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Send, CheckCircle, Clock } from 'lucide-react';
 import DashboardHeader from '../../../../components/DashboardHeader';
 
 const CATS: Record<string, string> = {
@@ -27,6 +27,8 @@ const CATS: Record<string, string> = {
 interface Task {
   id: string; title: string; description: string; status: string;
   category: string; city: string; budget?: number; deadline?: string; created_at: string;
+  accountant_id?: string; completion_requested?: boolean; completion_approved?: boolean;
+  final_price?: number; commission_amount?: number; commission_paid?: boolean;
 }
 
 export default function AccountantTaskDetail() {
@@ -44,6 +46,7 @@ export default function AccountantTaskDetail() {
   const [price, setPrice] = useState('');
   const [days, setDays] = useState('');
   const [letter, setLetter] = useState('');
+  const [myPrice, setMyPrice] = useState(0);
 
   useEffect(() => { init(); }, [taskId]);
 
@@ -64,9 +67,21 @@ export default function AccountantTaskDetail() {
       setTask(taskData);
     }
 
-    const { data: existing } = await supabase.from('proposals').select('id').eq('task_id', taskId).eq('accountant_id', user.id).maybeSingle();
-    if (existing) setAlreadyApplied(true);
+    const { data: existing } = await supabase.from('proposals').select('id,proposed_price').eq('task_id', taskId).eq('accountant_id', user.id).maybeSingle();
+    if (existing) {
+      setAlreadyApplied(true);
+      if (existing.proposed_price) setMyPrice(existing.proposed_price);
+    }
     setLoading(false);
+  };
+
+  const requestCompletion = async () => {
+    const { error: e } = await supabase.from('tasks').update({
+      completion_requested: true,
+      completion_requested_at: new Date().toISOString(),
+    }).eq('id', taskId);
+    if (e) { setError('Ошибка: ' + e.message); return; }
+    setTask(t => t ? { ...t, completion_requested: true } : t);
   };
 
   const handleSubmit = async () => {
@@ -134,10 +149,61 @@ export default function AccountantTaskDetail() {
             <h2 className="text-lg font-bold text-gray-900 mb-1">Отклик отправлен!</h2>
             <p className="text-sm text-gray-500">Перенаправляем...</p>
           </div>
+        ) : (task.status === 'in_progress' || task.status === 'paid') && task.accountant_id === userId ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600"/> Управление заказом</h2>
+
+            {/* Этап 1: работа идёт, запросить закрытие */}
+            {task.status === 'in_progress' && !task.completion_requested && (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">Когда выполните работу — запросите подтверждение у заказчика. После одобрения вы сможете закрыть заказ и запросить оплату.</p>
+                <button onClick={requestCompletion}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+                  <CheckCircle className="w-4 h-4"/> Запросить закрытие задачи
+                </button>
+              </div>
+            )}
+
+            {/* Этап 2: ждём одобрения заказчика */}
+            {task.status === 'in_progress' && task.completion_requested && !task.completion_approved && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                <Clock className="w-8 h-8 text-amber-500 mx-auto mb-2"/>
+                <p className="font-semibold text-amber-800 text-sm">Ожидаем подтверждения заказчика</p>
+                <p className="text-xs text-amber-600 mt-1">Заказчик проверяет работу. После одобрения вы сможете запросить оплату.</p>
+              </div>
+            )}
+
+            {/* Этап 3: заказчик одобрил — показать оплату */}
+            {task.status === 'in_progress' && task.completion_approved && (
+              <div>
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center mb-4">
+                  <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2"/>
+                  <p className="font-semibold text-emerald-800 text-sm">Заказчик одобрил закрытие!</p>
+                  <p className="text-xs text-emerald-600 mt-1">Запросите оплату у клиента, затем отметьте заказ оплаченным</p>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">Сумма заказа: <b>{(myPrice || task.budget || 0).toLocaleString()} ₸</b></p>
+                <p className="text-xs text-gray-400 mb-4">Клиент оплатит вам напрямую через ваш Kaspi QR (из профиля). После получения оплаты отметьте заказ оплаченным в разделе «Мои заказы».</p>
+                <button onClick={() => router.push('/dashboard/accountant?tab=my_orders')}
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+                  Перейти к заказу для отметки оплаты
+                </button>
+              </div>
+            )}
+
+            {/* Оплачено */}
+            {task.status === 'paid' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                <CheckCircle className="w-8 h-8 text-blue-500 mx-auto mb-2"/>
+                <p className="font-semibold text-blue-800 text-sm">Заказ оплачен и закрыт</p>
+                {!task.commission_paid && <p className="text-xs text-blue-600 mt-1">Не забудьте оплатить комиссию платформе в разделе «Баланс»</p>}
+              </div>
+            )}
+          </div>
         ) : alreadyApplied ? (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
             <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-3"/>
             <p className="font-semibold text-emerald-800">Вы уже откликнулись</p>
+            <p className="text-xs text-emerald-600 mt-1">Ожидайте выбора заказчика</p>
           </div>
         ) : task.status !== 'open' ? (
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 text-center"><p className="text-gray-500">Задача больше не принимает отклики</p></div>
