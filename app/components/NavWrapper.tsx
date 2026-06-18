@@ -47,13 +47,18 @@ export default function NavWrapper({ dark = false }: Props) {
 
   const headerStyle = isLanding ? (scrolled ? scrolledStyle : transparentStyle) : fixedStyle;
   const textColor = isLanding && !scrolled ? "text-white/90 hover:text-white" : dark ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900";
-  const logoFilter = isLanding && !scrolled ? "brightness-0 invert" : dark ? "brightness-0 invert" : "";
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 transition-all duration-300" style={headerStyle}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
         <a href="/" className="flex items-center">
-          <img src="/images/logo.png" alt="BuhTask" className={`h-9 w-auto transition-all ${logoFilter}`} />
+          {isLanding && !scrolled ? (
+            // На синем hero-фоне — белый логотип
+            <img src="/images/logo.png" alt="BuhTask" className="h-14 w-auto transition-all brightness-0 invert" />
+          ) : (
+            // При скролле (белый фон) или внутр. страницы — цветной логотип
+            <img src="/images/logo-dark.png" alt="BuhTask" className="h-14 w-auto transition-all" />
+          )}
         </a>
 
         {isLanding && (
