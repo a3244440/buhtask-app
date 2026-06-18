@@ -144,7 +144,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
         <div className="w-full max-w-md">
           <div className="lg:hidden mb-6 text-center">
-            <a href="/"><img src="/images/logo.png" alt="BuhTask" className="h-9 w-auto mx-auto" /></a>
+            <a href="/"><img src="/images/logo-dark.png" alt="BuhTask" className="h-14 w-auto mx-auto" /></a>
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
