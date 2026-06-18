@@ -267,34 +267,52 @@ export default function HomePage() {
                   Зарегистрироваться как бухгалтер <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
-              {/* Mock profile card */}
-              <div className={`rounded-2xl border p-6 ${D ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 font-bold text-lg">А</div>
-                  <div>
-                    <p className="font-semibold text-sm">Айгерим Сейткали</p>
-                    <div className="flex items-center gap-1">
-                      {[1,2,3,4,5].map(s => <Star key={s} className="w-3 h-3 text-amber-400 fill-amber-400" />)}
-                      <span className={`text-xs ml-1 ${mutedText}`}>5.0 · 48 задач</span>
+              {/* Accountant profile card */}
+              <div className={`rounded-2xl border overflow-hidden shadow-lg ${D ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                {/* Header with photo */}
+                <div className={`relative p-6 pb-5 ${D ? 'bg-gradient-to-br from-blue-900/40 to-gray-800' : 'bg-gradient-to-br from-blue-50 to-white'}`}>
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-shrink-0">
+                      <img src="/images/accountant-avatar.jpg" alt="Сейілбек Әлихан"
+                        className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md" />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-base truncate">Сейілбек Әлихан</p>
+                      </div>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        {[1,2,3,4,5].map(s => <Star key={s} className="w-3 h-3 text-amber-400 fill-amber-400" />)}
+                        <span className={`text-xs ml-1 ${mutedText}`}>5.0 · 48 задач</span>
+                      </div>
+                      <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-semibold">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                        Проверен BuhTask
+                      </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {["НДС","КПН","Зарплата","1С","ТОО","ИП"].map(tag => (
-                    <span key={tag} className={`px-2.5 py-1 rounded-full text-xs border ${D ? 'border-gray-700 text-gray-300' : 'border-gray-200 text-gray-600'}`}>{tag}</span>
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[{ label: "Задач", value: "48" }, { label: "Отзывов", value: "41" }, { label: "Рейтинг", value: "5.0" }].map(m => (
-                    <div key={m.label} className={`rounded-xl p-3 text-center ${D ? 'bg-gray-900' : 'bg-white'}`}>
-                      <p className="text-xl font-extrabold text-blue-500">{m.value}</p>
-                      <p className={`text-xs mt-0.5 ${mutedText}`}>{m.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className={`mt-4 rounded-xl px-4 py-3 flex items-center gap-3 ${D ? 'bg-emerald-900/30 border border-emerald-800' : 'bg-emerald-50 border border-emerald-200'}`}>
-                  <Zap className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <p className="text-sm text-emerald-500">3 новых задачи доступны прямо сейчас</p>
+
+                <div className="p-6 pt-4">
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {["НДС","КПН","Зарплата","1С","ТОО","ИП"].map(tag => (
+                      <span key={tag} className={`px-2.5 py-1 rounded-full text-xs border ${D ? 'border-gray-700 text-gray-300' : 'border-gray-200 text-gray-600'}`}>{tag}</span>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[{ label: "Задач", value: "48" }, { label: "Отзывов", value: "41" }, { label: "Рейтинг", value: "5.0" }].map(m => (
+                      <div key={m.label} className={`rounded-xl p-3 text-center ${D ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                        <p className="text-xl font-extrabold text-blue-500">{m.value}</p>
+                        <p className={`text-xs mt-0.5 ${mutedText}`}>{m.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={`mt-4 rounded-xl px-4 py-3 flex items-center gap-3 ${D ? 'bg-emerald-900/30 border border-emerald-800' : 'bg-emerald-50 border border-emerald-200'}`}>
+                    <Zap className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <p className="text-sm text-emerald-500">3 новых задачи доступны прямо сейчас</p>
+                  </div>
                 </div>
               </div>
             </div>
