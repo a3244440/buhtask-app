@@ -6,7 +6,7 @@ import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Set
 import DashboardHeader from '../../components/DashboardHeader';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; }
-interface Conversation { id: string; other_name: string; other_id: string; last_message: string; updated_at: string; }
+interface Conversation { id: string; other_name: string; other_id: string; last_message: string; updated_at: string; task_title?: string; task_id?: string; }
 interface Message { id: string; sender_id: string; content: string; created_at: string; }
 
 const CATS: Record<string, string> = {
@@ -75,7 +75,12 @@ function ClientDashboardInner() {
       for (const c of convData) {
         const otherId = c.participant1_id === user.id ? c.participant2_id : c.participant1_id;
         const { data: p } = await supabase.from('profiles').select('full_name').eq('id', otherId).single();
-        convs.push({ id: c.id, other_id: otherId, other_name: p?.full_name || 'Бухгалтер', last_message: c.last_message || '', updated_at: c.updated_at });
+        let taskTitle = '';
+        if (c.task_id) {
+          const { data: t } = await supabase.from('tasks').select('title').eq('id', c.task_id).maybeSingle();
+          taskTitle = t?.title || '';
+        }
+        convs.push({ id: c.id, other_id: otherId, other_name: p?.full_name || 'Бухгалтер', last_message: c.last_message || '', updated_at: c.updated_at, task_title: taskTitle, task_id: c.task_id });
       }
       setConversations(convs);
 
@@ -336,6 +341,7 @@ function ClientDashboardInner() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 text-sm truncate">{conv.other_name}</p>
+                        {conv.task_title && <p className="text-xs text-blue-600 truncate">📋 {conv.task_title}</p>}
                         <p className="text-xs text-gray-400 truncate">{conv.last_message || 'Нет сообщений'}</p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
@@ -358,9 +364,14 @@ function ClientDashboardInner() {
                   <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 flex-shrink-0">
                     <button onClick={() => setActiveConv(null)} className="p-1.5 rounded-lg hover:bg-gray-100"><ArrowLeft className="w-4 h-4 text-gray-500" /></button>
                     <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">{activeConv.other_name[0]?.toUpperCase()}</div>
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm">{activeConv.other_name}</p>
-                      <p className="text-xs text-gray-400">Бухгалтер</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 text-sm truncate">{activeConv.other_name}</p>
+                      {activeConv.task_title ? (
+                        <button onClick={() => router.push(`/dashboard/client/tasks/${activeConv.task_id}`)}
+                          className="text-xs text-blue-600 hover:underline truncate block max-w-full text-left">📋 {activeConv.task_title}</button>
+                      ) : (
+                        <p className="text-xs text-gray-400">Бухгалтер</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
