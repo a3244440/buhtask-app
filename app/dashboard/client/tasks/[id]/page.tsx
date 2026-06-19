@@ -53,6 +53,7 @@ export default function ClientTaskDetail() {
   const [editCity, setEditCity] = useState('Астана');
   const [editCategory, setEditCategory] = useState('tax');
   const [assignedAccountant, setAssignedAccountant] = useState<{ name: string; kaspiQr: string; phone: string } | null>(null);
+  const [qrZoom, setQrZoom] = useState<string | null>(null);
 
   useEffect(() => {
     init();
@@ -323,14 +324,14 @@ CREATE POLICY "tasks_select" ON tasks
             <p className="text-sm text-gray-600 mb-4">Вы одобрили закрытие. Оплатите работу бухгалтеру{assignedAccountant?.name ? ` (${assignedAccountant.name})` : ''} через Kaspi.</p>
             {assignedAccountant?.kaspiQr ? (
               <div className="flex flex-col items-center bg-gray-50 rounded-2xl p-5">
-                <img src={assignedAccountant.kaspiQr} alt="Kaspi QR бухгалтера" className="w-56 h-56 object-contain rounded-xl bg-white p-2" />
-                <p className="text-xs text-gray-500 mt-3">Отсканируйте QR в приложении Kaspi для оплаты</p>
-                {assignedAccountant.phone && <p className="text-sm text-gray-700 mt-1">Или по номеру: <b>{assignedAccountant.phone}</b></p>}
+                <button onClick={() => setQrZoom(assignedAccountant.kaspiQr)} className="cursor-zoom-in">
+                  <img src={assignedAccountant.kaspiQr} alt="Kaspi QR бухгалтера" className="w-56 h-56 object-contain rounded-xl bg-white p-2 hover:ring-2 hover:ring-blue-400 transition-all" />
+                </button>
+                <p className="text-xs text-gray-500 mt-3">Нажмите на QR чтобы увеличить · Отсканируйте в приложении Kaspi</p>
               </div>
             ) : (
               <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
                 <p className="text-sm text-amber-700">Бухгалтер ещё не загрузил Kaspi QR. Запросите реквизиты для оплаты в чате.</p>
-                {assignedAccountant?.phone && <p className="text-sm text-gray-700 mt-2">Телефон бухгалтера: <b>{assignedAccountant.phone}</b></p>}
                 <button onClick={() => router.push(`/dashboard/client?tab=messages&with=${task.accountant_id}`)}
                   className="mt-3 text-sm text-blue-600 hover:underline">Перейти в чат →</button>
               </div>
@@ -339,6 +340,16 @@ CREATE POLICY "tasks_select" ON tasks
         )}
 
         {/* Edit modal */}
+        {/* QR zoom modal */}
+        {qrZoom && (
+          <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setQrZoom(null)}>
+            <div className="bg-white rounded-2xl p-4 max-w-md w-full" onClick={e => e.stopPropagation()}>
+              <img src={qrZoom} alt="Kaspi QR" className="w-full object-contain rounded-xl" />
+              <button onClick={() => setQrZoom(null)} className="mt-3 w-full py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700">Закрыть</button>
+            </div>
+          </div>
+        )}
+
         {editing && (
           <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setEditing(false)}>
             <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>

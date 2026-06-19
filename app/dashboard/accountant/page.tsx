@@ -212,8 +212,25 @@ function AccountantDashboardInner() {
     }
   };
 
+  const containsContact = (text: string): boolean => {
+    if (!text) return false;
+    const phonePatterns = [
+      /(\+?7|8)[\s\-(]*\d{3}[\s\-)]*\d{3}[\s\-]*\d{2}[\s\-]*\d{2}/,
+      /\d{10,}/,
+      /\d{3}[\s\-]\d{3}[\s\-]\d{2}[\s\-]\d{2}/,
+    ];
+    const emailPattern = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
+    const messengerPattern = /(whats\s?app|вотс\s?ап|ватсап|телеграм|telegram|@[a-zA-Z0-9_]{4,}|instagram|инстаграм|вайбер|viber)/i;
+    const cleaned = text.replace(/\s+/g, ' ');
+    return phonePatterns.some(p => p.test(cleaned)) || emailPattern.test(cleaned) || messengerPattern.test(cleaned);
+  };
+
   const sendMessage = async () => {
     if (!newMsg.trim() || !activeConv || !userId) return;
+    if (containsContact(newMsg)) {
+      setChatError('⚠️ Запрещено передавать телефоны, email или контакты мессенджеров. Общение и оплата проходят через платформу для вашей безопасности.');
+      return;
+    }
     setSending(true);
     const content = newMsg.trim();
     setNewMsg('');
@@ -594,8 +611,15 @@ function AccountantDashboardInner() {
                     <div ref={messagesEnd} />
                   </div>
                   {/* Input */}
-                  <div className="px-4 py-3 border-t border-gray-100 flex gap-2 flex-shrink-0">
-                    <input type="text" value={newMsg} onChange={e => setNewMsg(e.target.value)}
+                  <div className="border-t border-gray-100 flex-shrink-0">
+                    {chatError && (
+                      <div className="mx-4 mt-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-xl text-xs flex items-start justify-between gap-2">
+                        <span>{chatError}</span>
+                        <button onClick={() => setChatError('')} className="text-red-400 hover:text-red-600 flex-shrink-0">✕</button>
+                      </div>
+                    )}
+                    <div className="px-4 py-3 flex gap-2">
+                    <input type="text" value={newMsg} onChange={e => { setNewMsg(e.target.value); if (chatError) setChatError(''); }}
                       onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                       placeholder="Напишите сообщение..." disabled={sending}
                       className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white" />
@@ -603,6 +627,7 @@ function AccountantDashboardInner() {
                       className="p-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white rounded-xl transition-colors flex-shrink-0">
                       <Send className="w-4 h-4" />
                     </button>
+                    </div>
                   </div>
                 </div>
               )}

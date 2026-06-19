@@ -144,8 +144,29 @@ function ClientDashboardInner() {
     }
   };
 
+  const containsContact = (text: string): boolean => {
+    if (!text) return false;
+    // Телефоны: 8/+7 форматы, 10+ цифр подряд (с разделителями), казахстанские номера
+    const phonePatterns = [
+      /(\+?7|8)[\s\-(]*\d{3}[\s\-)]*\d{3}[\s\-]*\d{2}[\s\-]*\d{2}/,  // +7/8 XXX XXX XX XX
+      /\d{10,}/,  // 10+ цифр подряд
+      /\d{3}[\s\-]\d{3}[\s\-]\d{2}[\s\-]\d{2}/,  // XXX-XXX-XX-XX
+    ];
+    // Email
+    const emailPattern = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
+    // Мессенджеры / соцсети (попытка увести с платформы)
+    const messengerPattern = /(whats\s?app|вотс\s?ап|ватсап|телеграм|telegram|@[a-zA-Z0-9_]{4,}|instagram|инстаграм|вайбер|viber)/i;
+    const cleaned = text.replace(/\s+/g, ' ');
+    return phonePatterns.some(p => p.test(cleaned)) || emailPattern.test(cleaned) || messengerPattern.test(cleaned);
+  };
+
   const sendMessage = async () => {
     if ((!newMsg.trim() && !attachedFile) || !activeConv || !userId) return;
+    // Блокировка контактов
+    if (newMsg.trim() && containsContact(newMsg)) {
+      setChatError('⚠️ Запрещено передавать телефоны, email или контакты мессенджеров. Общение и оплата проходят через платформу для вашей безопасности.');
+      return;
+    }
     setSending(true);
     setChatError('');
     const content = newMsg.trim();
