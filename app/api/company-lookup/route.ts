@@ -21,13 +21,8 @@ const browserHeaders = {
 // API v4 формат: /api/v4/{dataset}/{version}?source={ES query}&apiKey={key}
 async function tryEgovData(bin: string): Promise<CompanyData | null> {
   const apiKey = process.env.EGOV_API_KEY || 'REVOKED_KEY_USE_ENV';
-  // Возможные имена наборов данных с юрлицами (Минюст публикует под разными uri)
-  const datasets = [
-    process.env.EGOV_DATASET || 'legal_entities',
-    'gbd_ul',
-    'jur_persons',
-    'registration_legal',
-  ];
+  // Правильный набор данных Минюста: gbd_ul (проверено)
+  const datasets = [process.env.EGOV_DATASET || 'gbd_ul'];
 
   for (const ds of datasets) {
     try {
@@ -44,17 +39,18 @@ async function tryEgovData(bin: string): Promise<CompanyData | null> {
       if (!ct.includes('json')) continue;
 
       const data = await res.json();
-      const arr = Array.isArray(data) ? data : (data?.data || []);
-      const obj = arr[0];
-      if (obj && (obj.name || obj.nameRu || obj.full_name || obj.fullname)) {
+      const arr = Array.isArray(data) ? data : (data?.data || data?.elements || []);
+      const obj = Array.isArray(arr) ? arr[0] : arr;
+      // Реальные поля gbd_ul: nameru, namekz, bin, director, addressru, addresskz, okedru, datereg
+      if (obj && (obj.nameru || obj.namekz)) {
         return {
-          found: true, bin, source: 'data.egov.kz',
-          name: obj.name || obj.nameRu || obj.full_name || obj.fullname || '',
-          director: obj.fio || obj.director || obj.head || obj.rukovoditel || '',
-          address: obj.address || obj.legal_address || obj.adres || '',
-          oked: obj.oked || obj.activity || obj.vid_deyat || '',
-          registration_date: obj.reg_date || obj.registration_date || obj.data_reg || '',
-          status: obj.status || 'Действующее',
+          found: true, bin, source: 'data.egov.kz (ГБД ЮЛ)',
+          name: obj.nameru || obj.namekz || '',
+          director: obj.director || '',
+          address: obj.addressru || obj.addresskz || '',
+          oked: obj.okedru || obj.okedkz || '',
+          registration_date: (obj.datereg || '').split('+')[0].split('T')[0] || '',
+          status: 'Действующее',
         };
       }
     } catch { /* next dataset */ }
@@ -98,7 +94,7 @@ export async function GET(req: NextRequest) {
   // Режим отладки: показать сырой ответ портала и какие наборы пробуем
   if (debug) {
     const apiKey = process.env.EGOV_API_KEY || 'REVOKED_KEY_USE_ENV';
-    const datasets = [process.env.EGOV_DATASET || 'gov3_legal_entities', 'legal_entities', 'jur_persons', 'gbd_ul'];
+    const datasets = [process.env.EGOV_DATASET || 'gbd_ul'];
     const results: any = {};
     for (const ds of datasets) {
       try {
