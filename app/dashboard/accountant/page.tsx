@@ -628,6 +628,7 @@ function AccountantDashboardInner() {
                       <Send className="w-4 h-4" />
                     </button>
                     </div>
+                    <p className="px-4 pb-2 text-[11px] text-gray-400 text-center">🔒 Не передавайте телефоны, email и контакты — общение и оплата только через платформу</p>
                   </div>
                 </div>
               )}

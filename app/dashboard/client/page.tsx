@@ -459,7 +459,7 @@ function ClientDashboardInner() {
                       </button>
                       <input ref={fileInputRef} type="file" className="hidden"
                         onChange={e => { const f = e.target.files?.[0]; if (f) { if (f.size > 50*1024*1024) { alert('Файл слишком большой (макс 50MB)'); return; } setAttachedFile(f); } }} />
-                      <input type="text" value={newMsg} onChange={e => setNewMsg(e.target.value)}
+                      <input type="text" value={newMsg} onChange={e => { setNewMsg(e.target.value); if (chatError) setChatError(''); }}
                         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                         placeholder="Напишите сообщение..." disabled={sending}
                         className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -468,6 +468,7 @@ function ClientDashboardInner() {
                         <Send className="w-4 h-4" />
                       </button>
                     </div>
+                    <p className="px-4 pb-2 text-[11px] text-gray-400 text-center">🔒 Не передавайте телефоны, email и контакты — общение и оплата только через платформу</p>
                   </div>
                 </div>
               )}
