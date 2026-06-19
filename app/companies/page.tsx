@@ -13,12 +13,12 @@ interface Company {
 }
 
 const TAX_REGIMES = [
-  'Упрощённая декларация (920.00)',
+  'СНР на основе упрощённой декларации (920.00)',
   'Общеустановленный режим',
   'Розничный налог',
   'Патент',
-  'Специальный налоговый режим (СНР)',
-  'Фиксированный вычет',
+  'СНР с использованием фиксированного вычета',
+  'СНР для крестьянских хозяйств',
 ];
 const BANKS = ['Kaspi Bank', 'Halyk Bank', 'Народный банк', 'БЦК (CenterCredit)', 'ForteBank', 'Jusan Bank', 'Bereke Bank', 'Freedom Bank', 'Altyn Bank', 'RBK Bank', 'Другой'];
 
@@ -234,14 +234,17 @@ export default function CompaniesPage() {
                   <label className="block text-sm font-semibold text-gray-700">Банковские счета</label>
                   <button onClick={addBankAccount} className="text-xs text-blue-600 hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Добавить счёт</button>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {form.bank_accounts.map((b, i) => (
-                    <div key={i} className="flex gap-2">
-                      <select value={b.bank} onChange={e => updateBankAccount(i, 'bank', e.target.value)} className={inp + ' flex-shrink-0 w-32'}>
+                    <div key={i} className="border border-gray-200 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-500">Счёт {i + 1}</span>
+                        <button onClick={() => removeBankAccount(i)} className="p-1 text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                      </div>
+                      <select value={b.bank} onChange={e => updateBankAccount(i, 'bank', e.target.value)} className={inp}>
                         {BANKS.map(bank => <option key={bank} value={bank}>{bank}</option>)}
                       </select>
-                      <input type="text" value={b.iban} onChange={e => updateBankAccount(i, 'iban', e.target.value.toUpperCase())} placeholder="KZ..." className={inp} />
-                      <button onClick={() => removeBankAccount(i)} className="p-2 text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                      <input type="text" value={b.iban} onChange={e => updateBankAccount(i, 'iban', e.target.value.toUpperCase())} placeholder="KZ00 0000 0000 0000 0000" className={inp} />
                     </div>
                   ))}
                   {form.bank_accounts.length === 0 && <p className="text-xs text-gray-400">Нет добавленных счетов</p>}
