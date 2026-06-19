@@ -109,11 +109,18 @@ export async function GET(req: NextRequest) {
     } catch { /* next */ }
   }
 
+  // Определяем тип по 5-й цифре: БИН юрлица (4,5,6), ИИН физлица/ИП (0-3 = век/пол)
+  const fifthDigit = parseInt(bin[4], 10);
+  const isLikelyIndividual = fifthDigit >= 0 && fifthDigit <= 3;
+
   const configured = !!process.env.EGOV_API_KEY;
   return NextResponse.json({
     found: false, bin,
-    message: configured
-      ? 'Компания не найдена в реестре. Проверьте БИН или заполните вручную.'
-      : 'Автозаполнение настраивается (нужен API-ключ data.egov.kz). Пока заполните вручную.',
+    isIndividual: isLikelyIndividual,
+    message: !configured
+      ? 'Автозаполнение настраивается. Пока заполните вручную.'
+      : isLikelyIndividual
+        ? 'Это ИИН индивидуального предпринимателя. По закону РК данные ИП не публикуются в открытом реестре — заполните вручную.'
+        : 'Компания не найдена в реестре юрлиц. Проверьте БИН или заполните вручную.',
   });
 }
