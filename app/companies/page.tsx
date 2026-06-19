@@ -31,6 +31,7 @@ export default function CompaniesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupMsg, setLookupMsg] = useState('');
+  const [attribution, setAttribution] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -69,6 +70,7 @@ export default function CompaniesPage() {
           status: data.status || f.status,
         }));
         setLookupMsg('✓ Данные загружены' + (data.source ? ` (${data.source})` : ' из реестра'));
+        setAttribution(data.attribution || '');
       } else {
         setLookupMsg(data.message || 'Не найдено. Заполните вручную.');
       }
@@ -206,6 +208,7 @@ export default function CompaniesPage() {
                   </button>
                 </div>
                 {lookupMsg && <p className={`text-xs mt-1.5 ${lookupMsg.startsWith('✓') ? 'text-emerald-600' : 'text-amber-600'}`}>{lookupMsg}</p>}
+                {attribution && <p className="text-[11px] text-gray-400 mt-1">{attribution}</p>}
                 <p className="text-xs text-gray-400 mt-1">Введите БИН и нажмите «Найти» — данные подтянутся автоматически</p>
               </div>
 

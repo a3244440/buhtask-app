@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+// Простой in-memory кеш (соблюдаем лимит 40 запросов/мин портала)
+const cache = new Map<string, { data: any; ts: number }>();
+const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 часа — данные компаний меняются редко
+
 interface CompanyData {
   found: boolean; name?: string; bin: string; director?: string; address?: string;
   oked?: string; registration_date?: string; status?: string; source?: string; message?: string;
@@ -89,12 +93,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Введите корректный БИН/ИИН (12 цифр)' }, { status: 400 });
   }
 
+  // Проверяем кеш (соблюдаем лимит портала 40 запросов/мин)
+  const cached = cache.get(bin);
+  if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    return NextResponse.json({ ...cached.data, cached: true });
+  }
+
   const sources = [tryEgovData, tryGoszakup];
   for (const src of sources) {
     try {
       const result = await src(bin);
       if (result && result.found && result.name) {
-        return NextResponse.json(result);
+        // Обязательная ссылка на источник (п.8 соглашения)
+        const withAttribution = { ...result, attribution: 'Источник: data.egov.kz — Открытые данные РК' };
+        cache.set(bin, { data: withAttribution, ts: Date.now() });
+        return NextResponse.json(withAttribution);
       }
     } catch { /* next */ }
   }
