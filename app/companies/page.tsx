@@ -68,7 +68,7 @@ export default function CompaniesPage() {
           registration_date: data.registration_date || f.registration_date,
           status: data.status || f.status,
         }));
-        setLookupMsg('✓ Данные загружены из реестра');
+        setLookupMsg('✓ Данные загружены' + (data.source ? ` (${data.source})` : ' из реестра'));
       } else {
         setLookupMsg(data.message || 'Не найдено. Заполните вручную.');
       }
