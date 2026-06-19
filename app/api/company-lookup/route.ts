@@ -3,106 +3,85 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 interface CompanyData {
-  found: boolean;
-  name?: string;
-  bin: string;
-  director?: string;
-  address?: string;
-  oked?: string;
-  registration_date?: string;
-  status?: string;
-  source?: string;
-  message?: string;
+  found: boolean; name?: string; bin: string; director?: string; address?: string;
+  oked?: string; registration_date?: string; status?: string; source?: string; message?: string;
 }
 
-const headers = { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; BuhTask/1.0)' };
+const headers = {
+  'Accept': 'application/json, text/plain, */*',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+  'Referer': 'https://stat.gov.kz/',
+};
 
-// 1. Бюро национальной статистики (stat.gov.kz) — основной реестр юрлиц
+// stat.gov.kz — реальный API нового портала статистики (поиск юрлица по БИН)
 async function tryStatGov(bin: string): Promise<CompanyData | null> {
-  try {
-    const url = `https://stat.gov.kz/api/juridical/counter/api/?bin=${bin}&lang=ru`;
-    const res = await fetch(url, { headers, signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const obj = data?.obj || data;
-    if (obj && (obj.name || obj.nameRu)) {
-      return {
-        found: true, bin, source: 'stat.gov.kz',
-        name: obj.name || obj.nameRu || '',
-        director: obj.fio || obj.director || '',
-        address: obj.address || obj.legalAddress || '',
-        oked: obj.okedName || obj.oked || '',
-        registration_date: obj.registerDate || obj.registrationDate || '',
-        status: obj.statusName || obj.status || 'Действующее',
-      };
-    }
-  } catch { /* skip */ }
+  const endpoints = [
+    `https://stat.gov.kz/api/juridical/counter/api/?bin=${bin}&lang=ru`,
+    `https://stat.gov.kz/api/rbins/qp?bin=${bin}`,
+    `https://stat.gov.kz/jur-search/filter?bin=${bin}`,
+  ];
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { headers, signal: AbortSignal.timeout(8000) });
+      if (!res.ok) continue;
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('json')) continue;
+      const data = await res.json();
+      const obj = data?.obj || data?.elements?.[0] || data?.[0] || data;
+      if (obj && (obj.name || obj.nameRu || obj.fullName)) {
+        return {
+          found: true, bin, source: 'stat.gov.kz',
+          name: obj.name || obj.nameRu || obj.fullName || '',
+          director: obj.fio || obj.director || obj.head || '',
+          address: obj.address || obj.legalAddress || obj.addressRu || '',
+          oked: obj.okedName || obj.oked || obj.okedNameRu || '',
+          registration_date: obj.registerDate || obj.registrationDate || '',
+          status: obj.statusName || obj.status || 'Действующее',
+        };
+      }
+    } catch { /* next */ }
+  }
   return null;
 }
 
-// 2. Госзакупки (goszakup.gov.kz) — реестр участников госзакупок (GraphQL/REST)
+// goszakup.gov.kz — публичный REST API реестра участников (v3)
 async function tryGoszakup(bin: string): Promise<CompanyData | null> {
   try {
-    const url = `https://ows.goszakup.gov.kz/v3/subject/search?bin=${bin}`;
+    const url = `https://ows.goszakup.gov.kz/v3/subject/all?bin=${bin}`;
     const res = await fetch(url, { headers, signal: AbortSignal.timeout(8000) });
     if (!res.ok) return null;
     const data = await res.json();
-    const item = Array.isArray(data?.items) ? data.items[0] : (data?.items || data);
+    const item = data?.items?.[0] || data?.[0];
     if (item && (item.name_ru || item.name)) {
       return {
         found: true, bin, source: 'goszakup.gov.kz',
         name: item.name_ru || item.name || '',
-        director: item.ceo || item.director_fio || '',
-        address: item.full_delivery_address || item.address || '',
-        oked: item.oked || '',
-        registration_date: item.regdate || '',
-        status: item.system_id ? 'Действующее' : '',
+        director: item.ceo || '',
+        address: item.full_delivery_address || item.index_name || '',
+        oked: item.oked || '', registration_date: item.regdate || '',
+        status: 'Действующее',
       };
     }
   } catch { /* skip */ }
   return null;
 }
 
-// 3. Самрук-Казына закупки (zakup.sk.kz) — реестр поставщиков
-async function trySkZakup(bin: string): Promise<CompanyData | null> {
+// pravstat / adata fallback (открытый поиск)
+async function tryAdata(bin: string): Promise<CompanyData | null> {
   try {
-    const url = `https://zakup.sk.kz/api/usersystem/api/v1/suppliers?bin=${bin}`;
+    const url = `https://pk.adata.kz/api/company?identifier=${bin}`;
     const res = await fetch(url, { headers, signal: AbortSignal.timeout(8000) });
     if (!res.ok) return null;
     const data = await res.json();
-    const item = Array.isArray(data?.content) ? data.content[0] : (Array.isArray(data) ? data[0] : data);
-    if (item && (item.nameRu || item.name)) {
+    const obj = data?.company || data?.data || data;
+    if (obj && (obj.name || obj.nameRu)) {
       return {
-        found: true, bin, source: 'zakup.sk.kz',
-        name: item.nameRu || item.name || '',
-        director: item.headFio || item.director || '',
-        address: item.addressRu || item.address || '',
-        oked: item.oked || '',
-        registration_date: item.registrationDate || '',
-        status: item.status || '',
-      };
-    }
-  } catch { /* skip */ }
-  return null;
-}
-
-// 4. Mitwork (mitwork.kz) — гос-маркетплейс, реестр поставщиков
-async function tryMitwork(bin: string): Promise<CompanyData | null> {
-  try {
-    const url = `https://mitwork.kz/api/v1/companies?bin=${bin}`;
-    const res = await fetch(url, { headers, signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const item = Array.isArray(data?.data) ? data.data[0] : (Array.isArray(data) ? data[0] : data?.data || data);
-    if (item && (item.name || item.nameRu || item.company_name)) {
-      return {
-        found: true, bin, source: 'mitwork.kz',
-        name: item.name || item.nameRu || item.company_name || '',
-        director: item.director || item.ceo || '',
-        address: item.address || '',
-        oked: item.oked || '',
-        registration_date: item.created_at || item.registration_date || '',
-        status: item.status || '',
+        found: true, bin, source: 'adata.kz',
+        name: obj.name || obj.nameRu || '',
+        director: obj.director || obj.head || '',
+        address: obj.address || '',
+        oked: obj.oked || '', registration_date: obj.registrationDate || '',
+        status: obj.status || '',
       };
     }
   } catch { /* skip */ }
@@ -115,17 +94,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Введите корректный БИН/ИИН (12 цифр)' }, { status: 400 });
   }
 
-  // Пробуем источники по очереди, возвращаем первый успешный
-  const sources = [tryStatGov, tryGoszakup, trySkZakup, tryMitwork];
+  const sources = [tryStatGov, tryGoszakup, tryAdata];
   for (const src of sources) {
-    const result = await src(bin);
-    if (result && result.found && result.name) {
-      return NextResponse.json(result);
-    }
+    try {
+      const result = await src(bin);
+      if (result && result.found && result.name) {
+        return NextResponse.json(result);
+      }
+    } catch { /* next source */ }
   }
 
   return NextResponse.json({
     found: false, bin,
-    message: 'Не удалось получить данные автоматически из реестров. Заполните вручную.',
+    message: 'Автоматический поиск временно недоступен (госреестры требуют авторизации). Заполните данные вручную.',
   });
 }
