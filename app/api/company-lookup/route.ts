@@ -20,7 +20,7 @@ const browserHeaders = {
 // Набор Минюста: "Регистрационные данные юридических лиц"
 // API v4 формат: /api/v4/{dataset}/{version}?source={ES query}&apiKey={key}
 async function tryEgovData(bin: string): Promise<CompanyData | null> {
-  const apiKey = process.env.EGOV_API_KEY;
+  const apiKey = process.env.EGOV_API_KEY || 'REVOKED_KEY_USE_ENV';
   // Возможные имена наборов данных с юрлицами (Минюст публикует под разными uri)
   const datasets = [
     process.env.EGOV_DATASET || 'legal_entities',
@@ -89,8 +89,28 @@ async function tryGoszakup(bin: string): Promise<CompanyData | null> {
 
 export async function GET(req: NextRequest) {
   const bin = req.nextUrl.searchParams.get('bin')?.trim();
+  const debug = req.nextUrl.searchParams.get('debug') === '1';
+
   if (!bin || !/^\d{12}$/.test(bin)) {
     return NextResponse.json({ error: 'Введите корректный БИН/ИИН (12 цифр)' }, { status: 400 });
+  }
+
+  // Режим отладки: показать сырой ответ портала и какие наборы пробуем
+  if (debug) {
+    const apiKey = process.env.EGOV_API_KEY || 'REVOKED_KEY_USE_ENV';
+    const datasets = [process.env.EGOV_DATASET || 'gov3_legal_entities', 'legal_entities', 'jur_persons', 'gbd_ul'];
+    const results: any = {};
+    for (const ds of datasets) {
+      try {
+        const query = { size: 1, query: { bool: { must: [{ match: { bin } }] } } };
+        const url = `https://data.egov.kz/api/v4/${ds}/v1?source=${encodeURIComponent(JSON.stringify(query))}&apiKey=${apiKey}`;
+        const res = await fetch(url, { headers: browserHeaders, signal: AbortSignal.timeout(9000) });
+        results[ds] = { status: res.status, contentType: res.headers.get('content-type'), body: (await res.text()).slice(0, 500) };
+      } catch (e: any) {
+        results[ds] = { error: e?.message || 'failed' };
+      }
+    }
+    return NextResponse.json({ debug: true, bin, datasets: results });
   }
 
   // Проверяем кеш (соблюдаем лимит портала 40 запросов/мин)
