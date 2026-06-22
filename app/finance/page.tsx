@@ -2,13 +2,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { TrendingUp, TrendingDown, Wallet, Plus, X, Trash2, ArrowUpRight, ArrowDownRight, Calendar, ChevronLeft, ChevronRight, PieChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Plus, X, Trash2, ArrowUpRight, ArrowDownRight, Calendar, ChevronLeft, ChevronRight, PieChart, Upload } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 
 interface FinRecord {
   id: string; type: 'income' | 'expense'; category: string; amount: number;
   description: string; record_date: string;
 }
+interface ParsedTx { date: string; amount: number; type: 'income' | 'expense'; category: string; description: string; include?: boolean; }
 
 const INCOME_CATS = ['Продажи', 'Услуги', 'Аванс от клиента', 'Возврат', 'Прочий доход'];
 const EXPENSE_CATS = ['Зарплата', 'Налоги', 'Аренда', 'Закуп товара', 'Реклама', 'Коммунальные', 'Транспорт', 'Связь/интернет', 'Банковские расходы', 'Прочий расход'];
@@ -24,6 +25,11 @@ export default function FinancePage() {
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
   const [saving, setSaving] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState('');
+  const [parsedTxs, setParsedTxs] = useState<ParsedTx[]>([]);
+  const [importSaving, setImportSaving] = useState(false);
 
   const [form, setForm] = useState({ amount: '', category: INCOME_CATS[0], description: '', record_date: new Date().toISOString().split('T')[0] });
 
@@ -53,6 +59,45 @@ export default function FinancePage() {
     if (!error && data) setRecords(prev => [data as FinRecord, ...prev]);
     setSaving(false);
     setModalOpen(false);
+  };
+
+  const handleStatementUpload = async (file: File) => {
+    setImporting(true);
+    setImportMsg('');
+    setParsedTxs([]);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/parse-statement', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.error) { setImportMsg(data.error); }
+      else {
+        setParsedTxs((data.transactions || []).map((t: ParsedTx) => ({ ...t, include: true })));
+        setImportMsg(data.message || '');
+      }
+    } catch (e: any) {
+      setImportMsg('Ошибка загрузки: ' + (e?.message || 'попробуйте снова'));
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const toggleTx = (i: number) => setParsedTxs(prev => prev.map((t, idx) => idx === i ? { ...t, include: !t.include } : t));
+  const changeTxCat = (i: number, cat: string) => setParsedTxs(prev => prev.map((t, idx) => idx === i ? { ...t, category: cat } : t));
+
+  const saveImported = async () => {
+    const toSave = parsedTxs.filter(t => t.include);
+    if (toSave.length === 0) return;
+    setImportSaving(true);
+    const payload = toSave.map(t => ({
+      user_id: userId, type: t.type, category: t.category,
+      amount: t.amount, description: t.description, record_date: t.date,
+    }));
+    const { data, error } = await supabase.from('finance_records').insert(payload).select();
+    if (!error && data) setRecords(prev => [...(data as FinRecord[]), ...prev]);
+    setImportSaving(false);
+    setImportOpen(false);
+    setParsedTxs([]);
   };
 
   const remove = async (id: string) => {
@@ -120,7 +165,7 @@ export default function FinancePage() {
         </div>
 
         {/* Add buttons */}
-        <div className="flex gap-3 mb-5">
+        <div className="flex gap-3 mb-3">
           <button onClick={() => openModal('income')} className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-semibold transition-colors">
             <Plus className="w-4 h-4" /> Добавить доход
           </button>
@@ -128,6 +173,10 @@ export default function FinancePage() {
             <Plus className="w-4 h-4" /> Добавить расход
           </button>
         </div>
+        <button onClick={() => { setImportOpen(true); setParsedTxs([]); setImportMsg(''); }}
+          className="w-full flex items-center justify-center gap-2 bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 py-3 rounded-xl text-sm font-semibold transition-colors mb-5">
+          <Upload className="w-4 h-4" /> Импорт из банковской выписки (PDF / Excel)
+        </button>
 
         {/* Expense breakdown */}
         {expenseByCat.length > 0 && (
@@ -215,6 +264,72 @@ export default function FinancePage() {
               <button onClick={save} disabled={saving || !form.amount} className={`w-full py-3 rounded-xl font-semibold text-sm text-white transition-colors disabled:bg-gray-300 ${modalType === 'income' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-500 hover:bg-red-600'}`}>
                 {saving ? 'Сохраняем...' : 'Добавить'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import statement modal */}
+      {importOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => !importing && setImportOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900">Импорт из выписки</h3>
+              <button onClick={() => setImportOpen(false)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6">
+              {parsedTxs.length === 0 ? (
+                <>
+                  <label className="block">
+                    <div className="border-2 border-dashed border-gray-200 hover:border-blue-300 rounded-2xl p-8 text-center cursor-pointer transition-colors">
+                      {importing ? (
+                        <><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3" /><p className="text-sm text-gray-500">Распознаём выписку...</p></>
+                      ) : (
+                        <><Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" /><p className="text-sm font-medium text-gray-700 mb-1">Выберите файл выписки</p><p className="text-xs text-gray-400">PDF, Excel (.xlsx/.xls) или CSV</p></>
+                      )}
+                    </div>
+                    <input type="file" accept=".pdf,.xlsx,.xls,.csv" className="hidden" disabled={importing}
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handleStatementUpload(f); }} />
+                  </label>
+                  {importMsg && <p className="text-sm text-amber-600 mt-3 text-center">{importMsg}</p>}
+                  <div className="mt-4 bg-blue-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-600">💡 Поддерживаются выписки Kaspi, Halyk, БЦК, Forte и др. Операции распознаются автоматически и распределяются по категориям. Перед сохранением вы сможете всё проверить.</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm text-gray-600">{importMsg}</p>
+                    <button onClick={() => { setParsedTxs([]); setImportMsg(''); }} className="text-xs text-blue-600 hover:underline">Загрузить другой</button>
+                  </div>
+                  <div className="space-y-2 max-h-[45vh] overflow-y-auto mb-4">
+                    {parsedTxs.map((t, i) => (
+                      <div key={i} className={`border rounded-xl p-3 ${t.include ? 'border-gray-200' : 'border-gray-100 opacity-50'}`}>
+                        <div className="flex items-start gap-2">
+                          <input type="checkbox" checked={t.include} onChange={() => toggleTx(i)} className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`text-sm font-semibold ${t.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {t.type === 'income' ? '+' : '−'}{t.amount.toLocaleString('ru-RU')} ₸
+                              </span>
+                              <span className="text-xs text-gray-400">{new Date(t.date).toLocaleDateString('ru-RU')}</span>
+                            </div>
+                            {t.description && <p className="text-xs text-gray-500 truncate mt-0.5">{t.description}</p>}
+                            <select value={t.category} onChange={e => changeTxCat(i, e.target.value)}
+                              className="mt-1.5 text-xs px-2 py-1 border border-gray-200 rounded-lg bg-white">
+                              {(t.type === 'income' ? INCOME_CATS : EXPENSE_CATS).map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={saveImported} disabled={importSaving || parsedTxs.filter(t => t.include).length === 0}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+                    {importSaving ? 'Сохраняем...' : `Добавить ${parsedTxs.filter(t => t.include).length} операций`}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
