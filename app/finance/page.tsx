@@ -2,12 +2,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { TrendingUp, TrendingDown, Wallet, Plus, X, Trash2, ArrowUpRight, ArrowDownRight, Calendar, ChevronLeft, ChevronRight, PieChart, Upload } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Plus, X, Trash2, ArrowUpRight, ArrowDownRight, Calendar, ChevronLeft, ChevronRight, PieChart, Upload, ArrowRightLeft } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 
 interface FinRecord {
   id: string; type: 'income' | 'expense'; category: string; amount: number;
-  description: string; record_date: string;
+  description: string; record_date: string; company_id?: string | null;
 }
 interface ParsedTx { date: string; amount: number; type: 'income' | 'expense'; category: string; description: string; include?: boolean; }
 
@@ -30,6 +30,8 @@ export default function FinancePage() {
   const [importMsg, setImportMsg] = useState('');
   const [parsedTxs, setParsedTxs] = useState<ParsedTx[]>([]);
   const [importSaving, setImportSaving] = useState(false);
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<string>('personal');
 
   const [form, setForm] = useState({ amount: '', category: INCOME_CATS[0], description: '', record_date: new Date().toISOString().split('T')[0] });
 
@@ -39,8 +41,12 @@ export default function FinancePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
-    const { data } = await supabase.from('finance_records').select('*').eq('user_id', user.id).order('record_date', { ascending: false });
-    setRecords((data as FinRecord[]) || []);
+    const [{ data: recs }, { data: comps }] = await Promise.all([
+      supabase.from('finance_records').select('*').eq('user_id', user.id).order('record_date', { ascending: false }),
+      supabase.from('companies').select('id,name').eq('owner_id', user.id),
+    ]);
+    setRecords((recs as FinRecord[]) || []);
+    setCompanies((comps as { id: string; name: string }[]) || []);
     setLoading(false);
   };
 
@@ -54,7 +60,7 @@ export default function FinancePage() {
     const amount = parseFloat(form.amount);
     if (!amount || amount <= 0) return;
     setSaving(true);
-    const payload = { user_id: userId, type: modalType, category: form.category, amount, description: form.description.trim(), record_date: form.record_date };
+    const payload = { user_id: userId, type: modalType, category: form.category, amount, description: form.description.trim(), record_date: form.record_date, company_id: selectedCompany === 'personal' ? null : selectedCompany };
     const { data, error } = await supabase.from('finance_records').insert(payload).select().single();
     if (!error && data) setRecords(prev => [data as FinRecord, ...prev]);
     setSaving(false);
@@ -84,6 +90,12 @@ export default function FinancePage() {
 
   const toggleTx = (i: number) => setParsedTxs(prev => prev.map((t, idx) => idx === i ? { ...t, include: !t.include } : t));
   const changeTxCat = (i: number, cat: string) => setParsedTxs(prev => prev.map((t, idx) => idx === i ? { ...t, category: cat } : t));
+  const toggleTxType = (i: number) => setParsedTxs(prev => prev.map((t, idx) => {
+    if (idx !== i) return t;
+    const newType: 'income' | 'expense' = t.type === 'income' ? 'expense' : 'income';
+    // Сбросим категорию на дефолт нового типа
+    return { ...t, type: newType, category: newType === 'income' ? INCOME_CATS[0] : EXPENSE_CATS[0] };
+  }));
 
   const saveImported = async () => {
     const toSave = parsedTxs.filter(t => t.include);
@@ -92,6 +104,7 @@ export default function FinancePage() {
     const payload = toSave.map(t => ({
       user_id: userId, type: t.type, category: t.category,
       amount: t.amount, description: t.description, record_date: t.date,
+      company_id: selectedCompany === 'personal' ? null : selectedCompany,
     }));
     const { data, error } = await supabase.from('finance_records').insert(payload).select();
     if (!error && data) setRecords(prev => [...(data as FinRecord[]), ...prev]);
@@ -105,11 +118,19 @@ export default function FinancePage() {
     setRecords(prev => prev.filter(r => r.id !== id));
   };
 
-  // Записи текущего месяца
+  const toggleRecordType = async (rec: FinRecord) => {
+    const newType: 'income' | 'expense' = rec.type === 'income' ? 'expense' : 'income';
+    await supabase.from('finance_records').update({ type: newType }).eq('id', rec.id);
+    setRecords(prev => prev.map(r => r.id === rec.id ? { ...r, type: newType } : r));
+  };
+
+  // Записи текущего месяца и выбранной компании (или личные)
   const monthRecords = useMemo(() => records.filter(r => {
     const d = new Date(r.record_date);
-    return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
-  }), [records, viewMonth, viewYear]);
+    const monthMatch = d.getMonth() === viewMonth && d.getFullYear() === viewYear;
+    const companyMatch = selectedCompany === 'personal' ? !r.company_id : r.company_id === selectedCompany;
+    return monthMatch && companyMatch;
+  }), [records, viewMonth, viewYear, selectedCompany]);
 
   const income = monthRecords.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0);
   const expense = monthRecords.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0);
@@ -119,6 +140,13 @@ export default function FinancePage() {
   const expenseByCat = useMemo(() => {
     const map: { [k: string]: number } = {};
     monthRecords.filter(r => r.type === 'expense').forEach(r => { map[r.category] = (map[r.category] || 0) + r.amount; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [monthRecords]);
+
+  // Доходы по категориям
+  const incomeByCat = useMemo(() => {
+    const map: { [k: string]: number } = {};
+    monthRecords.filter(r => r.type === 'income').forEach(r => { map[r.category] = (map[r.category] || 0) + r.amount; });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   }, [monthRecords]);
 
@@ -134,11 +162,24 @@ export default function FinancePage() {
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
       <DashboardHeader title="Финансы" />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5">
           <div>
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Wallet className="w-5 h-5 text-blue-600" /> Финансовая аналитика</h1>
             <p className="text-sm text-gray-500">Доходы, расходы и чистая прибыль</p>
           </div>
+        </div>
+
+        {/* Company selector */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
+          <label className="block text-xs font-medium text-gray-500 mb-2">Счёт / организация</label>
+          <select value={selectedCompany} onChange={e => setSelectedCompany(e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white font-medium">
+            <option value="personal">👤 Личные финансы</option>
+            {companies.map(c => <option key={c.id} value={c.id}>🏢 {c.name}</option>)}
+          </select>
+          {companies.length === 0 && (
+            <p className="text-xs text-gray-400 mt-2">Добавьте компанию в «Мои компании», чтобы вести учёт по организации отдельно</p>
+          )}
         </div>
 
         {/* Month nav */}
@@ -178,25 +219,52 @@ export default function FinancePage() {
           <Upload className="w-4 h-4" /> Импорт из банковской выписки (PDF / Excel)
         </button>
 
-        {/* Expense breakdown */}
+        {/* Expense breakdown - donut chart */}
         {expenseByCat.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm"><PieChart className="w-4 h-4 text-gray-400" /> Структура расходов</h3>
-            <div className="space-y-2.5">
-              {expenseByCat.map(([cat, amt]) => {
-                const pct = expense > 0 ? Math.round((amt / expense) * 100) : 0;
-                return (
-                  <div key={cat}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-gray-600">{cat}</span>
-                      <span className="text-gray-900 font-medium">{fmt(amt)} <span className="text-gray-400">({pct}%)</span></span>
+            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 text-sm"><PieChart className="w-4 h-4 text-gray-400" /> Куда уходят деньги</h3>
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              {/* Donut SVG */}
+              <div className="relative flex-shrink-0">
+                <svg width="180" height="180" viewBox="0 0 180 180">
+                  {(() => {
+                    const cx = 90, cy = 90, r = 70, sw = 28;
+                    const circumference = 2 * Math.PI * r;
+                    let offset = 0;
+                    const colors = ['#EF4444','#F59E0B','#3B82F6','#8B5CF6','#10B981','#EC4899','#06B6D4','#F97316','#6366F1','#84CC16'];
+                    return expenseByCat.map(([cat, amt], i) => {
+                      const pct = expense > 0 ? amt / expense : 0;
+                      const dash = pct * circumference;
+                      const seg = (
+                        <circle key={cat} cx={cx} cy={cy} r={r} fill="none"
+                          stroke={colors[i % colors.length]} strokeWidth={sw}
+                          strokeDasharray={`${dash} ${circumference - dash}`}
+                          strokeDashoffset={-offset}
+                          transform={`rotate(-90 ${cx} ${cy})`} />
+                      );
+                      offset += dash;
+                      return seg;
+                    });
+                  })()}
+                  <text x="90" y="84" textAnchor="middle" className="fill-gray-400" style={{ fontSize: '11px' }}>Расходы</text>
+                  <text x="90" y="104" textAnchor="middle" className="fill-gray-900 font-bold" style={{ fontSize: '15px' }}>{expense >= 1000000 ? (expense/1000000).toFixed(1)+'М' : expense >= 1000 ? Math.round(expense/1000)+'К' : expense} ₸</text>
+                </svg>
+              </div>
+              {/* Legend */}
+              <div className="flex-1 w-full space-y-2">
+                {expenseByCat.map(([cat, amt], i) => {
+                  const colors = ['#EF4444','#F59E0B','#3B82F6','#8B5CF6','#10B981','#EC4899','#06B6D4','#F97316','#6366F1','#84CC16'];
+                  const pct = expense > 0 ? Math.round((amt / expense) * 100) : 0;
+                  return (
+                    <div key={cat} className="flex items-center gap-2.5">
+                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: colors[i % colors.length] }} />
+                      <span className="text-sm text-gray-600 flex-1 truncate">{cat}</span>
+                      <span className="text-sm text-gray-900 font-medium">{fmt(amt)}</span>
+                      <span className="text-xs text-gray-400 w-9 text-right">{pct}%</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-red-400 rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -223,10 +291,15 @@ export default function FinancePage() {
                     {r.description && <p className="text-xs text-gray-400 truncate">{r.description}</p>}
                     <p className="text-xs text-gray-400">{new Date(r.record_date).toLocaleDateString('ru-RU')}</p>
                   </div>
-                  <span className={`font-semibold text-sm ${r.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {r.type === 'income' ? '+' : '−'}{fmt(r.amount)}
-                  </span>
-                  <button onClick={() => remove(r.id)} className="p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4" /></button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toggleRecordType(r)}
+                      className={`font-semibold text-sm px-2 py-1 rounded-lg transition-colors ${r.type === 'income' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-red-600 hover:bg-red-50'}`}
+                      title="Переключить доход/расход">
+                      {r.type === 'income' ? '+' : '−'}{fmt(r.amount)}
+                      <ArrowRightLeft className="w-3 h-3 inline ml-1 opacity-40" />
+                    </button>
+                    <button onClick={() => remove(r.id)} className="p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4" /></button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -309,9 +382,12 @@ export default function FinancePage() {
                           <input type="checkbox" checked={t.include} onChange={() => toggleTx(i)} className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <span className={`text-sm font-semibold ${t.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                              <button onClick={() => toggleTxType(i)}
+                                className={`text-sm font-semibold px-2 py-0.5 rounded-lg transition-colors ${t.type === 'income' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-red-600 hover:bg-red-50'}`}
+                                title="Нажмите чтобы переключить доход/расход">
                                 {t.type === 'income' ? '+' : '−'}{t.amount.toLocaleString('ru-RU')} ₸
-                              </span>
+                                <ArrowRightLeft className="w-3 h-3 inline ml-1.5 opacity-50" />
+                              </button>
                               <span className="text-xs text-gray-400">{new Date(t.date).toLocaleDateString('ru-RU')}</span>
                             </div>
                             {t.description && <p className="text-xs text-gray-500 truncate mt-0.5">{t.description}</p>}
