@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, FileText } from 'lucide-react';
 import DashboardHeader from '../../../components/DashboardHeader';
+import { getActiveCompany } from '@/lib/activeCompany';
 
 const CATEGORIES = [
   { value: 'tax', label: 'Налоговая отчётность' },
@@ -36,11 +37,20 @@ export default function CreateTask() {
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('Астана');
   const [deadline, setDeadline] = useState('');
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [companyId, setCompanyId] = useState<string>('personal');
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push('/auth'); return; }
       setUserId(data.user.id);
+
+      // Загружаем компании заказчика
+      const { data: comps } = await supabase.from('companies').select('id,name').eq('owner_id', data.user.id);
+      setCompanies((comps as { id: string; name: string }[]) || []);
+      // Предвыбираем активную компанию
+      const active = getActiveCompany();
+      if (active && active !== 'personal') setCompanyId(active);
 
       // Убеждаемся что профиль существует (создаём если нет)
       const { data: profile } = await supabase
@@ -82,6 +92,7 @@ export default function CreateTask() {
         status: 'open',
       };
       if (deadline) payload.deadline = deadline;
+      if (companyId && companyId !== 'personal') payload.company_id = companyId;
 
       const { error: e } = await supabase
         .from('tasks')
@@ -120,6 +131,19 @@ export default function CreateTask() {
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Для какой компании?</label>
+            <select value={companyId} onChange={e => setCompanyId(e.target.value)} className={inp}>
+              <option value="personal">👤 Личная задача (без компании)</option>
+              {companies.map(c => <option key={c.id} value={c.id}>🏢 {c.name}</option>)}
+            </select>
+            <p className="text-xs text-gray-400 mt-1.5">
+              {companies.length === 0
+                ? 'Добавьте компанию в «Мои компании» — бухгалтер будет видеть её реквизиты для документов'
+                : 'Бухгалтер увидит реквизиты компании после одобрения заказа — для подготовки документов'}
+            </p>
+          </div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Категория *</label>
             <select value={category} onChange={e => setCategory(e.target.value)} className={inp}>

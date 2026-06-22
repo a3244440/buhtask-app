@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, MapPin, Calendar, Send, CheckCircle, Clock } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Send, CheckCircle, Clock, Building2, CreditCard } from 'lucide-react';
 import DashboardHeader from '../../../../components/DashboardHeader';
 
 const CATS: Record<string, string> = {
@@ -29,6 +29,11 @@ interface Task {
   category: string; city: string; budget?: number; deadline?: string; created_at: string;
   accountant_id?: string; completion_requested?: boolean; completion_approved?: boolean;
   final_price?: number; commission_amount?: number; commission_paid?: boolean;
+  company_id?: string;
+}
+interface CompanyInfo {
+  name: string; bin: string; director: string; address: string;
+  tax_regime: string; oked: string; bank_accounts: { bank: string; iban: string }[];
 }
 
 export default function AccountantTaskDetail() {
@@ -47,6 +52,7 @@ export default function AccountantTaskDetail() {
   const [days, setDays] = useState('');
   const [letter, setLetter] = useState('');
   const [myPrice, setMyPrice] = useState(0);
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
 
   useEffect(() => { init(); }, [taskId]);
 
@@ -65,6 +71,13 @@ export default function AccountantTaskDetail() {
       setDebugInfo(`Задача с ID ${taskId} не существует в базе или RLS блокирует доступ.`);
     } else {
       setTask(taskData);
+      // Если бухгалтер назначен на эту задачу и есть компания — загружаем реквизиты
+      if (taskData.company_id && taskData.accountant_id === user.id) {
+        const { data: comp } = await supabase.from('companies')
+          .select('name,bin,director,address,tax_regime,oked,bank_accounts')
+          .eq('id', taskData.company_id).maybeSingle();
+        if (comp) setCompanyInfo(comp as CompanyInfo);
+      }
     }
 
     const { data: existing } = await supabase.from('proposals').select('id,proposed_price').eq('task_id', taskId).eq('accountant_id', user.id).maybeSingle();
@@ -150,6 +163,37 @@ export default function AccountantTaskDetail() {
             <p className="text-sm text-gray-500">Перенаправляем...</p>
           </div>
         ) : (task.status === 'in_progress' || task.status === 'paid') && task.accountant_id === userId ? (
+          <>
+            {/* Реквизиты компании заказчика для документов */}
+            {companyInfo && (
+              <div className="bg-white rounded-2xl border border-blue-200 shadow-sm p-6 mb-5">
+                <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-600"/> Реквизиты компании заказчика</h2>
+                <p className="text-xs text-gray-500 mb-4">Используйте эти данные для подготовки документов</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div><p className="text-xs text-gray-400">Наименование</p><p className="text-gray-800 font-medium">{companyInfo.name}</p></div>
+                  {companyInfo.bin && <div><p className="text-xs text-gray-400">БИН</p><p className="text-gray-800">{companyInfo.bin}</p></div>}
+                  {companyInfo.director && <div><p className="text-xs text-gray-400">Директор</p><p className="text-gray-800">{companyInfo.director}</p></div>}
+                  {companyInfo.tax_regime && <div><p className="text-xs text-gray-400">Налоговый режим</p><p className="text-gray-800">{companyInfo.tax_regime}</p></div>}
+                  {companyInfo.oked && <div className="sm:col-span-2"><p className="text-xs text-gray-400">Вид деятельности</p><p className="text-gray-800">{companyInfo.oked}</p></div>}
+                  {companyInfo.address && <div className="sm:col-span-2"><p className="text-xs text-gray-400">Адрес</p><p className="text-gray-800">{companyInfo.address}</p></div>}
+                </div>
+                {companyInfo.bank_accounts && companyInfo.bank_accounts.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-50">
+                    <p className="text-xs text-gray-400 mb-2">Банковские счета</p>
+                    <div className="space-y-1.5">
+                      {companyInfo.bank_accounts.map((b, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <CreditCard className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="text-gray-600">{b.bank}:</span>
+                          <span className="text-gray-900 font-medium">{b.iban}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600"/> Управление заказом</h2>
 
@@ -199,6 +243,7 @@ export default function AccountantTaskDetail() {
               </div>
             )}
           </div>
+          </>
         ) : alreadyApplied ? (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
             <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-3"/>
