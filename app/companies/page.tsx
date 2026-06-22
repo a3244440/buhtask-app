@@ -32,6 +32,7 @@ export default function CompaniesPage() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupMsg, setLookupMsg] = useState('');
   const [attribution, setAttribution] = useState('');
+  const [showPaywall, setShowPaywall] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -49,7 +50,11 @@ export default function CompaniesPage() {
     setLoading(false);
   };
 
-  const openAdd = () => { setForm(emptyForm); setEditingId(null); setLookupMsg(''); setError(''); setModalOpen(true); };
+  const FREE_LIMIT = 2;
+  const openAdd = () => {
+    if (companies.length >= FREE_LIMIT) { setShowPaywall(true); return; }
+    setForm(emptyForm); setEditingId(null); setLookupMsg(''); setError(''); setModalOpen(true);
+  };
   const openEdit = (c: Company) => { setForm({ ...c, bank_accounts: c.bank_accounts || [] }); setEditingId(c.id); setLookupMsg(''); setError(''); setModalOpen(true); };
 
   const lookupBin = async () => {
@@ -130,7 +135,7 @@ export default function CompaniesPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Мои компании</h1>
-            <p className="text-sm text-gray-500">Данные компаний для задач и документов</p>
+            <p className="text-sm text-gray-500">{companies.length} из {FREE_LIMIT} (бесплатно)</p>
           </div>
           <button onClick={openAdd} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
             <Plus className="w-4 h-4" /> Добавить компанию
@@ -262,6 +267,40 @@ export default function CompaniesPage() {
                 </button>
                 <button onClick={() => setModalOpen(false)} className="px-5 py-3 border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-xl font-semibold text-sm transition-colors">Отмена</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Paywall modal */}
+      {showPaywall && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowPaywall(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-8 text-center text-white">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-3">
+                <Building2 className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-bold">Лимит бесплатных компаний</h3>
+              <p className="text-sm text-blue-100 mt-1">На бесплатном тарифе можно добавить {FREE_LIMIT} компании</p>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">Чтобы добавить больше компаний, оформите подписку <b>BuhTask Pro</b> — управляйте неограниченным количеством компаний, ведите учёт и аналитику по каждой отдельно.</p>
+              <div className="bg-gray-50 rounded-xl p-4 mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-gray-900">BuhTask Pro</span>
+                  <span className="text-blue-600 font-bold">скоро</span>
+                </div>
+                <ul className="space-y-1.5 text-sm text-gray-600">
+                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Неограниченно компаний</li>
+                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Финансовая аналитика по каждой</li>
+                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Приоритетная поддержка</li>
+                </ul>
+              </div>
+              <button onClick={() => { setShowPaywall(false); alert('Подписка скоро будет доступна. Следите за обновлениями!'); }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors mb-2">
+                Оформить подписку
+              </button>
+              <button onClick={() => setShowPaywall(false)} className="w-full text-gray-500 py-2 text-sm hover:text-gray-700">Позже</button>
             </div>
           </div>
         </div>
