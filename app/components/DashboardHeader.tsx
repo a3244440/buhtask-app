@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { LogOut, User, Settings, ChevronDown, Building2, Check, Plus } from 'lucide-react';
+import { getActiveCompany, setActiveCompany } from '@/lib/activeCompany';
 
 interface Props { title?: string; right?: React.ReactNode; }
 
@@ -13,19 +14,40 @@ export default function DashboardHeader({ title, right }: Props) {
   const [fullName, setFullName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [role, setRole] = useState('client');
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [activeCompany, setActiveCompanyState] = useState('personal');
+  const [companyMenuOpen, setCompanyMenuOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const companyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       setEmail(data.user.email || '');
       const { data: p } = await supabase.from('profiles').select('full_name,avatar_url,role').eq('id', data.user.id).single();
-      if (p) { setFullName(p.full_name || ''); setAvatarUrl(p.avatar_url || ''); setRole(p.role || 'client'); }
+      if (p) {
+        setFullName(p.full_name || ''); setAvatarUrl(p.avatar_url || ''); setRole(p.role || 'client');
+        if (p.role !== 'accountant') {
+          const { data: comps } = await supabase.from('companies').select('id,name').eq('owner_id', data.user.id);
+          setCompanies((comps as { id: string; name: string }[]) || []);
+        }
+      }
     });
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    setActiveCompanyState(getActiveCompany());
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (companyRef.current && !companyRef.current.contains(e.target as Node)) setCompanyMenuOpen(false);
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  const chooseCompany = (id: string) => {
+    setActiveCompany(id);
+    setActiveCompanyState(id);
+    setCompanyMenuOpen(false);
+  };
+  const activeCompanyName = activeCompany === 'personal' ? 'Личный кабинет' : (companies.find(c => c.id === activeCompany)?.name || 'Личный кабинет');
 
   const handleSignOut = async () => { await supabase.auth.signOut(); router.push('/'); };
   const initials = fullName ? fullName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : (email[0]?.toUpperCase() || '?');
@@ -42,8 +64,45 @@ export default function DashboardHeader({ title, right }: Props) {
         {title && <h1 className="hidden lg:block text-sm font-semibold text-gray-700 flex-shrink-0">{title}</h1>}
         {right && <div className="flex-1 max-w-md">{right}</div>}
 
+        {/* Company switcher (1С-style) — only for clients */}
+        {role !== 'accountant' && (
+          <div className="relative flex-shrink-0 ml-auto mr-2" ref={companyRef}>
+            <button onClick={() => setCompanyMenuOpen(v => !v)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors max-w-[200px]">
+              <Building2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <span className="text-sm font-medium text-gray-700 truncate">{activeCompanyName}</span>
+              <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            </button>
+            {companyMenuOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-50">
+                <p className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase">Выберите организацию</p>
+                <button onClick={() => chooseCompany('personal')}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <span className="flex-1 text-left text-gray-700">Личный кабинет</span>
+                  {activeCompany === 'personal' && <Check className="w-4 h-4 text-blue-600" />}
+                </button>
+                {companies.map(c => (
+                  <button key={c.id} onClick={() => chooseCompany(c.id)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
+                    <Building2 className="w-4 h-4 text-gray-400" />
+                    <span className="flex-1 text-left text-gray-700 truncate">{c.name}</span>
+                    {activeCompany === c.id && <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />}
+                  </button>
+                ))}
+                <div className="border-t border-gray-100 mt-1 pt-1">
+                  <button onClick={() => { setCompanyMenuOpen(false); router.push('/companies'); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50">
+                    <Plus className="w-4 h-4" /> Управление компаниями
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Profile dropdown */}
-        <div className="relative flex-shrink-0 ml-auto" ref={ref}>
+        <div className={`relative flex-shrink-0 ${role === 'accountant' ? 'ml-auto' : ''}`} ref={ref}>
           <button onClick={() => setOpen(v => !v)}
             className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors">
             {avatarUrl ? (

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { TrendingUp, TrendingDown, Wallet, Plus, X, Trash2, ArrowUpRight, ArrowDownRight, Calendar, ChevronLeft, ChevronRight, PieChart, Upload, ArrowRightLeft } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
+import { getActiveCompany } from '@/lib/activeCompany';
 
 interface FinRecord {
   id: string; type: 'income' | 'expense'; category: string; amount: number;
@@ -35,7 +36,13 @@ export default function FinancePage() {
 
   const [form, setForm] = useState({ amount: '', category: INCOME_CATS[0], description: '', record_date: new Date().toISOString().split('T')[0] });
 
-  useEffect(() => { init(); }, []);
+  useEffect(() => {
+    init();
+    setSelectedCompany(getActiveCompany());
+    const handler = (e: any) => setSelectedCompany(e.detail);
+    window.addEventListener('active-company-changed', handler);
+    return () => window.removeEventListener('active-company-changed', handler);
+  }, []);
 
   const init = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -169,17 +176,11 @@ export default function FinancePage() {
           </div>
         </div>
 
-        {/* Company selector */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
-          <label className="block text-xs font-medium text-gray-500 mb-2">Счёт / организация</label>
-          <select value={selectedCompany} onChange={e => setSelectedCompany(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white font-medium">
-            <option value="personal">👤 Личные финансы</option>
-            {companies.map(c => <option key={c.id} value={c.id}>🏢 {c.name}</option>)}
-          </select>
-          {companies.length === 0 && (
-            <p className="text-xs text-gray-400 mt-2">Добавьте компанию в «Мои компании», чтобы вести учёт по организации отдельно</p>
-          )}
+        {/* Active company indicator */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5 flex items-center gap-2">
+          <span className="text-xs text-gray-400">Организация:</span>
+          <span className="text-sm font-semibold text-gray-700">{selectedCompany === 'personal' ? '👤 Личный кабинет' : '🏢 ' + (companies.find(c => c.id === selectedCompany)?.name || 'Компания')}</span>
+          <span className="text-xs text-gray-400 ml-auto">Переключить можно вверху →</span>
         </div>
 
         {/* Month nav */}

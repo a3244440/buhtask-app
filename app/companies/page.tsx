@@ -153,15 +153,15 @@ export default function CompaniesPage() {
             {companies.map(c => (
               <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                 <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <button onClick={() => router.push('/companies/' + c.id)} className="flex items-center gap-3 text-left group">
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
                       <Building2 className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{c.name}</p>
+                      <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{c.name}</p>
                       {c.bin && <p className="text-xs text-gray-400">БИН: {c.bin}</p>}
                     </div>
-                  </div>
+                  </button>
                   <div className="flex items-center gap-1">
                     <button onClick={() => openEdit(c)} className="p-2 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-blue-600"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => remove(c.id)} className="p-2 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
