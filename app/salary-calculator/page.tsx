@@ -61,6 +61,7 @@ function calcFromNet(net: number, opts: any) {
 
 export default function SalaryCalculatorPage() {
   const [mode, setMode] = useState<'gross' | 'net'>('gross');
+  const [showHint, setShowHint] = useState(false);
   const [amount, setAmount] = useState('300000');
   const [disabled, setDisabled] = useState(false);
   const [manyChildren, setManyChildren] = useState(false);
@@ -88,12 +89,28 @@ export default function SalaryCalculatorPage() {
         {/* Input */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
           {/* Mode toggle */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm font-medium text-gray-700">Метод расчёта</span>
+            <div className="relative">
+              <button onClick={() => setShowHint(v => !v)} className="w-5 h-5 rounded-full bg-amber-100 text-amber-600 text-xs font-bold flex items-center justify-center hover:bg-amber-200">?</button>
+              {showHint && (
+                <div className="absolute left-0 top-7 z-10 w-72 bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-xs">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <span className="font-semibold text-gray-700">Метод расчёта налогов с зарплаты</span>
+                    <button onClick={() => setShowHint(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                  </div>
+                  <p className="text-gray-600 mb-1"><b className="text-gray-800">Прямой</b> — расчёт от оклада, указанного в трудовом договоре (gross).</p>
+                  <p className="text-gray-600"><b className="text-gray-800">Обратный</b> — расчёт от суммы, полученной «на руки» (net).</p>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex gap-2 mb-5">
             <button onClick={() => setMode('gross')} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${mode === 'gross' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-600'}`}>
-              Знаю оклад (gross)
+              Прямой
             </button>
             <button onClick={() => setMode('net')} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${mode === 'net' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-600'}`}>
-              Знаю «на руки» (net)
+              Обратный
             </button>
           </div>
 
