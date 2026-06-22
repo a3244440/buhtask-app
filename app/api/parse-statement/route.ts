@@ -63,23 +63,43 @@ function parseDate(s: string): string | null {
 }
 
 // Поиск индексов колонок по заголовкам выписки
-function findColumns(rows: any[][]): { dateCol: number; debitCol: number; creditCol: number; descCol: number; amountCol: number; headerRow: number } | null {
+function findColumns(rows: any[][]): { dateCol: number; debitCol: number; creditCol: number; descCol: number; amountCol: number; senderCol: number; receiverCol: number; counterpartyCol: number; headerRow: number } | null {
   for (let i = 0; i < Math.min(rows.length, 25); i++) {
     const row = rows[i].map(c => String(c || '').toLowerCase());
-    let dateCol = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1;
+    let dateCol = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, receiverCol = -1, counterpartyCol = -1;
     row.forEach((cell, idx) => {
       if (dateCol < 0 && /дата|күн|date/.test(cell)) dateCol = idx;
       if (debitCol < 0 && /дебет|debit|расход|списан|шығыс/.test(cell)) debitCol = idx;
       if (creditCol < 0 && /кредит|credit|приход|зачислен|поступлен|кіріс/.test(cell)) creditCol = idx;
-      if (descCol < 0 && /назначен|описан|детал|контрагент|операц|мақсат|purpose|details/.test(cell)) descCol = idx;
+      if (descCol < 0 && /назначен|описан|детал|операц|мақсат|purpose|details|основан/.test(cell)) descCol = idx;
       if (amountCol < 0 && /сумма|сома|amount/.test(cell)) amountCol = idx;
+      // Отправитель / получатель / контрагент
+      if (senderCol < 0 && /отправит|плательщик|жіберуш|sender|от кого/.test(cell)) senderCol = idx;
+      if (receiverCol < 0 && /получател|бенефициар|алушы|receiver|кому|payee/.test(cell)) receiverCol = idx;
+      if (counterpartyCol < 0 && /контрагент|корреспондент|наименование|atauы|counterparty/.test(cell)) counterpartyCol = idx;
     });
-    // нашли заголовок если есть дата и (дебет/кредит или сумма)
     if (dateCol >= 0 && (debitCol >= 0 || creditCol >= 0 || amountCol >= 0)) {
-      return { dateCol, debitCol, creditCol, descCol, amountCol, headerRow: i };
+      return { dateCol, debitCol, creditCol, descCol, amountCol, senderCol, receiverCol, counterpartyCol, headerRow: i };
     }
   }
   return null;
+}
+
+// Извлечение контрагента из текста назначения платежа
+function extractCounterpartyFromText(text: string, type: 'income' | 'expense'): string {
+  if (!text) return '';
+  // Ищем организации: ТОО "...", ИП ..., АО "...", и т.п.
+  const orgMatch = text.match(/(ТОО|АО|ИП|ОАО|ЗАО|ГУ|ПК|КХ|ФИЛИАЛ)\s*["«»]?[А-ЯЁA-Zа-яёa-z0-9\s\-]{2,40}["«»]?/i);
+  if (orgMatch) {
+    const org = orgMatch[0].trim();
+    return (type === 'income' ? 'От: ' : 'Кому: ') + org;
+  }
+  // Ищем ФИО (три слова с заглавной)
+  const fioMatch = text.match(/[А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+(\s+[А-ЯЁ][а-яё]+)?/);
+  if (fioMatch) {
+    return (type === 'income' ? 'От: ' : 'Кому: ') + fioMatch[0].trim();
+  }
+  return '';
 }
 
 function extractFromSheet(rows: any[][]): ParsedTx[] {
@@ -108,69 +128,36 @@ function extractFromSheet(rows: any[][]): ParsedTx[] {
       }
       if (amount < 1) continue;
 
-      const description = cols.descCol >= 0 ? String(row[cols.descCol] || '').trim().slice(0, 120) : 'Операция';
-      txs.push({ date: dateStr, amount, type, category: categorize(description, type), description: description || 'Операция' });
+      // Формируем описание: контрагент + назначение
+      const purpose = cols.descCol >= 0 ? String(row[cols.descCol] || '').trim() : '';
+      const sender = cols.senderCol >= 0 ? String(row[cols.senderCol] || '').trim() : '';
+      const receiver = cols.receiverCol >= 0 ? String(row[cols.receiverCol] || '').trim() : '';
+      const counterparty = cols.counterpartyCol >= 0 ? String(row[cols.counterpartyCol] || '').trim() : '';
+
+      let description = '';
+      if (type === 'income') {
+        // Доход — от кого
+        const from = sender || counterparty;
+        if (from) description = `От: ${from}`;
+        if (purpose) description += (description ? ' · ' : '') + purpose;
+      } else {
+        // Расход — кому
+        const to = receiver || counterparty;
+        if (to) description = `Кому: ${to}`;
+        if (purpose) description += (description ? ' · ' : '') + purpose;
+      }
+      // Если ничего не нашли — пробуем извлечь контрагента из назначения платежа
+      if (!description && purpose) description = purpose;
+      if (!description) description = extractCounterpartyFromText(row.join(' '), type);
+      description = description.replace(/\s+/g, ' ').trim().slice(0, 140);
+
+      txs.push({ date: dateStr, amount, type, category: categorize(purpose + ' ' + counterparty + ' ' + sender + ' ' + receiver, type), description: description || 'Операция' });
     }
   }
 
   return txs;
 }
 
-// PDF: извлечение текста через pdfjs-dist (серверный legacy build)
-async function extractFromPdf(buffer: Buffer): Promise<ParsedTx[]> {
-  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  // Отключаем воркер в серверной среде
-  (pdfjsLib as any).GlobalWorkerOptions.workerSrc = '';
-  const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true, disableFontFace: true, isEvalSupported: false });
-  const pdf = await loadingTask.promise;
-  const lines: string[] = [];
-
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const page = await pdf.getPage(p);
-    const content = await page.getTextContent();
-    // Группируем элементы по Y-координате (строки)
-    const rowsMap: { [y: string]: { x: number; str: string }[] } = {};
-    for (const item of content.items as any[]) {
-      const y = Math.round(item.transform[5]);
-      const x = item.transform[4];
-      const key = String(y);
-      if (!rowsMap[key]) rowsMap[key] = [];
-      rowsMap[key].push({ x, str: item.str });
-    }
-    // Сортируем строки сверху вниз, элементы в строке слева направо
-    const ys = Object.keys(rowsMap).map(Number).sort((a, b) => b - a);
-    for (const y of ys) {
-      const line = rowsMap[String(y)].sort((a, b) => a.x - b.x).map(i => i.str).join(' ').trim();
-      if (line) lines.push(line);
-    }
-  }
-
-  // Парсим строки: дата + суммы
-  const txs: ParsedTx[] = [];
-  for (const line of lines) {
-    const dateStr = parseDate(line);
-    if (!dateStr) continue;
-    // Находим денежные значения (с разделителями тысяч и копейками)
-    const moneyMatches = line.match(/\d[\d\s\u00A0]*[.,]\d{2}(?!\d)/g) || [];
-    if (moneyMatches.length === 0) continue;
-    const amounts = moneyMatches.map(parseAmount).filter(a => a >= 1);
-    if (amounts.length === 0) continue;
-
-    // В строке выписки обычно: сумма операции и остаток. Остаток обычно последний и больше.
-    // Берём наименьшую сумму как операцию (остаток ≥ сумма операции), но если одна — её.
-    let amount: number;
-    if (amounts.length === 1) amount = amounts[0];
-    else { amounts.sort((a, b) => a - b); amount = amounts[0]; }
-
-    const isExpense = /списан|расход|дебет|debit|оплата|перевод исходящ|комисс|снятие/i.test(line)
-      && !/зачислен|пополнен|поступлен|кредит/i.test(line);
-    const type: 'income' | 'expense' = isExpense ? 'expense' : 'income';
-    const description = line.replace(/\d[\d\s\u00A0]*[.,]\d{2}/g, '').replace(dateStr, '')
-      .replace(/\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2,4}/g, '').replace(/\s+/g, ' ').trim().slice(0, 120);
-    txs.push({ date: dateStr, amount, type, category: categorize(description, type), description: description || 'Операция' });
-  }
-  return txs;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -182,15 +169,13 @@ export async function POST(req: NextRequest) {
     const name = file.name.toLowerCase();
     let txs: ParsedTx[] = [];
 
-    if (name.endsWith('.pdf')) {
-      txs = await extractFromPdf(buffer);
-    } else if (name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv')) {
+    if (name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv')) {
       const wb = XLSX.read(buffer, { type: 'buffer', cellDates: false });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' }) as any[][];
       txs = extractFromSheet(rows);
     } else {
-      return NextResponse.json({ error: 'Поддерживаются только PDF, Excel (.xlsx/.xls) и CSV' }, { status: 400 });
+      return NextResponse.json({ error: 'Поддерживаются только Excel (.xlsx/.xls) и CSV. Скачайте выписку в формате Excel из приложения банка.' }, { status: 400 });
     }
 
     // Дедуп и сортировка

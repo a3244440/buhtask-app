@@ -256,7 +256,7 @@ export default function FinancePage() {
         </div>
         <button onClick={() => { setImportOpen(true); setParsedTxs([]); setImportMsg(''); }}
           className="w-full flex items-center justify-center gap-2 bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 py-3 rounded-xl text-sm font-semibold transition-colors mb-5">
-          <Upload className="w-4 h-4" /> Импорт из банковской выписки (PDF / Excel)
+          <Upload className="w-4 h-4" /> Импорт из банковской выписки (Excel)
         </button>
 
         {/* Expense breakdown - donut chart */}
@@ -398,15 +398,15 @@ export default function FinancePage() {
                       {importing ? (
                         <><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3" /><p className="text-sm text-gray-500">Распознаём выписку...</p></>
                       ) : (
-                        <><Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" /><p className="text-sm font-medium text-gray-700 mb-1">Выберите файл выписки</p><p className="text-xs text-gray-400">PDF, Excel (.xlsx/.xls) или CSV</p></>
+                        <><Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" /><p className="text-sm font-medium text-gray-700 mb-1">Выберите файл выписки</p><p className="text-xs text-gray-400">Excel (.xlsx / .xls) или CSV</p></>
                       )}
                     </div>
-                    <input type="file" accept=".pdf,.xlsx,.xls,.csv" className="hidden" disabled={importing}
+                    <input type="file" accept=".xlsx,.xls,.csv" className="hidden" disabled={importing}
                       onChange={e => { const f = e.target.files?.[0]; if (f) handleStatementUpload(f); }} />
                   </label>
                   {importMsg && <p className="text-sm text-amber-600 mt-3 text-center">{importMsg}</p>}
                   <div className="mt-4 bg-blue-50 rounded-xl p-3">
-                    <p className="text-xs text-gray-600">💡 Поддерживаются выписки Kaspi, Halyk, БЦК, Forte и др. Операции распознаются автоматически и распределяются по категориям. Перед сохранением вы сможете всё проверить.</p>
+                    <p className="text-xs text-gray-600">💡 Скачайте выписку в формате <b>Excel</b> из приложения банка (Kaspi, Halyk, БЦК, Forte и др.). Операции распознаются автоматически с указанием контрагента и категории. Перед сохранением всё можно проверить и поправить.</p>
                   </div>
                 </>
               ) : (
