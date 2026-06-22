@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy } from 'lucide-react';
+import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; final_price?: number; commission_amount?: number; commission_paid?: boolean; paid_by_client?: boolean; }
@@ -249,7 +249,7 @@ function AccountantDashboardInner() {
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-60 bg-white border-r border-gray-100 flex-col z-40 pt-[57px]">
-        <nav className="flex-1 p-3 space-y-0.5">
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {[
             { id: 'home', icon: Home, label: 'Главная' },
             { id: 'tasks', icon: Briefcase, label: 'Доступные задачи' },
@@ -265,6 +265,19 @@ function AccountantDashboardInner() {
               )}
             </button>
           ))}
+
+          {/* Инструменты */}
+          <div className="pt-3 mt-2 border-t border-gray-100">
+            <p className="px-4 pb-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Инструменты</p>
+            <button onClick={() => router.push('/tax-calendar')}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
+              <CalendarDays className="w-4 h-4" /> Налоговый календарь
+            </button>
+            <button onClick={() => router.push('/salary-calculator')}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
+              <Calculator className="w-4 h-4" /> Калькулятор зарплаты
+            </button>
+          </div>
         </nav>
         <div className="p-3 border-t border-gray-100">
           <button onClick={() => router.push('/profile')}
