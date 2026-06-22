@@ -2,10 +2,10 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator } from 'lucide-react';
+import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2 } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 
-interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; final_price?: number; commission_amount?: number; commission_paid?: boolean; paid_by_client?: boolean; }
+interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; final_price?: number; commission_amount?: number; commission_paid?: boolean; paid_by_client?: boolean; company_id?: string; company_name?: string; }
 interface Conversation { id: string; other_name: string; other_id: string; last_message: string; updated_at: string; task_title?: string; task_id?: string; }
 interface Message { id: string; sender_id: string; content: string; created_at: string; }
 
@@ -89,6 +89,15 @@ function AccountantDashboardInner() {
 
     // Показываем только открытые задачи БЕЗ моего отклика
     const availableTasks = (openTasks || []).filter((t: any) => !respondedTaskIds.has(t.id));
+
+    // Подгружаем названия компаний (только название, без реквизитов)
+    const companyIds = [...new Set(availableTasks.map((t: any) => t.company_id).filter(Boolean))];
+    if (companyIds.length > 0) {
+      const { data: comps } = await supabase.from('companies').select('id,name').in('id', companyIds as string[]);
+      const nameMap: Record<string, string> = {};
+      (comps || []).forEach((c: any) => { nameMap[c.id] = c.name; });
+      availableTasks.forEach((t: any) => { if (t.company_id) t.company_name = nameMap[t.company_id]; });
+    }
     setTasks(availableTasks);
 
     // Загружаем мои заказы (задачи где я откликнулся)
@@ -502,6 +511,7 @@ function AccountantDashboardInner() {
                       <p className="text-sm text-gray-400 line-clamp-2 mb-3">{task.description}</p>
                       <div className="flex flex-wrap gap-2 text-xs">
                         <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-medium">{CATS[task.category]}</span>
+                        {task.company_name && <span className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full font-medium"><Building2 className="w-3 h-3" />{task.company_name}</span>}
                         {task.city && <span className="flex items-center gap-1 text-gray-400"><MapPin className="w-3 h-3" />{task.city}</span>}
                         {task.budget && <span className="text-emerald-600 font-medium">💰 {task.budget.toLocaleString()} ₸</span>}
                         {task.deadline && <span className="flex items-center gap-1 text-gray-400"><Clock className="w-3 h-3" />{new Date(task.deadline).toLocaleDateString('ru-RU')}</span>}

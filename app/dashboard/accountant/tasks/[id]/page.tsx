@@ -53,6 +53,7 @@ export default function AccountantTaskDetail() {
   const [letter, setLetter] = useState('');
   const [myPrice, setMyPrice] = useState(0);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
+  const [companyName, setCompanyName] = useState('');
 
   useEffect(() => { init(); }, [taskId]);
 
@@ -71,12 +72,16 @@ export default function AccountantTaskDetail() {
       setDebugInfo(`Задача с ID ${taskId} не существует в базе или RLS блокирует доступ.`);
     } else {
       setTask(taskData);
-      // Если бухгалтер назначен на эту задачу и есть компания — загружаем реквизиты
-      if (taskData.company_id && taskData.accountant_id === user.id) {
-        const { data: comp } = await supabase.from('companies')
-          .select('name,bin,director,address,tax_regime,oked,bank_accounts')
-          .eq('id', taskData.company_id).maybeSingle();
-        if (comp) setCompanyInfo(comp as CompanyInfo);
+      // Загружаем данные компании если задача к ней привязана
+      if (taskData.company_id) {
+        const assigned = taskData.accountant_id === user.id;
+        // Название — всегда; полные реквизиты — только назначенному бухгалтеру
+        const fields = assigned ? 'name,bin,director,address,tax_regime,oked,bank_accounts' : 'name';
+        const { data: comp } = await supabase.from('companies').select(fields).eq('id', taskData.company_id).maybeSingle();
+        if (comp) {
+          setCompanyName((comp as any).name || '');
+          if (assigned) setCompanyInfo(comp as CompanyInfo);
+        }
       }
     }
 
@@ -148,6 +153,7 @@ export default function AccountantTaskDetail() {
           </div>
           <div className="flex flex-wrap gap-2 mb-5 text-xs">
             <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full font-medium">{CATS[task.category] || task.category}</span>
+            {companyName && <span className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full font-medium"><Building2 className="w-3 h-3"/>{companyName}</span>}
             {task.city && <span className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full"><MapPin className="w-3 h-3"/>{task.city}</span>}
             {task.deadline && <span className="flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-full"><Calendar className="w-3 h-3"/>до {new Date(task.deadline).toLocaleDateString('ru-RU')}</span>}
           </div>
