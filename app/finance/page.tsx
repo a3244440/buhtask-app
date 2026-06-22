@@ -27,6 +27,9 @@ export default function FinancePage() {
   const [modalType, setModalType] = useState<'income' | 'expense'>('income');
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
+  const [periodMode, setPeriodMode] = useState<'month' | 'all' | 'range'>('month');
+  const [rangeFrom, setRangeFrom] = useState('');
+  const [rangeTo, setRangeTo] = useState('');
   const [saving, setSaving] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -136,10 +139,17 @@ export default function FinancePage() {
   // Записи текущего месяца и выбранной компании (или личные)
   const monthRecords = useMemo(() => records.filter(r => {
     const d = new Date(r.record_date);
-    const monthMatch = d.getMonth() === viewMonth && d.getFullYear() === viewYear;
     const companyMatch = selectedCompany === 'personal' ? !r.company_id : r.company_id === selectedCompany;
-    return monthMatch && companyMatch;
-  }), [records, viewMonth, viewYear, selectedCompany]);
+    if (!companyMatch) return false;
+    if (periodMode === 'all') return true;
+    if (periodMode === 'range') {
+      if (rangeFrom && r.record_date < rangeFrom) return false;
+      if (rangeTo && r.record_date > rangeTo) return false;
+      return true;
+    }
+    // month
+    return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
+  }), [records, viewMonth, viewYear, selectedCompany, periodMode, rangeFrom, rangeTo]);
 
   const income = monthRecords.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0);
   const expense = monthRecords.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0);
@@ -187,11 +197,36 @@ export default function FinancePage() {
           <span className="text-xs text-gray-400 ml-auto">Переключить можно вверху →</span>
         </div>
 
-        {/* Month nav */}
-        <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
-          <button onClick={prevMonth} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronLeft className="w-5 h-5 text-gray-500" /></button>
-          <h2 className="font-bold text-lg text-gray-900">{MONTHS_RU[viewMonth]} {viewYear}</h2>
-          <button onClick={nextMonth} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronRight className="w-5 h-5 text-gray-500" /></button>
+        {/* Period selector */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
+          <div className="flex gap-2 mb-3">
+            <button onClick={() => setPeriodMode('month')} className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${periodMode === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-600'}`}>Месяц</button>
+            <button onClick={() => setPeriodMode('all')} className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${periodMode === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-600'}`}>Всё время</button>
+            <button onClick={() => setPeriodMode('range')} className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${periodMode === 'range' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-600'}`}>Период</button>
+          </div>
+
+          {periodMode === 'month' && (
+            <div className="flex items-center justify-between">
+              <button onClick={prevMonth} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronLeft className="w-5 h-5 text-gray-500" /></button>
+              <h2 className="font-bold text-lg text-gray-900">{MONTHS_RU[viewMonth]} {viewYear}</h2>
+              <button onClick={nextMonth} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronRight className="w-5 h-5 text-gray-500" /></button>
+            </div>
+          )}
+          {periodMode === 'all' && (
+            <p className="text-center text-sm text-gray-500 py-1">Показаны все операции за всё время</p>
+          )}
+          {periodMode === 'range' && (
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <label className="block text-xs text-gray-400 mb-1">С</label>
+                <input type="date" value={rangeFrom} onChange={e => setRangeFrom(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs text-gray-400 mb-1">По</label>
+                <input type="date" value={rangeTo} onChange={e => setRangeTo(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Summary cards */}
@@ -227,7 +262,7 @@ export default function FinancePage() {
         {/* Expense breakdown - donut chart */}
         {expenseByCat.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 text-sm"><PieChart className="w-4 h-4 text-gray-400" /> Куда уходят деньги</h3>
+            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 text-sm"><PieChart className="w-4 h-4 text-gray-400" /> Расходы по категориям</h3>
             <div className="flex flex-col sm:flex-row items-center gap-6">
               {/* Donut SVG */}
               <div className="relative flex-shrink-0">
@@ -277,12 +312,12 @@ export default function FinancePage() {
         {/* Records list */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
           <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900 text-sm">Операции за месяц ({monthRecords.length})</h3>
+            <h3 className="font-semibold text-gray-900 text-sm">Операции ({monthRecords.length})</h3>
           </div>
           {monthRecords.length === 0 ? (
             <div className="py-12 text-center">
               <Wallet className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-gray-400 text-sm">Нет операций за этот месяц</p>
+              <p className="text-gray-400 text-sm">Нет операций за выбранный период</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
