@@ -272,28 +272,24 @@ function ClientDashboardInner() {
           <div className="pt-3 mt-2 border-t border-gray-100">
             <p className="px-4 pb-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Инструменты</p>
             <button onClick={() => router.push('/companies')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
-              <Building2 className="w-4 h-4" /> Мои компании
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <Building2 className="w-4 h-4 flex-shrink-0" /> Мои компании
             </button>
             <button onClick={() => router.push('/tax-calendar')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
-              <CalendarDays className="w-4 h-4" /> Налоговый календарь
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <CalendarDays className="w-4 h-4 flex-shrink-0" /> Налоговый календарь
             </button>
             <button onClick={() => router.push('/salary-calculator')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
-              <Calculator className="w-4 h-4" /> Калькулятор зарплаты
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <Calculator className="w-4 h-4 flex-shrink-0" /> Калькулятор зарплаты
             </button>
             <button onClick={() => router.push('/finance')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
-              <BarChart3 className="w-4 h-4" /> Финансовая аналитика
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <BarChart3 className="w-4 h-4 flex-shrink-0" /> Финансовая аналитика
             </button>
           </div>
         </nav>
         <div className="p-3 border-t border-gray-100 space-y-1">
-          <button onClick={() => router.push('/profile')}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
-            <Settings className="w-4 h-4" /> Настройки
-          </button>
           <button onClick={() => router.push('/dashboard/client/create-task')}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors">
             <Plus className="w-4 h-4" /> Новая задача

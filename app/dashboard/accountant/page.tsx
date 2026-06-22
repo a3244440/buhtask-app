@@ -280,9 +280,9 @@ function AccountantDashboardInner() {
           </div>
         </nav>
         <div className="p-3 border-t border-gray-100">
-          <button onClick={() => router.push('/profile')}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
-            <Settings className="w-4 h-4" /> Настройки профиля
+          <button onClick={() => setTab('tasks')}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors">
+            <Briefcase className="w-4 h-4" /> Найти задачи
           </button>
         </div>
       </aside>
