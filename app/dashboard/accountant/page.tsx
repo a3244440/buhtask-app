@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2 } from 'lucide-react';
+import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; final_price?: number; commission_amount?: number; commission_paid?: boolean; paid_by_client?: boolean; company_id?: string; company_name?: string; }
@@ -30,9 +30,9 @@ const CATS: Record<string, string> = {
 
 const NAV = [
   { id: 'home', icon: Home, label: 'Главная' },
+  { id: 'tools', icon: Wrench, label: 'Инструменты' },
   { id: 'tasks', icon: Briefcase, label: 'Задачи' },
   { id: 'messages', icon: MessageSquare, label: 'Чат' },
-  { id: 'profile', icon: User, label: 'Профиль' },
 ];
 
 function AccountantDashboardInner() {
@@ -668,7 +668,7 @@ function AccountantDashboardInner() {
       <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-40">
         <div className="grid grid-cols-4 h-16">
           {NAV.map(item => (
-            <button key={item.id} onClick={() => item.id === 'profile' ? router.push('/profile') : setTab(item.id)}
+            <button key={item.id} onClick={() => item.id === 'tools' ? router.push('/tools') : setTab(item.id)}
               className={`flex flex-col items-center justify-center gap-1 text-[10px] font-medium relative ${tab === item.id ? 'text-blue-600' : 'text-gray-400'}`}>
               <item.icon className="w-5 h-5" />
               {item.label}

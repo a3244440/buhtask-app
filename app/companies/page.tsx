@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Building2, Plus, Trash2, Pencil, X, Search, CreditCard, MapPin, User, FileText, Loader2 } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
+import ToolsSidebar from '../components/ToolsSidebar';
+import MobileToolsNav from '../components/MobileToolsNav';
 
 interface BankAccount { bank: string; iban: string; }
 interface Company {
@@ -129,9 +131,11 @@ export default function CompaniesPage() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <DashboardHeader title="Мои компании" />
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <ToolsSidebar />
+      <div className="lg:pl-60">
+        <DashboardHeader title="Мои компании" />
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Мои компании</h1>
@@ -189,6 +193,8 @@ export default function CompaniesPage() {
           </div>
         )}
       </main>
+      </div>
+      <MobileToolsNav />
 
       {/* Modal */}
       {modalOpen && (

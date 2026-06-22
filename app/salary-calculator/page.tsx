@@ -2,6 +2,8 @@
 import { useState, useMemo } from 'react';
 import { Calculator, Info, ArrowRightLeft } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
+import ToolsSidebar from '../components/ToolsSidebar';
+import MobileToolsNav from '../components/MobileToolsNav';
 
 // Параметры РК 2026
 const MRP = 4325;
@@ -78,9 +80,11 @@ export default function SalaryCalculatorPage() {
   const inp = "w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold bg-white";
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <DashboardHeader title="Калькулятор зарплаты" />
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <ToolsSidebar />
+      <div className="lg:pl-60">
+        <DashboardHeader title="Калькулятор зарплаты" />
+        <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calculator className="w-5 h-5 text-blue-600" /> Калькулятор зарплаты 2026</h1>
           <p className="text-sm text-gray-500">Расчёт налогов и удержаний по ставкам Казахстана 2026 года</p>
@@ -211,6 +215,8 @@ export default function SalaryCalculatorPage() {
           </div>
         </div>
       </main>
+      </div>
+      <MobileToolsNav />
     </div>
   );
 }

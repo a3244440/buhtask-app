@@ -1,0 +1,59 @@
+'use client';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Building2, CalendarDays, Calculator, BarChart3, ChevronRight, ArrowLeft } from 'lucide-react';
+import DashboardHeader from '../components/DashboardHeader';
+import MobileToolsNav from '../components/MobileToolsNav';
+
+export default function ToolsPage() {
+  const router = useRouter();
+  const [role, setRole] = useState('client');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) { router.push('/auth'); return; }
+      const { data: p } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+      if (p) setRole(p.role || 'client');
+    });
+  }, []);
+
+  const isAccountant = role === 'accountant';
+  const dash = isAccountant ? '/dashboard/accountant' : '/dashboard/client';
+
+  const tools = [
+    { href: '/companies', icon: Building2, label: 'Мои компании', desc: 'Реквизиты ваших компаний', hide: isAccountant, color: 'bg-blue-50 text-blue-600' },
+    { href: '/tax-calendar', icon: CalendarDays, label: 'Налоговый календарь', desc: 'Сроки сдачи отчётности', hide: false, color: 'bg-violet-50 text-violet-600' },
+    { href: '/salary-calculator', icon: Calculator, label: 'Калькулятор зарплаты', desc: 'Расчёт налогов с ЗП', hide: false, color: 'bg-emerald-50 text-emerald-600' },
+    { href: '/finance', icon: BarChart3, label: 'Финансовая аналитика', desc: 'Доходы, расходы, прибыль', hide: isAccountant, color: 'bg-amber-50 text-amber-600' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <DashboardHeader title="Инструменты" />
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        <button onClick={() => router.push(dash)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-5">
+          <ArrowLeft className="w-4 h-4" /> На главную
+        </button>
+        <h1 className="text-xl font-bold text-gray-900 mb-5">Инструменты</h1>
+        <div className="space-y-3">
+          {tools.filter(t => !t.hide).map(t => (
+            <button key={t.href} onClick={() => router.push(t.href)}
+              className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4 hover:border-blue-200 transition-colors">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${t.color}`}>
+                <t.icon className="w-5 h-5" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-gray-900">{t.label}</p>
+                <p className="text-xs text-gray-400">{t.desc}</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-300" />
+            </button>
+          ))}
+        </div>
+      </main>
+      <MobileToolsNav />
+    </div>
+  );
+}
+export const dynamic = 'force-dynamic';

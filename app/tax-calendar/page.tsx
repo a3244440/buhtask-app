@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Calendar, Bell, BellOff, ChevronLeft, ChevronRight, Info, CheckCircle2 } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
+import ToolsSidebar from '../components/ToolsSidebar';
+import MobileToolsNav from '../components/MobileToolsNav';
 
 interface TaxEvent { key: string; title: string; desc: string; type: 'monthly' | 'quarterly' | 'yearly' | 'halfyear'; day: number; months: number[]; who: string; }
 
@@ -73,9 +75,11 @@ export default function TaxCalendarPage() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <DashboardHeader title="Налоговый календарь" />
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <ToolsSidebar />
+      <div className="lg:pl-60">
+        <DashboardHeader title="Налоговый календарь" />
+        <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /> Налоговый календарь {year}</h1>
           <p className="text-sm text-gray-500">Сроки сдачи отчётности и уплаты налогов в Казахстане</p>
@@ -140,6 +144,8 @@ export default function TaxCalendarPage() {
           </div>
         </div>
       </main>
+      </div>
+      <MobileToolsNav />
     </div>
   );
 }

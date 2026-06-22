@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { TrendingUp, TrendingDown, Wallet, Plus, X, Trash2, ArrowUpRight, ArrowDownRight, Calendar, ChevronLeft, ChevronRight, PieChart, Upload, ArrowRightLeft } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
+import ToolsSidebar from '../components/ToolsSidebar';
+import MobileToolsNav from '../components/MobileToolsNav';
 import { getActiveCompany } from '@/lib/activeCompany';
 
 interface FinRecord {
@@ -166,9 +168,11 @@ export default function FinancePage() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <DashboardHeader title="Финансы" />
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <ToolsSidebar />
+      <div className="lg:pl-60">
+        <DashboardHeader title="Финансы" />
+        <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-5">
           <div>
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Wallet className="w-5 h-5 text-blue-600" /> Финансовая аналитика</h1>
@@ -411,6 +415,8 @@ export default function FinancePage() {
           </div>
         </div>
       )}
+      </div>
+      <MobileToolsNav />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3 } from 'lucide-react';
+import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3, Wrench } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; }
@@ -35,9 +35,9 @@ const STATUS: Record<string, { label: string; color: string }> = {
 };
 const NAV = [
   { id: 'home', icon: Home, label: 'Главная' },
+  { id: 'tools', icon: Wrench, label: 'Инструменты' },
   { id: 'tasks', icon: Briefcase, label: 'Задачи' },
   { id: 'messages', icon: MessageSquare, label: 'Чат' },
-  { id: 'profile', icon: User, label: 'Профиль' },
 ];
 
 function ClientDashboardInner() {
@@ -499,7 +499,7 @@ function ClientDashboardInner() {
       <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-40">
         <div className="grid grid-cols-4 h-16">
           {NAV.map(item => (
-            <button key={item.id} onClick={() => item.id === 'profile' ? router.push('/profile') : setTab(item.id)}
+            <button key={item.id} onClick={() => item.id === 'tools' ? router.push('/tools') : setTab(item.id)}
               className={`flex flex-col items-center justify-center gap-1 text-[10px] font-medium relative ${tab === item.id ? 'text-blue-600' : 'text-gray-400'}`}>
               <item.icon className="w-5 h-5" />{item.label}
               {item.id === 'messages' && conversations.length > 0 && <span className="absolute top-2 right-6 bg-blue-600 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">{conversations.length}</span>}
