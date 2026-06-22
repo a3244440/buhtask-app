@@ -34,11 +34,9 @@ export default function DashboardHeader({ title, right }: Props) {
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
       <div className="px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
-        {/* Logo with dark background pill */}
+        {/* Logo */}
         <a href={dashHref} className="flex items-center flex-shrink-0">
-          <div className="flex items-center gap-2 bg-gray-900 rounded-xl px-3 py-1.5">
-            <img src="/images/logo.png" alt="BuhTask" className="h-7 w-auto brightness-0 invert" />
-          </div>
+          <img src="/images/logo-new.png" alt="BuhTask" className="h-10 w-auto" />
         </a>
 
         {title && <h1 className="hidden lg:block text-sm font-semibold text-gray-700 flex-shrink-0">{title}</h1>}

@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6" style={{ fontFamily: 'Inter, sans-serif' }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <a href="/"><img src="/images/logo.png" alt="BuhTask" className="h-9 w-auto mx-auto" /></a>
+          <a href="/"><img src="/images/logo-new.png" alt="BuhTask" className="h-10 w-auto mx-auto" /></a>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           {success ? (

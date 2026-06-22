@@ -60,7 +60,7 @@ export default function ClientOnboarding() {
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6" style={{ fontFamily: 'Inter, sans-serif' }}>
       <div className="w-full max-w-lg">
         <div className="text-center mb-6">
-          <a href="/"><img src="/images/logo.png" alt="BuhTask" className="h-10 w-auto mx-auto" /></a>
+          <a href="/"><img src="/images/logo-new.png" alt="BuhTask" className="h-12 w-auto mx-auto" /></a>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">

@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   title: "BuhTask - Маркетплейс бухгалтерских услуг",
   description: "Платформа для поиска бухгалтеров и размещения бухгалтерских задач в Казахстане",
   icons: {
-    icon: '/images/logo.png',
-    apple: '/images/logo.png',
+    icon: '/images/logo-new.png',
+    apple: '/images/logo-new.png',
   },
 };
 

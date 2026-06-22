@@ -358,7 +358,7 @@ export default function HomePage() {
       {/* FOOTER */}
       <footer className={`py-10 px-4 sm:px-6 ${D ? 'bg-gray-950 border-t border-gray-800' : 'bg-gray-900'}`}>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <img src="/images/logo.png" alt="BuhTask" className="h-8 w-auto brightness-0 invert" />
+          <img src="/images/logo-new.png" alt="BuhTask" className="h-9 w-auto brightness-0 invert" />
           <p className="text-xs text-gray-400">© 2026 BuhTask. Маркетплейс бухгалтерских услуг Казахстана.</p>
           <div className="flex gap-5">
             {["Условия","Конфиденциальность","Контакты"].map(l => (

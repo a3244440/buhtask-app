@@ -54,10 +54,10 @@ export default function NavWrapper({ dark = false }: Props) {
         <a href="/" className="flex items-center">
           {(isLanding && !scrolled) || dark ? (
             // На синем hero-фоне ИЛИ в тёмном режиме — белый логотип
-            <img src="/images/logo.png" alt="BuhTask" className="h-14 w-auto transition-all brightness-0 invert" />
+            <img src="/images/logo-new.png" alt="BuhTask" className="h-14 w-auto transition-all brightness-0 invert" />
           ) : (
             // При скролле на светлом фоне — цветной логотип
-            <img src="/images/logo-dark.png" alt="BuhTask" className="h-14 w-auto transition-all" />
+            <img src="/images/logo-new.png" alt="BuhTask" className="h-14 w-auto transition-all" />
           )}
         </a>
 
