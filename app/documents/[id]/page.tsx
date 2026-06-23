@@ -250,10 +250,7 @@ function AvrView({ doc, company, counterparty, items, fmt }: any) {
   return (
     <div className="text-[11px] text-gray-900 leading-snug">
       {/* Шапка формы */}
-      <div className="flex justify-between items-start mb-2">
-        <div className="text-[10px]">
-          <p>ИИН/БИН</p>
-        </div>
+      <div className="flex justify-end mb-1">
         <div className="text-right text-[9px] leading-tight">
           <p>Приложение 50</p>
           <p>к приказу Министра финансов</p>
@@ -263,55 +260,59 @@ function AvrView({ doc, company, counterparty, items, fmt }: any) {
         </div>
       </div>
 
-      {/* Заказчик */}
-      <table className="w-full border-collapse mb-1 text-[10px]">
-        <tbody>
-          <tr>
-            <td className="px-1 py-1 align-top font-medium" style={{ width: '90px' }}>Заказчик</td>
-            <td className="px-1 py-1 border-b border-gray-700">
-              {counterparty?.name}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}
-            </td>
-            <td className="px-1 py-1 align-top text-right" style={{ width: '120px' }}>{counterparty?.bin || ''}</td>
-          </tr>
-          <tr><td></td><td className="px-1 text-[8px] text-gray-400 text-center">полное наименование, адрес, данные о средствах связи</td><td></td></tr>
-          <tr>
-            <td className="px-1 py-1 align-top font-medium">Исполнитель</td>
-            <td className="px-1 py-1 border-b border-gray-700">
-              {company?.name}{company?.address ? `, Адрес: ${company.address}` : ''}
-            </td>
-            <td className="px-1 py-1 align-top text-right">{company?.bin || ''}</td>
-          </tr>
-          <tr><td></td><td className="px-1 text-[8px] text-gray-400 text-center">полное наименование, адрес, данные о средствах связи</td><td></td></tr>
-        </tbody>
-      </table>
-
-      {/* Договор / номер / дата */}
+      {/* Заказчик / Исполнитель */}
       <table className="w-full border-collapse mb-2 text-[10px]">
         <tbody>
           <tr>
-            <td className="border border-gray-700 px-2 py-1 text-center font-medium">Договор (контракт)</td>
-            <td className="border border-gray-700 px-2 py-1 text-center font-medium">Номер документа</td>
-            <td className="border border-gray-700 px-2 py-1 text-center font-medium">Дата составления</td>
+            <td className="px-1 align-bottom text-right text-[8px] text-gray-500" colSpan={3}>ИИН/БИН</td>
           </tr>
           <tr>
-            <td className="border border-gray-700 px-2 py-1 text-center">{doc.contract || ''}</td>
+            <td className="px-1 py-0.5 align-top font-medium whitespace-nowrap" style={{ width: '70px' }}>Заказчик</td>
+            <td className="px-1 py-0.5 border-b border-gray-700">
+              {counterparty?.name}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}
+            </td>
+            <td className="px-1 py-0.5 align-bottom border-b border-gray-700 text-right whitespace-nowrap" style={{ width: '110px' }}>{counterparty?.bin || ''}</td>
+          </tr>
+          <tr><td></td><td className="px-1 text-[7px] text-gray-400 text-center">полное наименование, адрес, данные о средствах связи</td><td></td></tr>
+          <tr>
+            <td className="px-1 py-0.5 align-top font-medium">Исполнитель</td>
+            <td className="px-1 py-0.5 border-b border-gray-700">
+              {company?.name}{company?.address ? `, Адрес: ${company.address}` : ''}
+            </td>
+            <td className="px-1 py-0.5 align-bottom border-b border-gray-700 text-right whitespace-nowrap">{company?.bin || ''}</td>
+          </tr>
+          <tr><td></td><td className="px-1 text-[7px] text-gray-400 text-center">полное наименование, адрес, данные о средствах связи</td><td></td></tr>
+        </tbody>
+      </table>
+
+      {/* Договор / номер / дата — заголовок АКТ в одной таблице */}
+      <table className="w-full border-collapse mb-2 text-[10px]">
+        <tbody>
+          <tr>
+            <td className="px-2 py-1 text-center font-medium" style={{ width: '50%' }}>Договор (контракт)</td>
+            <td className="border border-gray-700 px-2 py-1 text-center font-medium" style={{ width: '25%' }}>Номер документа</td>
+            <td className="border border-gray-700 px-2 py-1 text-center font-medium" style={{ width: '25%' }}>Дата составления</td>
+          </tr>
+          <tr>
+            <td className="px-2 py-2 text-center font-bold text-[13px]">АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ)</td>
             <td className="border border-gray-700 px-2 py-1 text-center">{doc.number}</td>
             <td className="border border-gray-700 px-2 py-1 text-center">{dateStr}</td>
           </tr>
         </tbody>
       </table>
 
-      <h2 className="text-center text-[13px] font-bold my-3">АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ)</h2>
-
       {/* Основная таблица — 8 колонок формы Р-1 */}
       <table className="w-full border-collapse text-[9px]">
         <thead>
           <tr>
-            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '32px' }}>Номер по порядку</th>
-            <th className="border border-gray-700 px-1 py-1 align-middle">Наименование работ (услуг)</th>
-            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '60px' }}>Дата выполнения работ (оказания услуг)</th>
-            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '80px' }}>Сведения о наличии отчета о маркетинговых исследованиях, консультационных и прочих услуг (дата, номер, количество страниц)</th>
-            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '40px' }}>Единица измерения</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2} style={{ width: '32px' }}>Номер по порядку</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2}>Наименование работ (услуг)</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2} style={{ width: '55px' }}>Дата выполнения работ (оказания услуг)</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2} style={{ width: '90px' }}>Сведения о наличии отчета о маркетинговых исследованиях, консультационных и прочих услуг (дата, номер, количество страниц)</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2} style={{ width: '40px' }}>Единица измерения</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle text-center" colSpan={3}>Выполнено работ (оказано услуг)</th>
+          </tr>
+          <tr>
             <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '40px' }}>количество</th>
             <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '55px' }}>цена за единицу</th>
             <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '60px' }}>стоимость</th>
