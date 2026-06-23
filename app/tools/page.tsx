@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Building2, CalendarDays, Calculator, BarChart3, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Building2, CalendarDays, Calculator, BarChart3, ChevronRight, ArrowLeft, FileText } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import MobileToolsNav from '../components/MobileToolsNav';
 
@@ -23,6 +23,7 @@ export default function ToolsPage() {
 
   const tools = [
     { href: '/companies', icon: Building2, label: 'Мои компании', desc: 'Реквизиты ваших компаний', hide: isAccountant, color: 'bg-blue-50 text-blue-600' },
+    { href: '/documents', icon: FileText, label: 'Документы', desc: 'Счета, акты, счета-фактуры', hide: isAccountant, color: 'bg-sky-50 text-sky-600' },
     { href: '/tax-calendar', icon: CalendarDays, label: 'Налоговый календарь', desc: 'Сроки сдачи отчётности', hide: false, color: 'bg-violet-50 text-violet-600' },
     { href: '/salary-calculator', icon: Calculator, label: 'Калькулятор зарплаты', desc: 'Расчёт налогов с ЗП', hide: false, color: 'bg-emerald-50 text-emerald-600' },
     { href: '/finance', icon: BarChart3, label: 'Финансовая аналитика', desc: 'Доходы, расходы, прибыль', hide: isAccountant, color: 'bg-amber-50 text-amber-600' },

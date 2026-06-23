@@ -277,6 +277,10 @@ function ClientDashboardInner() {
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <Building2 className="w-4 h-4 flex-shrink-0" /> Мои компании
             </button>
+            <button onClick={() => router.push('/documents')}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <FileText className="w-4 h-4 flex-shrink-0" /> Документы
+            </button>
             <button onClick={() => router.push('/tax-calendar')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <CalendarDays className="w-4 h-4 flex-shrink-0" /> Налоговый календарь

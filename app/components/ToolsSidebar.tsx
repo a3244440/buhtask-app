@@ -2,7 +2,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Home, Building2, CalendarDays, Calculator, BarChart3 } from 'lucide-react';
+import { Home, Building2, CalendarDays, Calculator, BarChart3, FileText } from 'lucide-react';
 
 export default function ToolsSidebar() {
   const router = useRouter();
@@ -22,6 +22,7 @@ export default function ToolsSidebar() {
 
   const tools = [
     { href: '/companies', icon: Building2, label: 'Мои компании', hide: isAccountant },
+    { href: '/documents', icon: FileText, label: 'Документы', hide: isAccountant },
     { href: '/tax-calendar', icon: CalendarDays, label: 'Налоговый календарь', hide: false },
     { href: '/salary-calculator', icon: Calculator, label: 'Калькулятор зарплаты', hide: false },
     { href: '/finance', icon: BarChart3, label: 'Финансовая аналитика', hide: isAccountant },
