@@ -260,18 +260,20 @@ function AvrView({ doc, company, counterparty, items, fmt }: any) {
         </div>
       </div>
 
-      {/* Заказчик / Исполнитель */}
-      <table className="w-full border-collapse mb-2 text-[10px]">
+      {/* Заказчик / Исполнитель с ИИН/БИН в рамке справа */}
+      <table className="w-full border-collapse mb-1 text-[10px]">
         <tbody>
           <tr>
-            <td className="px-1 align-bottom text-right text-[8px] text-gray-500" colSpan={3}>ИИН/БИН</td>
+            <td style={{ width: '70px' }}></td>
+            <td></td>
+            <td className="border border-gray-700 px-1 text-center text-[8px] font-medium" style={{ width: '120px' }}>ИИН/БИН</td>
           </tr>
           <tr>
-            <td className="px-1 py-0.5 align-top font-medium whitespace-nowrap" style={{ width: '70px' }}>Заказчик</td>
+            <td className="px-1 py-0.5 align-top font-medium whitespace-nowrap">Заказчик</td>
             <td className="px-1 py-0.5 border-b border-gray-700">
               {counterparty?.name}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}
             </td>
-            <td className="px-1 py-0.5 align-bottom border-b border-gray-700 text-right whitespace-nowrap" style={{ width: '110px' }}>{counterparty?.bin || ''}</td>
+            <td className="border border-gray-700 px-1 py-0.5 align-middle text-center whitespace-nowrap">{counterparty?.bin || ''}</td>
           </tr>
           <tr><td></td><td className="px-1 text-[7px] text-gray-400 text-center">полное наименование, адрес, данные о средствах связи</td><td></td></tr>
           <tr>
@@ -279,27 +281,22 @@ function AvrView({ doc, company, counterparty, items, fmt }: any) {
             <td className="px-1 py-0.5 border-b border-gray-700">
               {company?.name}{company?.address ? `, Адрес: ${company.address}` : ''}
             </td>
-            <td className="px-1 py-0.5 align-bottom border-b border-gray-700 text-right whitespace-nowrap">{company?.bin || ''}</td>
+            <td className="border border-gray-700 px-1 py-0.5 align-middle text-center whitespace-nowrap">{company?.bin || ''}</td>
           </tr>
           <tr><td></td><td className="px-1 text-[7px] text-gray-400 text-center">полное наименование, адрес, данные о средствах связи</td><td></td></tr>
         </tbody>
       </table>
 
-      {/* Договор / номер / дата — заголовок АКТ в одной таблице */}
-      <table className="w-full border-collapse mb-2 text-[10px]">
-        <tbody>
-          <tr>
-            <td className="px-2 py-1 text-center font-medium" style={{ width: '50%' }}>Договор (контракт)</td>
-            <td className="border border-gray-700 px-2 py-1 text-center font-medium" style={{ width: '25%' }}>Номер документа</td>
-            <td className="border border-gray-700 px-2 py-1 text-center font-medium" style={{ width: '25%' }}>Дата составления</td>
-          </tr>
-          <tr>
-            <td className="px-2 py-2 text-center font-bold text-[13px]">АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ)</td>
-            <td className="border border-gray-700 px-2 py-1 text-center">{doc.number}</td>
-            <td className="border border-gray-700 px-2 py-1 text-center">{dateStr}</td>
-          </tr>
-        </tbody>
-      </table>
+      {/* Договор под исполнителем + номер/дата справа */}
+      <div className="flex justify-between items-start mb-3 text-[10px]">
+        <p>Договор (контракт): {doc.contract || '—'}</p>
+        <div className="text-right">
+          <p>Номер документа: <b>{doc.number}</b></p>
+          <p>Дата составления: <b>{dateStr}</b></p>
+        </div>
+      </div>
+
+      <h2 className="text-center text-[13px] font-bold mb-3">АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ)</h2>
 
       {/* Основная таблица — 8 колонок формы Р-1 */}
       <table className="w-full border-collapse text-[9px]">
