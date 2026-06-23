@@ -259,7 +259,7 @@ function AccountantDashboardInner() {
       {/* Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-60 bg-white border-r border-gray-100 flex-col z-40">
         <div className="px-5 py-4 border-b border-gray-50">
-          <img src="/images/logo-new.png" alt="BuhTask" className="h-9 w-auto" />
+          <img src="/images/logo-new.png" alt="BuhTask" className="h-14 w-auto" />
         </div>
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {[
