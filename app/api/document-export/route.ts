@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
-import path from 'path';
 import { amountToWords } from '@/lib/amountToWords';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const TEMPLATE_FILE: Record<string, string> = {
-  invoice: 'invoice_template.xlsx',
-  avr: 'avr_template.xlsx',
-  sf: 'sf_template.xlsx',
+const YELLOW = 'FFFFFF00';
+const thin: ExcelJS.Borders = {
+  top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' },
+  diagonal: { style: 'thin' },
 };
 
-// Данные приходят с клиента (он авторизован, RLS пройден на клиенте)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -24,73 +22,11 @@ export async function POST(req: NextRequest) {
     const dateStr = new Date(doc.doc_date).toLocaleDateString('ru-RU');
 
     const wb = new ExcelJS.Workbook();
-    const tplPath = path.join(process.cwd(), 'templates', TEMPLATE_FILE[doc.type]);
-    await wb.xlsx.readFile(tplPath);
-    const ws = wb.worksheets[0];
+    wb.creator = 'BuhTask';
 
-    const supplierLine = `${company?.name || ''}${company?.bin ? ', БИН ' + company.bin : ''}${company?.address ? ', Адрес: ' + company.address : ''}`;
-    const buyerLine = `${counterparty?.name || ''}${counterparty?.bin ? ', БИН ' + counterparty.bin : ''}${counterparty?.address ? ', Адрес: ' + counterparty.address : ''}`;
-
-    if (doc.type === 'invoice') {
-      ws.getCell('B9').value = 'Бенефициар:';
-      ws.getCell('B10').value = company?.name || '';
-      ws.getCell('B11').value = company?.bin ? 'БИН: ' + company.bin : '';
-      ws.getCell('B12').value = 'Банк бенефициара:';
-      ws.getCell('B13').value = bankAcc ? `${bankAcc.bank}` : '';
-      ws.getCell('B16').value = `Счет на оплату №${doc.number} от ${dateStr} года`;
-      ws.getCell('F20').value = supplierLine;
-      ws.getCell('F22').value = buyerLine;
-      ws.getCell('B24').value = doc.contract ? `Договор: ${doc.contract}` : 'Договор:';
-      // позиции начинаются с 27 строки
-      let r = 27;
-      items.forEach((it, i) => {
-        ws.getCell(`B${r}`).value = i + 1;
-        ws.getCell(`D${r}`).value = i + 1;
-        ws.getCell(`I${r}`).value = it.name;
-        r++;
-      });
-      ws.getCell(`B${r + 2}`).value = `Всего наименований ${items.length}, на сумму ${Number(doc.total).toLocaleString('ru-RU')}`;
-      ws.getCell(`B${r + 3}`).value = `Всего к оплате: ${amountToWords(Number(doc.total))}`;
-    } else if (doc.type === 'avr') {
-      ws.getCell('E9').value = buyerLine;
-      ws.getCell('E12').value = supplierLine;
-      ws.getCell('A15').value = `Договор (контракт) ${doc.contract || ''}`;
-      ws.getCell('A17').value = `АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ) №${doc.number} от ${dateStr}`;
-      let r = 22;
-      items.forEach((it, i) => {
-        ws.getCell(`A${r}`).value = i + 1;
-        ws.getCell(`C${r}`).value = `${it.name} — ${it.qty} ${it.unit} x ${Number(it.price).toLocaleString('ru-RU')} = ${(it.qty*it.price).toLocaleString('ru-RU')} ₸`;
-        r++;
-      });
-      ws.getCell('F30').value = company?.director || 'Директор';
-    } else if (doc.type === 'sf') {
-      ws.getCell('A1').value = `Счет-фактура № ${doc.number} от ${dateStr} г.`;
-      ws.getCell('A5').value = `Поставщик: ${company?.name || ''}`;
-      ws.getCell('A6').value = `ИИН/БИН и адрес поставщика: ${company?.bin || ''}, ${company?.address || ''}`;
-      ws.getCell('A7').value = bankAcc ? `ИИК: ${bankAcc.iban}, Банк: ${bankAcc.bank}` : '';
-      ws.getCell('A8').value = `Договор(контракт): ${doc.contract || ''}`;
-      ws.getCell('A15').value = `Грузоотправитель: ${supplierLine}`;
-      ws.getCell('A17').value = `Грузополучатель: ${buyerLine}`;
-      ws.getCell('A19').value = `Получатель: ${counterparty?.name || ''}`;
-      ws.getCell('A20').value = `БИН/ИИН и адрес получателя: ${counterparty?.bin || ''}, ${counterparty?.address || ''}`;
-      let r = 26;
-      items.forEach((it, i) => {
-        const sumNoVat = doc.has_vat ? Math.round((it.qty*it.price)/1.12) : it.qty*it.price;
-        const vatSum = doc.has_vat ? (it.qty*it.price) - sumNoVat : 0;
-        ws.getCell(`A${r}`).value = i + 1;
-        ws.getCell(`B${r}`).value = it.name;
-        ws.getCell(`C${r}`).value = it.unit;
-        ws.getCell(`D${r}`).value = it.qty;
-        ws.getCell(`E${r}`).value = it.price;
-        ws.getCell(`F${r}`).value = sumNoVat;
-        ws.getCell(`G${r}`).value = doc.has_vat ? '12%' : 'Без НДС';
-        ws.getCell(`H${r}`).value = doc.has_vat ? vatSum : 'Без НДС';
-        ws.getCell(`I${r}`).value = it.qty*it.price;
-        r++;
-      });
-      ws.getCell(`I${r}`).value = doc.total;
-      ws.getCell('A29').value = `Руководитель: ${company?.director || ''}`;
-    }
+    if (doc.type === 'invoice') buildInvoice(wb, doc, company, counterparty, bankAcc, items, dateStr);
+    else if (doc.type === 'avr') buildAvr(wb, doc, company, counterparty, items, dateStr);
+    else buildSf(wb, doc, company, counterparty, bankAcc, items, dateStr);
 
     const buf = await wb.xlsx.writeBuffer();
     return new NextResponse(buf, {
@@ -102,4 +38,219 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'error' }, { status: 500 });
   }
+}
+
+function yellow(cell: ExcelJS.Cell) {
+  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: YELLOW } };
+}
+
+// ===== СЧЁТ НА ОПЛАТУ =====
+function buildInvoice(wb: ExcelJS.Workbook, doc: any, company: any, cp: any, bankAcc: any, items: any[], dateStr: string) {
+  const ws = wb.addWorksheet('Счёт на оплату');
+  ws.columns = [
+    { width: 5 }, { width: 8 }, { width: 30 }, { width: 10 }, { width: 8 },
+    { width: 14 }, { width: 16 }, { width: 12 },
+  ];
+
+  // Блок "Внимание"
+  ws.mergeCells('C1:H3');
+  const warn = ws.getCell('C1');
+  warn.value = 'Внимание! Оплата данного счета означает согласие с условиями поставки товара. Уведомление об оплате обязательно, в противном случае не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с Поставщика, самовывозом, при наличии доверенности и документов удостоверяющих личность.';
+  warn.alignment = { wrapText: true, vertical: 'top' };
+  warn.font = { size: 8 };
+  ['C1','D1','E1','F1','G1','H1'].forEach(c => ws.getCell(c).border = thin);
+
+  // Образец платёжного поручения
+  ws.getCell('A5').value = 'Образец платежного поручения';
+  ws.getCell('A5').font = { bold: true };
+
+  // Таблица платёжки
+  ws.mergeCells('A6:C6'); ws.getCell('A6').value = 'Бенефициар:'; ws.getCell('A6').font = { bold: true };
+  ws.getCell('F6').value = 'ИИК'; ws.getCell('F6').font = { bold: true }; ws.getCell('F6').alignment = { horizontal: 'center' };
+  ws.getCell('H6').value = 'Кбе'; ws.getCell('H6').font = { bold: true }; ws.getCell('H6').alignment = { horizontal: 'center' };
+  ws.mergeCells('A7:C7'); ws.getCell('A7').value = company?.name || ''; yellow(ws.getCell('A7'));
+  ws.getCell('F7').value = bankAcc?.iban || ''; yellow(ws.getCell('F7')); ws.getCell('F7').alignment = { horizontal: 'center' };
+  ws.getCell('H7').value = '17'; yellow(ws.getCell('H7')); ws.getCell('H7').alignment = { horizontal: 'center' };
+  ws.mergeCells('A8:C8'); ws.getCell('A8').value = company?.bin ? 'БИН: ' + company.bin : '';
+  ws.mergeCells('A9:C9'); ws.getCell('A9').value = 'Банк бенефициара:'; ws.getCell('A9').font = { bold: true };
+  ws.getCell('F9').value = 'БИК'; ws.getCell('F9').font = { bold: true }; ws.getCell('F9').alignment = { horizontal: 'center' };
+  ws.getCell('G9').value = 'Код назначения платежа'; ws.getCell('G9').font = { bold: true, size: 9 };
+  ws.mergeCells('A10:C10'); ws.getCell('A10').value = bankAcc?.bank || ''; yellow(ws.getCell('A10'));
+  ws.getCell('F10').value = ''; yellow(ws.getCell('F10')); ws.getCell('F10').alignment = { horizontal: 'center' };
+  ws.getCell('G10').value = '859'; yellow(ws.getCell('G10')); ws.getCell('G10').alignment = { horizontal: 'center' };
+  // рамки для платёжки
+  for (let r = 6; r <= 10; r++) for (const c of ['A','D','E','F','G','H']) ws.getCell(`${c}${r}`).border = thin;
+
+  // Заголовок счёта
+  ws.mergeCells('A12:H12');
+  const title = ws.getCell('A12');
+  title.value = `Счет на оплату №${doc.number} от ${dateStr} года`;
+  title.font = { bold: true, size: 14 };
+
+  // Поставщик / Покупатель
+  ws.getCell('A14').value = 'Поставщик:'; ws.getCell('A14').font = { bold: true };
+  ws.mergeCells('C14:H15');
+  const sup = ws.getCell('C14');
+  sup.value = `${company?.bin ? 'БИН: ' + company.bin + ' ' : ''}${company?.name || ''}${company?.address ? ', Адрес: ' + company.address : ''}`;
+  sup.alignment = { wrapText: true, vertical: 'top' }; yellow(sup);
+
+  ws.getCell('A16').value = 'Покупатель:'; ws.getCell('A16').font = { bold: true };
+  ws.mergeCells('C16:H17');
+  const buy = ws.getCell('C16');
+  buy.value = `${cp?.bin ? 'БИН: ' + cp.bin + ', ' : ''}${cp?.name || ''}${cp?.address ? ', Адрес: ' + cp.address : ''}`;
+  buy.alignment = { wrapText: true, vertical: 'top' }; yellow(buy);
+
+  ws.getCell('A19').value = 'Договор:'; ws.getCell('A19').font = { bold: true };
+  ws.getCell('C19').value = doc.contract || '';
+
+  // Таблица позиций
+  const headerRow = 21;
+  const headers = ['№', 'Код', 'Наименование', 'Кол-во', 'Ед.', 'Цена', 'Сумма'];
+  const cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+  headers.forEach((h, i) => {
+    const cell = ws.getCell(`${cols[i]}${headerRow}`);
+    cell.value = h; cell.font = { bold: true }; cell.alignment = { horizontal: 'center' };
+    cell.border = thin; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
+  });
+  ws.mergeCells(`G${headerRow}:H${headerRow}`);
+
+  let r = headerRow + 1;
+  items.forEach((it, i) => {
+    const sum = it.qty * it.price;
+    ws.getCell(`A${r}`).value = i + 1;
+    ws.getCell(`B${r}`).value = i + 1;
+    ws.getCell(`C${r}`).value = it.name; yellow(ws.getCell(`C${r}`));
+    ws.getCell(`D${r}`).value = it.qty;
+    ws.getCell(`E${r}`).value = it.unit;
+    ws.getCell(`F${r}`).value = it.price; ws.getCell(`F${r}`).numFmt = '#,##0.00'; yellow(ws.getCell(`F${r}`));
+    ws.mergeCells(`G${r}:H${r}`);
+    ws.getCell(`G${r}`).value = sum; ws.getCell(`G${r}`).numFmt = '#,##0.00'; yellow(ws.getCell(`G${r}`));
+    for (const c of ['A','B','C','D','E','F','G','H']) ws.getCell(`${c}${r}`).border = thin;
+    r++;
+  });
+
+  // Итого
+  r += 1;
+  ws.getCell(`F${r}`).value = 'Итого:'; ws.getCell(`F${r}`).font = { bold: true }; ws.getCell(`F${r}`).alignment = { horizontal: 'right' };
+  ws.mergeCells(`G${r}:H${r}`); ws.getCell(`G${r}`).value = doc.total; ws.getCell(`G${r}`).numFmt = '#,##0.00'; yellow(ws.getCell(`G${r}`));
+  r++;
+  ws.getCell(`F${r}`).value = 'В том числе НДС:'; ws.getCell(`F${r}`).alignment = { horizontal: 'right' };
+  ws.mergeCells(`G${r}:H${r}`); ws.getCell(`G${r}`).value = doc.vat_total || 0; ws.getCell(`G${r}`).numFmt = '#,##0.00'; yellow(ws.getCell(`G${r}`));
+  r += 2;
+  ws.getCell(`A${r}`).value = `Всего наименований ${items.length}, на сумму ${Number(doc.total).toLocaleString('ru-RU')}`; yellow(ws.getCell(`A${r}`));
+  r++;
+  ws.getCell(`A${r}`).value = `Всего к оплате: ${amountToWords(Number(doc.total))}`; ws.getCell(`A${r}`).font = { bold: true }; yellow(ws.getCell(`A${r}`));
+  r += 3;
+  ws.getCell(`A${r}`).value = 'Исполнитель'; ws.getCell(`A${r}`).font = { bold: true };
+  ws.getCell(`E${r}`).value = company?.director || ''; yellow(ws.getCell(`E${r}`));
+}
+
+// ===== АВР =====
+function buildAvr(wb: ExcelJS.Workbook, doc: any, company: any, cp: any, items: any[], dateStr: string) {
+  const ws = wb.addWorksheet('АВР');
+  ws.columns = [{ width: 6 }, { width: 35 }, { width: 12 }, { width: 12 }, { width: 14 }, { width: 16 }];
+
+  ws.getCell('A1').value = 'Заказчик'; ws.getCell('A1').font = { bold: true };
+  ws.mergeCells('B1:F1'); ws.getCell('B1').value = `${cp?.name || ''}${cp?.bin ? ', БИН ' + cp.bin : ''}${cp?.address ? ', Адрес: ' + cp.address : ''}`;
+  ws.getCell('A3').value = 'Исполнитель'; ws.getCell('A3').font = { bold: true };
+  ws.mergeCells('B3:F3'); ws.getCell('B3').value = `${company?.name || ''}${company?.bin ? ', БИН ' + company.bin : ''}${company?.address ? ', Адрес: ' + company.address : ''}`;
+  ws.getCell('A5').value = 'Договор (контракт)'; ws.getCell('A5').font = { bold: true };
+  ws.getCell('B5').value = doc.contract || '';
+
+  ws.mergeCells('A7:F7');
+  const title = ws.getCell('A7');
+  title.value = `АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ) №${doc.number} от ${dateStr}`;
+  title.font = { bold: true, size: 12 }; title.alignment = { horizontal: 'center' };
+
+  const hr = 9;
+  ['№', 'Наименование работ (услуг)', 'Кол-во', 'Ед.', 'Цена', 'Сумма'].forEach((h, i) => {
+    const cell = ws.getCell(hr, i + 1);
+    cell.value = h; cell.font = { bold: true }; cell.alignment = { horizontal: 'center' };
+    cell.border = thin; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
+  });
+  let r = hr + 1;
+  items.forEach((it, i) => {
+    ws.getCell(r, 1).value = i + 1;
+    ws.getCell(r, 2).value = it.name;
+    ws.getCell(r, 3).value = it.qty;
+    ws.getCell(r, 4).value = it.unit;
+    ws.getCell(r, 5).value = it.price; ws.getCell(r, 5).numFmt = '#,##0.00';
+    ws.getCell(r, 6).value = it.qty * it.price; ws.getCell(r, 6).numFmt = '#,##0.00';
+    for (let c = 1; c <= 6; c++) ws.getCell(r, c).border = thin;
+    r++;
+  });
+  r++;
+  ws.getCell(r, 5).value = 'Итого:'; ws.getCell(r, 5).font = { bold: true };
+  ws.getCell(r, 6).value = doc.total; ws.getCell(r, 6).numFmt = '#,##0.00';
+  r++;
+  ws.mergeCells(`A${r}:F${r}`);
+  ws.getCell(`A${r}`).value = `Всего на сумму: ${amountToWords(Number(doc.total))}`;
+  r += 3;
+  ws.getCell(`A${r}`).value = 'Сдал (Исполнитель)'; ws.getCell(`A${r}`).font = { bold: true };
+  ws.getCell(`D${r}`).value = 'Принял (Заказчик)'; ws.getCell(`D${r}`).font = { bold: true };
+  r++;
+  ws.getCell(`A${r}`).value = company?.director || '';
+  ws.getCell(`D${r}`).value = cp?.director || '';
+  r += 2;
+  ws.getCell(`A${r}`).value = 'М.П.';
+  ws.getCell(`D${r}`).value = 'М.П.';
+}
+
+// ===== СЧЁТ-ФАКТУРА =====
+function buildSf(wb: ExcelJS.Workbook, doc: any, company: any, cp: any, bankAcc: any, items: any[], dateStr: string) {
+  const ws = wb.addWorksheet('Счёт-фактура');
+  ws.columns = [{ width: 5 }, { width: 28 }, { width: 8 }, { width: 8 }, { width: 12 }, { width: 14 }, { width: 8 }, { width: 12 }, { width: 14 }];
+
+  ws.mergeCells('A1:I1');
+  ws.getCell('A1').value = `Счет-фактура № ${doc.number} от ${dateStr} г.`;
+  ws.getCell('A1').font = { bold: true, size: 12 };
+
+  let row = 3;
+  const addLine = (text: string) => { ws.mergeCells(`A${row}:I${row}`); ws.getCell(`A${row}`).value = text; ws.getCell(`A${row}`).font = { size: 9 }; row++; };
+  addLine(`Поставщик: ${company?.name || ''}`);
+  addLine(`ИИН/БИН и адрес поставщика: ${company?.bin || ''}${company?.address ? ', ' + company.address : ''}`);
+  if (bankAcc) addLine(`ИИК: ${bankAcc.iban}, Банк: ${bankAcc.bank}`);
+  addLine(`Договор(контракт): ${doc.contract || ''}`);
+  addLine(`Условия оплаты: Безналичный расчёт`);
+  addLine(`Грузоотправитель: ${company?.name || ''}${company?.address ? ', Адрес: ' + company.address : ''}`);
+  addLine(`Грузополучатель: ${cp?.name || ''}${cp?.address ? ', Адрес: ' + cp.address : ''}`);
+  addLine(`Получатель: ${cp?.name || ''}`);
+  addLine(`БИН/ИИН и адрес получателя: ${cp?.bin || ''}${cp?.address ? ', ' + cp.address : ''}`);
+  row++;
+
+  const hr = row;
+  const heads = ['№ п/п', 'Наименование товаров (работ, услуг)', 'Ед. изм.', 'Кол-во', 'Цена (KZT)', 'Стоимость без НДС', 'Ставка НДС', 'Сумма НДС', 'Всего'];
+  heads.forEach((h, i) => {
+    const cell = ws.getCell(hr, i + 1);
+    cell.value = h; cell.font = { bold: true, size: 9 }; cell.alignment = { horizontal: 'center', wrapText: true, vertical: 'middle' };
+    cell.border = thin; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
+  });
+  ws.getRow(hr).height = 36;
+  row++;
+  items.forEach((it, i) => {
+    const total = it.qty * it.price;
+    const noVat = doc.has_vat ? Math.round(total / 1.12) : total;
+    const vat = doc.has_vat ? total - noVat : 0;
+    const vals = [i + 1, it.name, it.unit, it.qty, it.price, noVat, doc.has_vat ? '12%' : 'Без НДС', doc.has_vat ? vat : 'Без НДС', total];
+    vals.forEach((v, c) => {
+      const cell = ws.getCell(row, c + 1);
+      cell.value = v as any;
+      if ([5, 6, 8, 9].includes(c + 1) && typeof v === 'number') cell.numFmt = '#,##0.00';
+      cell.border = thin; cell.font = { size: 9 };
+      cell.alignment = { horizontal: c === 1 ? 'left' : 'center' };
+    });
+    row++;
+  });
+  // Всего по счёту
+  ws.mergeCells(`A${row}:H${row}`);
+  ws.getCell(`A${row}`).value = 'Всего по счету:'; ws.getCell(`A${row}`).font = { bold: true }; ws.getCell(`A${row}`).alignment = { horizontal: 'right' };
+  ws.getCell(`I${row}`).value = doc.total; ws.getCell(`I${row}`).numFmt = '#,##0.00'; ws.getCell(`I${row}`).font = { bold: true };
+  for (let c = 1; c <= 9; c++) ws.getCell(row, c).border = thin;
+  row += 2;
+  ws.getCell(`A${row}`).value = `Всего на сумму: ${amountToWords(Number(doc.total))}`;
+  row += 2;
+  ws.getCell(`A${row}`).value = `Руководитель: ${company?.director || ''}`;
+  ws.getCell(`F${row}`).value = 'Главный бухгалтер: ___________';
+  row += 2;
+  ws.getCell(`A${row}`).value = 'Примечание: Без печати недействительно. М.П.'; ws.getCell(`A${row}`).font = { size: 8, italic: true };
 }
