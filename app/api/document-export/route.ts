@@ -1,66 +1,98 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import path from 'path';
 import { amountToWords } from '@/lib/amountToWords';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const TYPE_LABEL: Record<string, string> = {
-  invoice: 'Счёт на оплату', avr: 'Акт выполненных работ', sf: 'Счёт-фактура',
+const TEMPLATE_FILE: Record<string, string> = {
+  invoice: 'invoice_template.xlsx',
+  avr: 'avr_template.xlsx',
+  sf: 'sf_template.xlsx',
 };
 
-export async function GET(req: NextRequest) {
+// Данные приходят с клиента (он авторизован, RLS пройден на клиенте)
+export async function POST(req: NextRequest) {
   try {
-    const id = req.nextUrl.searchParams.get('id');
-    if (!id) return NextResponse.json({ error: 'no id' }, { status: 400 });
+    const body = await req.json();
+    const { doc, company, counterparty } = body;
+    if (!doc) return NextResponse.json({ error: 'no doc' }, { status: 400 });
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
-    const supabase = createClient(supabaseUrl, serviceKey);
-
-    const { data: doc } = await supabase.from('documents').select('*').eq('id', id).maybeSingle();
-    if (!doc) return NextResponse.json({ error: 'not found' }, { status: 404 });
-    const { data: company } = doc.company_id ? await supabase.from('companies').select('*').eq('id', doc.company_id).maybeSingle() : { data: null };
-    const { data: cp } = doc.counterparty_id ? await supabase.from('counterparties').select('*').eq('id', doc.counterparty_id).maybeSingle() : { data: null };
-
-    const items = doc.items || [];
+    const items: any[] = doc.items || [];
     const bankAcc = company?.bank_accounts?.[0];
+    const dateStr = new Date(doc.doc_date).toLocaleDateString('ru-RU');
 
-    // Строим лист как массив строк
-    const rows: any[][] = [];
-    rows.push([`${TYPE_LABEL[doc.type]} №${doc.number} от ${new Date(doc.doc_date).toLocaleDateString('ru-RU')} г.`]);
-    rows.push([]);
-    if (company) {
-      rows.push(['Поставщик:', `${company.name}${company.bin ? ', БИН ' + company.bin : ''}`]);
-      if (company.address) rows.push(['Адрес:', company.address]);
-      if (bankAcc) rows.push(['Банк:', `${bankAcc.bank}, IBAN: ${bankAcc.iban}`]);
+    const wb = new ExcelJS.Workbook();
+    const tplPath = path.join(process.cwd(), 'templates', TEMPLATE_FILE[doc.type]);
+    await wb.xlsx.readFile(tplPath);
+    const ws = wb.worksheets[0];
+
+    const supplierLine = `${company?.name || ''}${company?.bin ? ', БИН ' + company.bin : ''}${company?.address ? ', Адрес: ' + company.address : ''}`;
+    const buyerLine = `${counterparty?.name || ''}${counterparty?.bin ? ', БИН ' + counterparty.bin : ''}${counterparty?.address ? ', Адрес: ' + counterparty.address : ''}`;
+
+    if (doc.type === 'invoice') {
+      ws.getCell('B9').value = 'Бенефициар:';
+      ws.getCell('B10').value = company?.name || '';
+      ws.getCell('B11').value = company?.bin ? 'БИН: ' + company.bin : '';
+      ws.getCell('B12').value = 'Банк бенефициара:';
+      ws.getCell('B13').value = bankAcc ? `${bankAcc.bank}` : '';
+      ws.getCell('B16').value = `Счет на оплату №${doc.number} от ${dateStr} года`;
+      ws.getCell('F20').value = supplierLine;
+      ws.getCell('F22').value = buyerLine;
+      ws.getCell('B24').value = doc.contract ? `Договор: ${doc.contract}` : 'Договор:';
+      // позиции начинаются с 27 строки
+      let r = 27;
+      items.forEach((it, i) => {
+        ws.getCell(`B${r}`).value = i + 1;
+        ws.getCell(`D${r}`).value = i + 1;
+        ws.getCell(`I${r}`).value = it.name;
+        r++;
+      });
+      ws.getCell(`B${r + 2}`).value = `Всего наименований ${items.length}, на сумму ${Number(doc.total).toLocaleString('ru-RU')}`;
+      ws.getCell(`B${r + 3}`).value = `Всего к оплате: ${amountToWords(Number(doc.total))}`;
+    } else if (doc.type === 'avr') {
+      ws.getCell('E9').value = buyerLine;
+      ws.getCell('E12').value = supplierLine;
+      ws.getCell('A15').value = `Договор (контракт) ${doc.contract || ''}`;
+      ws.getCell('A17').value = `АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ) №${doc.number} от ${dateStr}`;
+      let r = 22;
+      items.forEach((it, i) => {
+        ws.getCell(`A${r}`).value = i + 1;
+        ws.getCell(`C${r}`).value = `${it.name} — ${it.qty} ${it.unit} x ${Number(it.price).toLocaleString('ru-RU')} = ${(it.qty*it.price).toLocaleString('ru-RU')} ₸`;
+        r++;
+      });
+      ws.getCell('F30').value = company?.director || 'Директор';
+    } else if (doc.type === 'sf') {
+      ws.getCell('A1').value = `Счет-фактура № ${doc.number} от ${dateStr} г.`;
+      ws.getCell('A5').value = `Поставщик: ${company?.name || ''}`;
+      ws.getCell('A6').value = `ИИН/БИН и адрес поставщика: ${company?.bin || ''}, ${company?.address || ''}`;
+      ws.getCell('A7').value = bankAcc ? `ИИК: ${bankAcc.iban}, Банк: ${bankAcc.bank}` : '';
+      ws.getCell('A8').value = `Договор(контракт): ${doc.contract || ''}`;
+      ws.getCell('A15').value = `Грузоотправитель: ${supplierLine}`;
+      ws.getCell('A17').value = `Грузополучатель: ${buyerLine}`;
+      ws.getCell('A19').value = `Получатель: ${counterparty?.name || ''}`;
+      ws.getCell('A20').value = `БИН/ИИН и адрес получателя: ${counterparty?.bin || ''}, ${counterparty?.address || ''}`;
+      let r = 26;
+      items.forEach((it, i) => {
+        const sumNoVat = doc.has_vat ? Math.round((it.qty*it.price)/1.12) : it.qty*it.price;
+        const vatSum = doc.has_vat ? (it.qty*it.price) - sumNoVat : 0;
+        ws.getCell(`A${r}`).value = i + 1;
+        ws.getCell(`B${r}`).value = it.name;
+        ws.getCell(`C${r}`).value = it.unit;
+        ws.getCell(`D${r}`).value = it.qty;
+        ws.getCell(`E${r}`).value = it.price;
+        ws.getCell(`F${r}`).value = sumNoVat;
+        ws.getCell(`G${r}`).value = doc.has_vat ? '12%' : 'Без НДС';
+        ws.getCell(`H${r}`).value = doc.has_vat ? vatSum : 'Без НДС';
+        ws.getCell(`I${r}`).value = it.qty*it.price;
+        r++;
+      });
+      ws.getCell(`I${r}`).value = doc.total;
+      ws.getCell('A29').value = `Руководитель: ${company?.director || ''}`;
     }
-    if (cp) {
-      rows.push([doc.type === 'avr' ? 'Заказчик:' : 'Покупатель:', `${cp.name}${cp.bin ? ', БИН ' + cp.bin : ''}`]);
-      if (cp.address) rows.push(['Адрес:', cp.address]);
-    }
-    if (doc.contract) rows.push(['Договор:', doc.contract]);
-    rows.push([]);
 
-    // Шапка таблицы
-    rows.push(['№', 'Наименование', 'Ед.изм', 'Кол-во', 'Цена', 'Сумма']);
-    items.forEach((it: any, i: number) => {
-      rows.push([i + 1, it.name, it.unit, it.qty, it.price, it.qty * it.price]);
-    });
-    rows.push([]);
-    if (doc.has_vat) rows.push(['', '', '', '', 'в т.ч. НДС 12%:', doc.vat_total]);
-    rows.push(['', '', '', '', 'Всего к оплате:', doc.total]);
-    rows.push([`Всего наименований ${items.length}, на сумму ${amountToWords(Number(doc.total))}`]);
-    rows.push([]);
-    rows.push([doc.type === 'avr' ? 'Сдал (Исполнитель):' : 'Исполнитель:', company?.director || '', '', '', doc.type === 'avr' ? 'Принял (Заказчик):' : 'Покупатель:', cp?.director || '']);
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [{ wch: 6 }, { wch: 40 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 16 }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, TYPE_LABEL[doc.type].slice(0, 28));
-
-    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const buf = await wb.xlsx.writeBuffer();
     return new NextResponse(buf, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

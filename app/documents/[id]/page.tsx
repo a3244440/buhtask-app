@@ -52,8 +52,15 @@ export default function DocViewPage() {
   const exportExcel = async () => {
     setExporting(true);
     try {
-      const res = await fetch(`/api/document-export?id=${docId}`);
-      if (!res.ok) throw new Error('export failed');
+      const res = await fetch('/api/document-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doc, company, counterparty }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'export failed');
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -61,7 +68,7 @@ export default function DocViewPage() {
       a.download = `${TYPE_INFO[doc.type].short}_${doc.number}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { alert('Ошибка экспорта'); }
+    } catch (e: any) { alert('Ошибка экспорта: ' + (e?.message || '')); }
     finally { setExporting(false); }
   };
 
