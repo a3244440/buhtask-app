@@ -24,7 +24,6 @@ export default function DocViewPage() {
   const [company, setCompany] = useState<any>(null);
   const [counterparty, setCounterparty] = useState<any>(null);
   const [children, setChildren] = useState<any[]>([]);
-  const [exporting, setExporting] = useState(false);
 
   useEffect(() => { init(); }, [docId]);
 
@@ -49,28 +48,6 @@ export default function DocViewPage() {
   const fmt = (n: number) => Number(n).toLocaleString('ru-RU') + ' ₸';
   const items: Item[] = doc?.items || [];
 
-  const exportExcel = async () => {
-    setExporting(true);
-    try {
-      const res = await fetch('/api/document-export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ doc, company, counterparty }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'export failed');
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${TYPE_INFO[doc.type].short}_${doc.number}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e: any) { alert('Ошибка экспорта: ' + (e?.message || '')); }
-    finally { setExporting(false); }
-  };
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
   if (!doc) return null;
@@ -90,11 +67,8 @@ export default function DocViewPage() {
               <ArrowLeft className="w-4 h-4" /> К документам
             </button>
             <div className="flex gap-2">
-              <button onClick={() => window.print()} className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium">
+              <button onClick={() => window.print()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium">
                 <Printer className="w-4 h-4" /> Печать / PDF
-              </button>
-              <button onClick={exportExcel} disabled={exporting} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-xl text-sm font-medium">
-                <FileSpreadsheet className="w-4 h-4" /> {exporting ? '...' : 'Excel'}
               </button>
             </div>
           </div>
@@ -390,33 +364,61 @@ function AvrView({ doc, company, counterparty, items, fmt }: any) {
 
 function SfView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
   const dateStr = new Date(doc.doc_date).toLocaleDateString('ru-RU');
+  const cpBank = counterparty?.bank ? `ИИК: ${counterparty.iban || ''}, БИК: ${counterparty.bik || ''}` : '';
   return (
-    <div className="text-[12px] text-gray-900 leading-relaxed">
-      <h2 className="text-base font-bold mb-3">Счёт-фактура № {doc.number} от {dateStr} г.</h2>
-      <div className="space-y-0.5 mb-3">
-        <p><b>Поставщик:</b> {company?.name}</p>
-        <p>ИИН/БИН и адрес поставщика: {company?.bin || ''}{company?.address ? `, ${company.address}` : ''}</p>
-        {bankAcc && <p>ИИК: {bankAcc.iban}, Банк: {bankAcc.bank}</p>}
-        <p>Договор (контракт): {doc.contract || '—'}</p>
-        <p>Условия оплаты: Безналичный расчёт</p>
-        <p className="pt-1"><b>Грузоотправитель:</b> {company?.name}{company?.address ? `, Адрес: ${company.address}` : ''}</p>
-        <p><b>Грузополучатель:</b> {counterparty?.name}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}</p>
-        <p><b>Получатель:</b> {counterparty?.name}</p>
-        <p>БИН/ИИН и адрес получателя: {counterparty?.bin || ''}{counterparty?.address ? `, ${counterparty.address}` : ''}</p>
+    <div className="text-[10px] text-gray-900 leading-snug">
+      {/* Номер бланка */}
+      <p className="text-[9px] mb-1">{String(doc.number).padStart(7, '0')}</p>
+
+      <h2 className="text-[14px] font-bold mb-3 text-center">Счет-фактура № {doc.number} от {dateStr} г.</h2>
+
+      {/* Реквизиты поставщика */}
+      <div className="space-y-0.5 mb-2">
+        <p><b>Поставщик:</b> {company?.name || ''}</p>
+        <p>ИИН/БИН и адрес местонахождения поставщика: {company?.bin || ''}{company?.address ? `, Адрес: ${company.address}` : ''}</p>
+        {bankAcc && <p>ИИК: {bankAcc.iban || ''}, БИК: {bankAcc.bik || ''}</p>}
+        <p>Договор(контракт) на поставку товаров(работ,услуг): {doc.contract || 'Без договора'}</p>
+        <p>Условия оплаты по договору (контракту): Безналичный расчет</p>
+        <p>Пункт назначения поставляемых товаров(работ,услуг): {counterparty?.address || ''}</p>
+        <p className="text-[8px] text-gray-400 ml-2">государство, регион, область, город, район</p>
+        <p>Поставка товаров(работ,услуг) осуществлена по доверенности: </p>
+        <p>Способ отправления: </p>
+        <p>Товарно-транспортная накладная: </p>
       </div>
 
-      <table className="w-full border-collapse my-3 text-[11px]">
+      {/* Грузоотправитель / Получатель */}
+      <div className="space-y-0.5 mb-3">
+        <p><b>Грузоотправитель:</b> {company?.name || ''}{company?.address ? `, Адрес: ${company.address}` : ''}</p>
+        <p className="text-[8px] text-gray-400 ml-2">(ИИН, наименование и адрес)</p>
+        <p><b>Грузополучатель:</b> {counterparty?.name || ''}{counterparty?.address ? `, ${counterparty.address}` : ''}</p>
+        <p className="text-[8px] text-gray-400 ml-2">(БИН, наименование и адрес)</p>
+        <p><b>Получатель:</b> {counterparty?.name || ''}</p>
+        <p>БИН/ИИН и адрес местонахождения получателя: {counterparty?.bin || ''}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}</p>
+        {cpBank && <p>{cpBank}</p>}
+      </div>
+
+      {/* Таблица 11 колонок */}
+      <table className="w-full border-collapse text-[8px]">
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-400 px-1 py-1 w-6">№</th>
-            <th className="border border-gray-400 px-1 py-1 text-left">Наименование товаров (работ, услуг)</th>
-            <th className="border border-gray-400 px-1 py-1 w-12">Ед.изм</th>
-            <th className="border border-gray-400 px-1 py-1 w-12">Кол-во</th>
-            <th className="border border-gray-400 px-1 py-1 w-16">Цена</th>
-            <th className="border border-gray-400 px-1 py-1 w-20">Стоимость без НДС</th>
-            <th className="border border-gray-400 px-1 py-1 w-12">Ставка НДС</th>
-            <th className="border border-gray-400 px-1 py-1 w-16">Сумма НДС</th>
-            <th className="border border-gray-400 px-1 py-1 w-20">Всего</th>
+          <tr>
+            <th className="border border-gray-700 px-0.5 py-1 align-middle" rowSpan={2} style={{ width: '20px' }}>№ п/п</th>
+            <th className="border border-gray-700 px-0.5 py-1 align-middle" rowSpan={2}>Наименование товаров (работ, услуг)</th>
+            <th className="border border-gray-700 px-0.5 py-1 align-middle" rowSpan={2} style={{ width: '32px' }}>Ед. изм.</th>
+            <th className="border border-gray-700 px-0.5 py-1 align-middle" rowSpan={2} style={{ width: '38px' }}>Кол-во (объем)</th>
+            <th className="border border-gray-700 px-0.5 py-1 align-middle" rowSpan={2} style={{ width: '45px' }}>Цена (KZT)</th>
+            <th className="border border-gray-700 px-0.5 py-1 align-middle" rowSpan={2} style={{ width: '50px' }}>Стоимость товаров (работ, услуг) без НДС</th>
+            <th className="border border-gray-700 px-0.5 py-1 align-middle text-center" colSpan={2}>НДС</th>
+            <th className="border border-gray-700 px-0.5 py-1 align-middle" rowSpan={2} style={{ width: '50px' }}>Всего стоимость реализации</th>
+            <th className="border border-gray-700 px-0.5 py-1 align-middle text-center" colSpan={2}>Акциз</th>
+          </tr>
+          <tr>
+            <th className="border border-gray-700 px-0.5 py-1" style={{ width: '32px' }}>Ставка</th>
+            <th className="border border-gray-700 px-0.5 py-1" style={{ width: '40px' }}>Сумма</th>
+            <th className="border border-gray-700 px-0.5 py-1" style={{ width: '32px' }}>Ставка</th>
+            <th className="border border-gray-700 px-0.5 py-1" style={{ width: '40px' }}>Сумма</th>
+          </tr>
+          <tr className="text-[7px] text-gray-500">
+            {[1,2,3,4,5,6,7,8,9,10,11].map(n => <td key={n} className="border border-gray-700 px-0.5 text-center">{n}</td>)}
           </tr>
         </thead>
         <tbody>
@@ -426,38 +428,44 @@ function SfView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
             const vat = doc.has_vat ? total - noVat : 0;
             return (
               <tr key={i}>
-                <td className="border border-gray-400 px-1 py-1 text-center">{i + 1}</td>
-                <td className="border border-gray-400 px-1 py-1">{it.name}</td>
-                <td className="border border-gray-400 px-1 py-1 text-center">{it.unit}</td>
-                <td className="border border-gray-400 px-1 py-1 text-center">{it.qty}</td>
-                <td className="border border-gray-400 px-1 py-1 text-right">{Number(it.price).toLocaleString('ru-RU')}</td>
-                <td className="border border-gray-400 px-1 py-1 text-right">{noVat.toLocaleString('ru-RU')}</td>
-                <td className="border border-gray-400 px-1 py-1 text-center">{doc.has_vat ? '12%' : 'Без НДС'}</td>
-                <td className="border border-gray-400 px-1 py-1 text-right">{doc.has_vat ? vat.toLocaleString('ru-RU') : '—'}</td>
-                <td className="border border-gray-400 px-1 py-1 text-right">{total.toLocaleString('ru-RU')}</td>
+                <td className="border border-gray-700 px-0.5 py-1 text-center">{i + 1}</td>
+                <td className="border border-gray-700 px-0.5 py-1">{it.name}</td>
+                <td className="border border-gray-700 px-0.5 py-1 text-center">{it.unit}</td>
+                <td className="border border-gray-700 px-0.5 py-1 text-center">{Number(it.qty).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+                <td className="border border-gray-700 px-0.5 py-1 text-right">{Number(it.price).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+                <td className="border border-gray-700 px-0.5 py-1 text-right">{noVat.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+                <td className="border border-gray-700 px-0.5 py-1 text-center">{doc.has_vat ? '12%' : 'Без НДС'}</td>
+                <td className="border border-gray-700 px-0.5 py-1 text-right">{doc.has_vat ? vat.toLocaleString('ru-RU', { minimumFractionDigits: 2 }) : 'Без НДС'}</td>
+                <td className="border border-gray-700 px-0.5 py-1 text-right">{total.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+                <td className="border border-gray-700 px-0.5 py-1 text-center"></td>
+                <td className="border border-gray-700 px-0.5 py-1 text-center"></td>
               </tr>
             );
           })}
-          <tr className="font-semibold bg-gray-50">
-            <td colSpan={8} className="border border-gray-400 px-1 py-1 text-right">Всего по счёту:</td>
-            <td className="border border-gray-400 px-1 py-1 text-right">{Number(doc.total).toLocaleString('ru-RU')}</td>
+          <tr className="font-semibold">
+            <td colSpan={8} className="border border-gray-700 px-1 py-1 text-right">Всего по счету:</td>
+            <td className="border border-gray-700 px-1 py-1 text-right">{Number(doc.total).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+            <td className="border border-gray-700" colSpan={2}></td>
           </tr>
         </tbody>
       </table>
 
-      <p className="mb-4">Всего на сумму: {amountToWords(Number(doc.total))}</p>
-
-      <div className="grid grid-cols-2 gap-8 mt-8">
+      {/* Подписи */}
+      <div className="grid grid-cols-2 gap-6 mt-5 text-[10px]">
         <div>
-          <p className="mb-6">Руководитель: {company?.director || ''}</p>
-          <p className="text-xs text-gray-400">(Ф.И.О., подпись)</p>
+          <p className="mb-4">Руководитель: <span className="font-medium">{company?.director || ''}</span></p>
+          <p className="text-[8px] text-gray-400">(Ф.И.О., подпись)  М.П.</p>
+          <p className="mt-3 mb-4">Главный бухгалтер: </p>
+          <p className="text-[8px] text-gray-400">(Ф.И.О., подпись)</p>
         </div>
         <div>
-          <p className="mb-6">Главный бухгалтер: ___________</p>
-          <p className="text-xs text-gray-400">(Ф.И.О., подпись)</p>
+          <p className="mb-4">ВЫДАЛ (ответственное лицо поставщика)</p>
+          <p className="text-[8px] text-gray-400">(должность)</p>
+          <p className="mt-3 mb-4 border-b border-gray-700 h-4"></p>
+          <p className="text-[8px] text-gray-400">(Ф.И.О., подпись)</p>
         </div>
       </div>
-      <p className="text-xs text-gray-400 mt-4">Примечание: Без печати недействительно. М.П.</p>
+      <p className="text-[8px] text-gray-500 mt-4">Примечание: Без печати недействительно. Оригинал (первый экземпляр) - покупателю. Копия (второй экземпляр) - поставщику.</p>
     </div>
   );
 }
