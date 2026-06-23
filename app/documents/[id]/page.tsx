@@ -367,9 +367,6 @@ function SfView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
   const cpBank = counterparty?.bank ? `ИИК: ${counterparty.iban || ''}, БИК: ${counterparty.bik || ''}` : '';
   return (
     <div className="text-[10px] text-gray-900 leading-snug">
-      {/* Номер бланка */}
-      <p className="text-[9px] mb-1">{String(doc.number).padStart(7, '0')}</p>
-
       <h2 className="text-[14px] font-bold mb-3 text-center">Счет-фактура № {doc.number} от {dateStr} г.</h2>
 
       {/* Реквизиты поставщика */}
@@ -442,13 +439,14 @@ function SfView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
               </tr>
             );
           })}
-          <tr className="font-semibold">
-            <td colSpan={8} className="border border-gray-700 px-1 py-1 text-right">Всего по счету:</td>
-            <td className="border border-gray-700 px-1 py-1 text-right">{Number(doc.total).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
-            <td className="border border-gray-700" colSpan={2}></td>
-          </tr>
         </tbody>
       </table>
+
+      {/* Всего по счету — слева под таблицей */}
+      <div className="flex items-center mt-1 mb-4">
+        <span className="font-bold">Всего по счету:</span>
+        <span className="ml-4 font-bold">{Number(doc.total).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</span>
+      </div>
 
       {/* Подписи */}
       <div className="grid grid-cols-2 gap-6 mt-5 text-[10px]">
