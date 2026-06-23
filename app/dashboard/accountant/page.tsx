@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
+import { shortCompanyName } from '@/lib/companyName';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; final_price?: number; commission_amount?: number; commission_paid?: boolean; paid_by_client?: boolean; company_id?: string; company_name?: string; }
 interface Conversation { id: string; other_name: string; other_id: string; last_message: string; updated_at: string; task_title?: string; task_id?: string; }
@@ -95,7 +96,7 @@ function AccountantDashboardInner() {
     if (companyIds.length > 0) {
       const { data: comps } = await supabase.from('companies').select('id,name').in('id', companyIds as string[]);
       const nameMap: Record<string, string> = {};
-      (comps || []).forEach((c: any) => { nameMap[c.id] = c.name; });
+      (comps || []).forEach((c: any) => { nameMap[c.id] = shortCompanyName(c.name); });
       availableTasks.forEach((t: any) => { if (t.company_id) t.company_name = nameMap[t.company_id]; });
     }
     setTasks(availableTasks);

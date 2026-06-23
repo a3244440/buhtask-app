@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, FileText } from 'lucide-react';
 import DashboardHeader from '../../../components/DashboardHeader';
 import { getActiveCompany } from '@/lib/activeCompany';
+import { shortCompanyName } from '@/lib/companyName';
 
 const CATEGORIES = [
   { value: 'tax', label: 'Налоговая отчётность' },
@@ -135,7 +136,7 @@ export default function CreateTask() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Для какой компании?</label>
             <select value={companyId} onChange={e => setCompanyId(e.target.value)} className={inp}>
               <option value="personal">👤 Личная задача (без компании)</option>
-              {companies.map(c => <option key={c.id} value={c.id}>🏢 {c.name}</option>)}
+              {companies.map(c => <option key={c.id} value={c.id}>🏢 {shortCompanyName(c.name)}</option>)}
             </select>
             <p className="text-xs text-gray-400 mt-1.5">
               {companies.length === 0

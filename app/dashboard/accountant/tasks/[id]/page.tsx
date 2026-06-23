@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, MapPin, Calendar, Send, CheckCircle, Clock, Building2, CreditCard } from 'lucide-react';
 import DashboardHeader from '../../../../components/DashboardHeader';
+import { shortCompanyName } from '@/lib/companyName';
 
 const CATS: Record<string, string> = {
   tax: 'Налоговая отчётность',
@@ -79,7 +80,7 @@ export default function AccountantTaskDetail() {
         const fields = assigned ? 'name,bin,director,address,tax_regime,oked,bank_accounts' : 'name';
         const { data: comp } = await supabase.from('companies').select(fields).eq('id', taskData.company_id).maybeSingle();
         if (comp) {
-          setCompanyName((comp as any).name || '');
+          setCompanyName(shortCompanyName((comp as any).name || ''));
           if (assigned) setCompanyInfo(comp as CompanyInfo);
         }
       }

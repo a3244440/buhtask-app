@@ -7,6 +7,7 @@ import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
 import MobileToolsNav from '../components/MobileToolsNav';
 import { getActiveCompany } from '@/lib/activeCompany';
+import { shortCompanyName } from '@/lib/companyName';
 
 interface Doc {
   id: string; type: 'invoice' | 'avr' | 'sf'; number: string; doc_date: string;
@@ -49,7 +50,7 @@ export default function DocumentsPage() {
       supabase.from('companies').select('id,name,bin').eq('owner_id', user.id),
     ]);
     const cpMap: Record<string, string> = {};
-    (cp || []).forEach((c: any) => { cpMap[c.id] = c.name; });
+    (cp || []).forEach((c: any) => { cpMap[c.id] = shortCompanyName(c.name); });
     setDocs(((d as Doc[]) || []).map(doc => ({ ...doc, counterparty_name: cpMap[doc.counterparty_id] || '—' })));
     setCounterparties(cp || []);
     setCompanies(comp || []);

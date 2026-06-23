@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { LogOut, User, Settings, ChevronDown, Building2, Check, Plus } from 'lucide-react';
 import { getActiveCompany, setActiveCompany } from '@/lib/activeCompany';
+import { shortCompanyName } from '@/lib/companyName';
 
 interface Props { title?: string; right?: React.ReactNode; }
 
@@ -47,7 +48,7 @@ export default function DashboardHeader({ title, right }: Props) {
     setActiveCompanyState(id);
     setCompanyMenuOpen(false);
   };
-  const activeCompanyName = activeCompany === 'personal' ? 'Личный кабинет' : (companies.find(c => c.id === activeCompany)?.name || 'Личный кабинет');
+  const activeCompanyName = activeCompany === 'personal' ? 'Личный кабинет' : shortCompanyName(companies.find(c => c.id === activeCompany)?.name || 'Личный кабинет');
 
   const handleSignOut = async () => { await supabase.auth.signOut(); router.push('/'); };
   const initials = fullName ? fullName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : (email[0]?.toUpperCase() || '?');
@@ -86,7 +87,7 @@ export default function DashboardHeader({ title, right }: Props) {
                   <button key={c.id} onClick={() => chooseCompany(c.id)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
                     <Building2 className="w-4 h-4 text-gray-400" />
-                    <span className="flex-1 text-left text-gray-700 truncate">{c.name}</span>
+                    <span className="flex-1 text-left text-gray-700 truncate">{shortCompanyName(c.name)}</span>
                     {activeCompany === c.id && <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />}
                   </button>
                 ))}
