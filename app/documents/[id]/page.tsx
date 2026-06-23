@@ -287,13 +287,23 @@ function AvrView({ doc, company, counterparty, items, fmt }: any) {
         </tbody>
       </table>
 
-      {/* Договор под исполнителем + номер/дата справа */}
-      <div className="flex justify-between items-start mb-3 text-[10px]">
-        <p>Договор (контракт): {doc.contract || '—'}</p>
-        <div className="text-right">
-          <p>Номер документа: <b>{doc.number}</b></p>
-          <p>Дата составления: <b>{dateStr}</b></p>
-        </div>
+      {/* Договор под исполнителем */}
+      <p className="text-[10px] mb-2">Договор (контракт): {doc.contract || '—'}</p>
+
+      {/* Номер / дата в таблице справа */}
+      <div className="flex justify-end mb-3">
+        <table className="border-collapse text-[10px]">
+          <tbody>
+            <tr>
+              <td className="border border-gray-700 px-3 py-1 text-center font-medium">Номер документа</td>
+              <td className="border border-gray-700 px-3 py-1 text-center font-medium">Дата составления</td>
+            </tr>
+            <tr>
+              <td className="border border-gray-700 px-3 py-1 text-center">{doc.number}</td>
+              <td className="border border-gray-700 px-3 py-1 text-center">{dateStr}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <h2 className="text-center text-[13px] font-bold mb-3">АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ)</h2>
