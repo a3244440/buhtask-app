@@ -6,8 +6,9 @@ import { Building2, Plus, Trash2, Pencil, X, Search, CreditCard, MapPin, User, F
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
 import MobileToolsNav from '../components/MobileToolsNav';
+import { KZ_BANKS, getBik } from '@/lib/kzBanks';
 
-interface BankAccount { bank: string; iban: string; }
+interface BankAccount { bank: string; iban: string; bik?: string; }
 interface Company {
   id: string; name: string; bin: string; director: string; address: string;
   tax_regime: string; oked: string; registration_date: string; status: string;
@@ -22,7 +23,7 @@ const TAX_REGIMES = [
   'СНР с использованием фиксированного вычета',
   'СНР для крестьянских хозяйств',
 ];
-const BANKS = ['Kaspi Bank', 'Halyk Bank', 'Народный банк', 'БЦК (CenterCredit)', 'ForteBank', 'Jusan Bank', 'Bereke Bank', 'Freedom Bank', 'Altyn Bank', 'RBK Bank', 'Другой'];
+const BANKS = KZ_BANKS.map(b => b.name).concat('Другой');
 
 export default function CompaniesPage() {
   const router = useRouter();
@@ -88,9 +89,15 @@ export default function CompaniesPage() {
     }
   };
 
-  const addBankAccount = () => setForm(f => ({ ...f, bank_accounts: [...f.bank_accounts, { bank: BANKS[0], iban: '' }] }));
+  const addBankAccount = () => setForm(f => ({ ...f, bank_accounts: [...f.bank_accounts, { bank: BANKS[0], iban: '', bik: getBik(BANKS[0]) }] }));
   const updateBankAccount = (i: number, field: keyof BankAccount, val: string) =>
-    setForm(f => ({ ...f, bank_accounts: f.bank_accounts.map((b, idx) => idx === i ? { ...b, [field]: val } : b) }));
+    setForm(f => ({ ...f, bank_accounts: f.bank_accounts.map((b, idx) => {
+      if (idx !== i) return b;
+      const updated = { ...b, [field]: val };
+      // При выборе банка — автозаполняем БИК
+      if (field === 'bank') updated.bik = getBik(val);
+      return updated;
+    }) }));
   const removeBankAccount = (i: number) => setForm(f => ({ ...f, bank_accounts: f.bank_accounts.filter((_, idx) => idx !== i) }));
 
   const save = async () => {
@@ -259,6 +266,10 @@ export default function CompaniesPage() {
                         {BANKS.map(bank => <option key={bank} value={bank}>{bank}</option>)}
                       </select>
                       <input type="text" value={b.iban} onChange={e => updateBankAccount(i, 'iban', e.target.value.toUpperCase())} placeholder="KZ00 0000 0000 0000 0000" className={inp} />
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-500 whitespace-nowrap">БИК:</label>
+                        <input type="text" value={b.bik || ''} onChange={e => updateBankAccount(i, 'bik', e.target.value.toUpperCase())} placeholder="HSBKKZKX" className={inp} />
+                      </div>
                     </div>
                   ))}
                   {form.bank_accounts.length === 0 && <p className="text-xs text-gray-400">Нет добавленных счетов</p>}

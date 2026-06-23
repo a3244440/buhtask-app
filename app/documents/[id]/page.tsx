@@ -187,7 +187,7 @@ function InvoiceView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
             <td className="border border-gray-700 px-2 py-1 text-center font-bold text-[10px]">Код назначения платежа</td>
           </tr>
           <tr>
-            <td className="border border-gray-700 px-2 py-1 text-center"></td>
+            <td className="border border-gray-700 px-2 py-1 text-center">{bankAcc?.bik || ''}</td>
             <td className="border border-gray-700 px-2 py-1 text-center">859</td>
           </tr>
         </tbody>

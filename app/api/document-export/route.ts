@@ -5,7 +5,6 @@ import { amountToWords } from '@/lib/amountToWords';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const YELLOW = 'FFFFFF00';
 const thin: ExcelJS.Borders = {
   top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' },
   diagonal: { style: 'thin' },
@@ -40,68 +39,65 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function yellow(cell: ExcelJS.Cell) {
-  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: YELLOW } };
-}
-
 // ===== СЧЁТ НА ОПЛАТУ =====
 function buildInvoice(wb: ExcelJS.Workbook, doc: any, company: any, cp: any, bankAcc: any, items: any[], dateStr: string) {
   const ws = wb.addWorksheet('Счёт на оплату');
+  // Пропорциональные колонки как в PDF
   ws.columns = [
-    { width: 5 }, { width: 8 }, { width: 30 }, { width: 10 }, { width: 8 },
-    { width: 14 }, { width: 16 }, { width: 12 },
+    { width: 5 }, { width: 8 }, { width: 32 }, { width: 10 }, { width: 8 },
+    { width: 16 }, { width: 18 },
   ];
 
   // Блок "Внимание"
-  ws.mergeCells('C1:H3');
-  const warn = ws.getCell('C1');
+  ws.mergeCells('A1:G3');
+  const warn = ws.getCell('A1');
   warn.value = 'Внимание! Оплата данного счета означает согласие с условиями поставки товара. Уведомление об оплате обязательно, в противном случае не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с Поставщика, самовывозом, при наличии доверенности и документов удостоверяющих личность.';
   warn.alignment = { wrapText: true, vertical: 'top' };
-  warn.font = { size: 8 };
-  ['C1','D1','E1','F1','G1','H1'].forEach(c => ws.getCell(c).border = thin);
+  warn.font = { size: 9 };
+  warn.border = thin;
 
   // Образец платёжного поручения
   ws.getCell('A5').value = 'Образец платежного поручения';
   ws.getCell('A5').font = { bold: true };
 
-  // Таблица платёжки
+  // Таблица платёжки: Бенефициар | ИИК | Кбе
   ws.mergeCells('A6:C6'); ws.getCell('A6').value = 'Бенефициар:'; ws.getCell('A6').font = { bold: true };
-  ws.getCell('F6').value = 'ИИК'; ws.getCell('F6').font = { bold: true }; ws.getCell('F6').alignment = { horizontal: 'center' };
-  ws.getCell('H6').value = 'Кбе'; ws.getCell('H6').font = { bold: true }; ws.getCell('H6').alignment = { horizontal: 'center' };
-  ws.mergeCells('A7:C7'); ws.getCell('A7').value = company?.name || ''; yellow(ws.getCell('A7'));
-  ws.getCell('F7').value = bankAcc?.iban || ''; yellow(ws.getCell('F7')); ws.getCell('F7').alignment = { horizontal: 'center' };
-  ws.getCell('H7').value = '17'; yellow(ws.getCell('H7')); ws.getCell('H7').alignment = { horizontal: 'center' };
+  ws.mergeCells('D6:E6'); ws.getCell('D6').value = 'ИИК'; ws.getCell('D6').font = { bold: true }; ws.getCell('D6').alignment = { horizontal: 'center' };
+  ws.getCell('F6').value = 'Кбе'; ws.getCell('F6').font = { bold: true }; ws.getCell('F6').alignment = { horizontal: 'center' };
+  ws.mergeCells('A7:C7'); ws.getCell('A7').value = company?.name || '';
+  ws.mergeCells('D7:E7'); ws.getCell('D7').value = bankAcc?.iban || ''; ws.getCell('D7').alignment = { horizontal: 'center' };
+  ws.getCell('F7').value = '17'; ws.getCell('F7').alignment = { horizontal: 'center' };
   ws.mergeCells('A8:C8'); ws.getCell('A8').value = company?.bin ? 'БИН: ' + company.bin : '';
   ws.mergeCells('A9:C9'); ws.getCell('A9').value = 'Банк бенефициара:'; ws.getCell('A9').font = { bold: true };
-  ws.getCell('F9').value = 'БИК'; ws.getCell('F9').font = { bold: true }; ws.getCell('F9').alignment = { horizontal: 'center' };
-  ws.getCell('G9').value = 'Код назначения платежа'; ws.getCell('G9').font = { bold: true, size: 9 };
-  ws.mergeCells('A10:C10'); ws.getCell('A10').value = bankAcc?.bank || ''; yellow(ws.getCell('A10'));
-  ws.getCell('F10').value = ''; yellow(ws.getCell('F10')); ws.getCell('F10').alignment = { horizontal: 'center' };
-  ws.getCell('G10').value = '859'; yellow(ws.getCell('G10')); ws.getCell('G10').alignment = { horizontal: 'center' };
+  ws.mergeCells('D9:E9'); ws.getCell('D9').value = 'БИК'; ws.getCell('D9').font = { bold: true }; ws.getCell('D9').alignment = { horizontal: 'center' };
+  ws.getCell('F9').value = 'Код назначения платежа'; ws.getCell('F9').font = { bold: true, size: 8 }; ws.getCell('F9').alignment = { wrapText: true, horizontal: 'center' };
+  ws.mergeCells('A10:C10'); ws.getCell('A10').value = bankAcc?.bank || '';
+  ws.mergeCells('D10:E10'); ws.getCell('D10').value = bankAcc?.bik || ''; ws.getCell('D10').alignment = { horizontal: 'center' };
+  ws.getCell('F10').value = '859'; ws.getCell('F10').alignment = { horizontal: 'center' };
   // рамки для платёжки
-  for (let r = 6; r <= 10; r++) for (const c of ['A','D','E','F','G','H']) ws.getCell(`${c}${r}`).border = thin;
+  for (let r = 6; r <= 10; r++) for (const c of ['A','B','C','D','E','F']) ws.getCell(`${c}${r}`).border = thin;
 
   // Заголовок счёта
-  ws.mergeCells('A12:H12');
+  ws.mergeCells('A12:G12');
   const title = ws.getCell('A12');
   title.value = `Счет на оплату №${doc.number} от ${dateStr} года`;
   title.font = { bold: true, size: 14 };
 
   // Поставщик / Покупатель
   ws.getCell('A14').value = 'Поставщик:'; ws.getCell('A14').font = { bold: true };
-  ws.mergeCells('C14:H15');
-  const sup = ws.getCell('C14');
+  ws.mergeCells('B14:G15');
+  const sup = ws.getCell('B14');
   sup.value = `${company?.bin ? 'БИН: ' + company.bin + ' ' : ''}${company?.name || ''}${company?.address ? ', Адрес: ' + company.address : ''}`;
-  sup.alignment = { wrapText: true, vertical: 'top' }; yellow(sup);
+  sup.alignment = { wrapText: true, vertical: 'top' };
 
   ws.getCell('A16').value = 'Покупатель:'; ws.getCell('A16').font = { bold: true };
-  ws.mergeCells('C16:H17');
-  const buy = ws.getCell('C16');
+  ws.mergeCells('B16:G17');
+  const buy = ws.getCell('B16');
   buy.value = `${cp?.bin ? 'БИН: ' + cp.bin + ', ' : ''}${cp?.name || ''}${cp?.address ? ', Адрес: ' + cp.address : ''}`;
-  buy.alignment = { wrapText: true, vertical: 'top' }; yellow(buy);
+  buy.alignment = { wrapText: true, vertical: 'top' };
 
   ws.getCell('A19').value = 'Договор:'; ws.getCell('A19').font = { bold: true };
-  ws.getCell('C19').value = doc.contract || '';
+  ws.getCell('B19').value = doc.contract || '';
 
   // Таблица позиций
   const headerRow = 21;
@@ -112,37 +108,37 @@ function buildInvoice(wb: ExcelJS.Workbook, doc: any, company: any, cp: any, ban
     cell.value = h; cell.font = { bold: true }; cell.alignment = { horizontal: 'center' };
     cell.border = thin; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
   });
-  ws.mergeCells(`G${headerRow}:H${headerRow}`);
 
   let r = headerRow + 1;
   items.forEach((it, i) => {
     const sum = it.qty * it.price;
-    ws.getCell(`A${r}`).value = i + 1;
-    ws.getCell(`B${r}`).value = i + 1;
-    ws.getCell(`C${r}`).value = it.name; yellow(ws.getCell(`C${r}`));
-    ws.getCell(`D${r}`).value = it.qty;
-    ws.getCell(`E${r}`).value = it.unit;
-    ws.getCell(`F${r}`).value = it.price; ws.getCell(`F${r}`).numFmt = '#,##0.00'; yellow(ws.getCell(`F${r}`));
-    ws.mergeCells(`G${r}:H${r}`);
-    ws.getCell(`G${r}`).value = sum; ws.getCell(`G${r}`).numFmt = '#,##0.00'; yellow(ws.getCell(`G${r}`));
-    for (const c of ['A','B','C','D','E','F','G','H']) ws.getCell(`${c}${r}`).border = thin;
+    ws.getCell(`A${r}`).value = i + 1; ws.getCell(`A${r}`).alignment = { horizontal: 'center' };
+    ws.getCell(`B${r}`).value = i + 1; ws.getCell(`B${r}`).alignment = { horizontal: 'center' };
+    ws.getCell(`C${r}`).value = it.name;
+    ws.getCell(`D${r}`).value = it.qty; ws.getCell(`D${r}`).alignment = { horizontal: 'center' };
+    ws.getCell(`E${r}`).value = it.unit; ws.getCell(`E${r}`).alignment = { horizontal: 'center' };
+    ws.getCell(`F${r}`).value = it.price; ws.getCell(`F${r}`).numFmt = '#,##0.00'; ws.getCell(`F${r}`).alignment = { horizontal: 'right' };
+    ws.getCell(`G${r}`).value = sum; ws.getCell(`G${r}`).numFmt = '#,##0.00'; ws.getCell(`G${r}`).alignment = { horizontal: 'right' };
+    for (const c of ['A','B','C','D','E','F','G']) ws.getCell(`${c}${r}`).border = thin;
     r++;
   });
 
   // Итого
   r += 1;
   ws.getCell(`F${r}`).value = 'Итого:'; ws.getCell(`F${r}`).font = { bold: true }; ws.getCell(`F${r}`).alignment = { horizontal: 'right' };
-  ws.mergeCells(`G${r}:H${r}`); ws.getCell(`G${r}`).value = doc.total; ws.getCell(`G${r}`).numFmt = '#,##0.00'; yellow(ws.getCell(`G${r}`));
+  ws.getCell(`G${r}`).value = doc.total; ws.getCell(`G${r}`).numFmt = '#,##0.00'; ws.getCell(`G${r}`).alignment = { horizontal: 'right' };
   r++;
   ws.getCell(`F${r}`).value = 'В том числе НДС:'; ws.getCell(`F${r}`).alignment = { horizontal: 'right' };
-  ws.mergeCells(`G${r}:H${r}`); ws.getCell(`G${r}`).value = doc.vat_total || 0; ws.getCell(`G${r}`).numFmt = '#,##0.00'; yellow(ws.getCell(`G${r}`));
+  ws.getCell(`G${r}`).value = doc.vat_total || 0; ws.getCell(`G${r}`).numFmt = '#,##0.00'; ws.getCell(`G${r}`).alignment = { horizontal: 'right' };
   r += 2;
-  ws.getCell(`A${r}`).value = `Всего наименований ${items.length}, на сумму ${Number(doc.total).toLocaleString('ru-RU')}`; yellow(ws.getCell(`A${r}`));
+  ws.mergeCells(`A${r}:G${r}`);
+  ws.getCell(`A${r}`).value = `Всего наименований ${items.length}, на сумму ${Number(doc.total).toLocaleString('ru-RU', { minimumFractionDigits: 2 })} KZT`;
   r++;
-  ws.getCell(`A${r}`).value = `Всего к оплате: ${amountToWords(Number(doc.total))}`; ws.getCell(`A${r}`).font = { bold: true }; yellow(ws.getCell(`A${r}`));
+  ws.mergeCells(`A${r}:G${r}`);
+  ws.getCell(`A${r}`).value = `Всего к оплате: ${amountToWords(Number(doc.total))}`; ws.getCell(`A${r}`).font = { bold: true };
   r += 3;
   ws.getCell(`A${r}`).value = 'Исполнитель'; ws.getCell(`A${r}`).font = { bold: true };
-  ws.getCell(`E${r}`).value = company?.director || ''; yellow(ws.getCell(`E${r}`));
+  ws.getCell(`D${r}`).value = company?.director || '';
 }
 
 // ===== АВР =====
