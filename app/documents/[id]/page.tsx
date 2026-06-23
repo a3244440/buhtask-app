@@ -142,9 +142,14 @@ export default function DocViewPage() {
       </div>
       <style jsx global>{`
         @media print {
-          body { background: white; }
-          @page { margin: 1cm; }
+          body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          @page { margin: 1cm; size: A4; }
+          #doc-print { font-size: 11px !important; }
+          #doc-print table { page-break-inside: auto; }
+          #doc-print tr { page-break-inside: avoid; }
+          #doc-print td, #doc-print th { word-wrap: break-word; overflow-wrap: break-word; }
         }
+        #doc-print table { table-layout: auto; }
       `}</style>
     </div>
   );
@@ -154,60 +159,87 @@ function InvoiceView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
   const dateStr = new Date(doc.doc_date).toLocaleDateString('ru-RU');
   return (
     <div className="text-[13px] text-gray-900 leading-relaxed">
-      {/* Образец платёжного поручения */}
-      <div className="border border-gray-400 p-3 mb-4 text-xs">
-        <p className="font-semibold mb-1">Образец платёжного поручения</p>
-        <p>Бенефициар: <b>{company?.name}</b></p>
-        {company?.bin && <p>БИН: {company.bin}</p>}
-        {bankAcc && <p>ИИК: {bankAcc.iban}</p>}
-        {bankAcc && <p>Банк бенефициара: {bankAcc.bank}</p>}
+      {/* Внимание */}
+      <div className="border border-gray-700 p-2 mb-4 text-[10px] leading-snug">
+        Внимание! Оплата данного счёта означает согласие с условиями поставки товара. Уведомление об оплате обязательно, в противном случае не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с Поставщика, самовывозом, при наличии доверенности и документов удостоверяющих личность.
       </div>
 
-      <h2 className="text-center text-base font-bold my-4">Счёт на оплату №{doc.number} от {dateStr} года</h2>
+      {/* Образец платёжного поручения */}
+      <p className="font-bold mb-1">Образец платёжного поручения</p>
+      <table className="w-full border-collapse mb-4 text-[11px]">
+        <tbody>
+          <tr>
+            <td className="border border-gray-700 px-2 py-1 font-medium align-top" rowSpan={2} style={{ width: '40%' }}>
+              Бенефициар:<br /><b>{company?.name || ''}</b><br />{company?.bin ? 'БИН: ' + company.bin : ''}
+            </td>
+            <td className="border border-gray-700 px-2 py-1 text-center font-bold w-1/3">ИИК</td>
+            <td className="border border-gray-700 px-2 py-1 text-center font-bold">Кбе</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-700 px-2 py-1 text-center">{bankAcc?.iban || ''}</td>
+            <td className="border border-gray-700 px-2 py-1 text-center">17</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-700 px-2 py-1 font-medium align-top" rowSpan={2}>
+              Банк бенефициара:<br />{bankAcc?.bank || ''}
+            </td>
+            <td className="border border-gray-700 px-2 py-1 text-center font-bold">БИК</td>
+            <td className="border border-gray-700 px-2 py-1 text-center font-bold text-[10px]">Код назначения платежа</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-700 px-2 py-1 text-center"></td>
+            <td className="border border-gray-700 px-2 py-1 text-center">859</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 className="text-base font-bold my-4">Счёт на оплату №{doc.number} от {dateStr} года</h2>
 
       <table className="w-full border-collapse mb-1">
         <tbody>
-          <tr><td className="border border-gray-400 px-2 py-1 align-top w-28 font-medium">Поставщик:</td><td className="border border-gray-400 px-2 py-1">{company?.bin ? `БИН: ${company.bin} ` : ''}{company?.name}{company?.address ? `, Адрес: ${company.address}` : ''}</td></tr>
-          <tr><td className="border border-gray-400 px-2 py-1 align-top font-medium">Покупатель:</td><td className="border border-gray-400 px-2 py-1">{counterparty?.bin ? `БИН: ${counterparty.bin}, ` : ''}{counterparty?.name}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}</td></tr>
-          <tr><td className="border border-gray-400 px-2 py-1 font-medium">Договор:</td><td className="border border-gray-400 px-2 py-1">{doc.contract || '—'}</td></tr>
+          <tr><td className="border border-gray-700 px-2 py-1 align-top w-28 font-medium">Поставщик:</td><td className="border border-gray-700 px-2 py-1">{company?.bin ? `БИН: ${company.bin} ` : ''}{company?.name}{company?.address ? `, Адрес: ${company.address}` : ''}</td></tr>
+          <tr><td className="border border-gray-700 px-2 py-1 align-top font-medium">Покупатель:</td><td className="border border-gray-700 px-2 py-1">{counterparty?.bin ? `БИН: ${counterparty.bin}, ` : ''}{counterparty?.name}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}</td></tr>
+          <tr><td className="border border-gray-700 px-2 py-1 font-medium">Договор:</td><td className="border border-gray-700 px-2 py-1">{doc.contract || ''}</td></tr>
         </tbody>
       </table>
 
       <table className="w-full border-collapse my-3">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border border-gray-400 px-2 py-1 w-8">№</th>
-            <th className="border border-gray-400 px-2 py-1 w-16">Код</th>
-            <th className="border border-gray-400 px-2 py-1 text-left">Наименование</th>
-            <th className="border border-gray-400 px-2 py-1 w-14">Кол-во</th>
-            <th className="border border-gray-400 px-2 py-1 w-24">Цена</th>
-            <th className="border border-gray-400 px-2 py-1 w-28">Сумма</th>
+            <th className="border border-gray-700 px-2 py-1 w-8">№</th>
+            <th className="border border-gray-700 px-2 py-1 w-12">Код</th>
+            <th className="border border-gray-700 px-2 py-1 text-left">Наименование</th>
+            <th className="border border-gray-700 px-2 py-1 w-14">Кол-во</th>
+            <th className="border border-gray-700 px-2 py-1 w-12">Ед.</th>
+            <th className="border border-gray-700 px-2 py-1 w-24">Цена</th>
+            <th className="border border-gray-700 px-2 py-1 w-28">Сумма</th>
           </tr>
         </thead>
         <tbody>
           {items.map((it: any, i: number) => (
             <tr key={i}>
-              <td className="border border-gray-400 px-2 py-1 text-center">{i + 1}</td>
-              <td className="border border-gray-400 px-2 py-1 text-center">{i + 1}</td>
-              <td className="border border-gray-400 px-2 py-1">{it.name}</td>
-              <td className="border border-gray-400 px-2 py-1 text-center">{it.qty} {it.unit}</td>
-              <td className="border border-gray-400 px-2 py-1 text-right">{Number(it.price).toLocaleString('ru-RU')}</td>
-              <td className="border border-gray-400 px-2 py-1 text-right">{(it.qty * it.price).toLocaleString('ru-RU')}</td>
+              <td className="border border-gray-700 px-2 py-1 text-center">{i + 1}</td>
+              <td className="border border-gray-700 px-2 py-1 text-center">{i + 1}</td>
+              <td className="border border-gray-700 px-2 py-1">{it.name}</td>
+              <td className="border border-gray-700 px-2 py-1 text-center">{it.qty}</td>
+              <td className="border border-gray-700 px-2 py-1 text-center">{it.unit}</td>
+              <td className="border border-gray-700 px-2 py-1 text-right">{Number(it.price).toLocaleString('ru-RU')}</td>
+              <td className="border border-gray-700 px-2 py-1 text-right">{(it.qty * it.price).toLocaleString('ru-RU')}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <div className="text-right space-y-1 mb-2">
-        {doc.has_vat && <p>в т.ч. НДС 12%: <b>{fmt(doc.vat_total)}</b></p>}
-        <p className="text-sm">Всего к оплате: <b>{fmt(doc.total)}</b></p>
+      <div className="text-right space-y-0.5 mb-2">
+        <p>Итого: <b>{Number(doc.total).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</b></p>
+        <p>В том числе НДС: <b>{(doc.has_vat ? Number(doc.vat_total) : 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</b></p>
       </div>
-      <p className="mb-1">Всего наименований {items.length}, на сумму {Number(doc.total).toLocaleString('ru-RU')} ₸</p>
-      <p className="font-medium mb-6">Всего к оплате: {amountToWords(Number(doc.total))}</p>
+      <p className="mb-1">Всего наименований {items.length}, на сумму {Number(doc.total).toLocaleString('ru-RU', { minimumFractionDigits: 2 })} KZT</p>
+      <p className="font-medium mb-8">Всего к оплате: {amountToWords(Number(doc.total))}</p>
 
-      <div className="mt-10">
-        <p className="mb-8">Исполнитель _______________________ {company?.director || ''}</p>
-        <p className="text-xs text-gray-400">М.П.</p>
+      <div className="mt-10 border-t border-gray-300 pt-3">
+        <p>Исполнитель _______________________ {company?.director || ''}</p>
+        <p className="text-xs text-gray-400 mt-4">М.П.</p>
       </div>
     </div>
   );
