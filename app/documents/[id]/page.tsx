@@ -126,85 +126,17 @@ export default function DocViewPage() {
             </div>
           )}
 
-          {/* Document body (printable) */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 print:shadow-none print:border-0 print:rounded-none">
-            <div className="text-center mb-6">
-              <h2 className="text-lg font-bold text-gray-900">{info.label} №{doc.number}</h2>
-              <p className="text-sm text-gray-500">от {new Date(doc.doc_date).toLocaleDateString('ru-RU')} г.</p>
-            </div>
-
-            {/* Поставщик и банк (для счёта) */}
-            {company && (
-              <div className="mb-4 text-sm">
-                <table className="w-full border-collapse">
-                  <tbody>
-                    <tr><td className="border border-gray-200 px-3 py-1.5 bg-gray-50 font-medium w-1/3">Поставщик</td><td className="border border-gray-200 px-3 py-1.5">{company.name}{company.bin ? `, БИН ${company.bin}` : ''}</td></tr>
-                    {company.address && <tr><td className="border border-gray-200 px-3 py-1.5 bg-gray-50 font-medium">Адрес</td><td className="border border-gray-200 px-3 py-1.5">{company.address}</td></tr>}
-                    {bankAcc && <tr><td className="border border-gray-200 px-3 py-1.5 bg-gray-50 font-medium">Банк / IBAN</td><td className="border border-gray-200 px-3 py-1.5">{bankAcc.bank}: {bankAcc.iban}</td></tr>}
-                  </tbody>
-                </table>
-              </div>
+          {/* Document body (printable) — формат РК */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 print:shadow-none print:border-0 print:rounded-none print:p-0" id="doc-print">
+            {doc.type === 'invoice' && (
+              <InvoiceView doc={doc} company={company} counterparty={counterparty} bankAcc={bankAcc} items={items} fmt={fmt} />
             )}
-
-            {/* Покупатель */}
-            {counterparty && (
-              <div className="mb-4 text-sm">
-                <table className="w-full border-collapse">
-                  <tbody>
-                    <tr><td className="border border-gray-200 px-3 py-1.5 bg-gray-50 font-medium w-1/3">{doc.type === 'avr' ? 'Заказчик' : 'Покупатель'}</td><td className="border border-gray-200 px-3 py-1.5">{counterparty.name}{counterparty.bin ? `, БИН ${counterparty.bin}` : ''}</td></tr>
-                    {counterparty.address && <tr><td className="border border-gray-200 px-3 py-1.5 bg-gray-50 font-medium">Адрес</td><td className="border border-gray-200 px-3 py-1.5">{counterparty.address}</td></tr>}
-                  </tbody>
-                </table>
-              </div>
+            {doc.type === 'avr' && (
+              <AvrView doc={doc} company={company} counterparty={counterparty} items={items} fmt={fmt} />
             )}
-
-            {doc.contract && <p className="text-sm text-gray-600 mb-4">Договор: {doc.contract}</p>}
-
-            {/* Позиции */}
-            <table className="w-full border-collapse text-sm mb-4">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-200 px-2 py-1.5 text-left w-8">№</th>
-                  <th className="border border-gray-200 px-2 py-1.5 text-left">Наименование</th>
-                  <th className="border border-gray-200 px-2 py-1.5 w-16">Ед.</th>
-                  <th className="border border-gray-200 px-2 py-1.5 w-16">Кол-во</th>
-                  <th className="border border-gray-200 px-2 py-1.5 w-24">Цена</th>
-                  <th className="border border-gray-200 px-2 py-1.5 w-28">Сумма</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((it, i) => (
-                  <tr key={i}>
-                    <td className="border border-gray-200 px-2 py-1.5 text-center">{i + 1}</td>
-                    <td className="border border-gray-200 px-2 py-1.5">{it.name}</td>
-                    <td className="border border-gray-200 px-2 py-1.5 text-center">{it.unit}</td>
-                    <td className="border border-gray-200 px-2 py-1.5 text-center">{it.qty}</td>
-                    <td className="border border-gray-200 px-2 py-1.5 text-right">{Number(it.price).toLocaleString('ru-RU')}</td>
-                    <td className="border border-gray-200 px-2 py-1.5 text-right">{(it.qty * it.price).toLocaleString('ru-RU')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Итого */}
-            <div className="text-right text-sm space-y-1 mb-4">
-              {doc.has_vat && <p>в т.ч. НДС 12%: <b>{fmt(doc.vat_total)}</b></p>}
-              <p className="text-base">Всего к оплате: <b>{fmt(doc.total)}</b></p>
-            </div>
-            <p className="text-sm text-gray-600 mb-6">Всего наименований {items.length}, на сумму {amountToWords(Number(doc.total))}</p>
-
-            {/* Подписи */}
-            <div className="grid grid-cols-2 gap-8 mt-8 text-sm">
-              <div>
-                <p className="text-gray-500 mb-6">{doc.type === 'avr' ? 'Сдал (Исполнитель)' : 'Исполнитель'}</p>
-                <div className="border-t border-gray-300 pt-1 text-xs text-gray-400">{company?.director || 'подпись'}</div>
-              </div>
-              <div>
-                <p className="text-gray-500 mb-6">{doc.type === 'avr' ? 'Принял (Заказчик)' : 'Покупатель'}</p>
-                <div className="border-t border-gray-300 pt-1 text-xs text-gray-400">{counterparty?.director || 'подпись'}</div>
-              </div>
-            </div>
-            {doc.type !== 'invoice' && <p className="text-xs text-gray-400 mt-6">М.П.</p>}
+            {doc.type === 'sf' && (
+              <SfView doc={doc} company={company} counterparty={counterparty} bankAcc={bankAcc} items={items} fmt={fmt} />
+            )}
           </div>
         </main>
       </div>
@@ -217,4 +149,203 @@ export default function DocViewPage() {
     </div>
   );
 }
+// ===== Виды документов в формате РК =====
+function InvoiceView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
+  const dateStr = new Date(doc.doc_date).toLocaleDateString('ru-RU');
+  return (
+    <div className="text-[13px] text-gray-900 leading-relaxed">
+      {/* Образец платёжного поручения */}
+      <div className="border border-gray-400 p-3 mb-4 text-xs">
+        <p className="font-semibold mb-1">Образец платёжного поручения</p>
+        <p>Бенефициар: <b>{company?.name}</b></p>
+        {company?.bin && <p>БИН: {company.bin}</p>}
+        {bankAcc && <p>ИИК: {bankAcc.iban}</p>}
+        {bankAcc && <p>Банк бенефициара: {bankAcc.bank}</p>}
+      </div>
+
+      <h2 className="text-center text-base font-bold my-4">Счёт на оплату №{doc.number} от {dateStr} года</h2>
+
+      <table className="w-full border-collapse mb-1">
+        <tbody>
+          <tr><td className="border border-gray-400 px-2 py-1 align-top w-28 font-medium">Поставщик:</td><td className="border border-gray-400 px-2 py-1">{company?.bin ? `БИН: ${company.bin} ` : ''}{company?.name}{company?.address ? `, Адрес: ${company.address}` : ''}</td></tr>
+          <tr><td className="border border-gray-400 px-2 py-1 align-top font-medium">Покупатель:</td><td className="border border-gray-400 px-2 py-1">{counterparty?.bin ? `БИН: ${counterparty.bin}, ` : ''}{counterparty?.name}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}</td></tr>
+          <tr><td className="border border-gray-400 px-2 py-1 font-medium">Договор:</td><td className="border border-gray-400 px-2 py-1">{doc.contract || '—'}</td></tr>
+        </tbody>
+      </table>
+
+      <table className="w-full border-collapse my-3">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-400 px-2 py-1 w-8">№</th>
+            <th className="border border-gray-400 px-2 py-1 w-16">Код</th>
+            <th className="border border-gray-400 px-2 py-1 text-left">Наименование</th>
+            <th className="border border-gray-400 px-2 py-1 w-14">Кол-во</th>
+            <th className="border border-gray-400 px-2 py-1 w-24">Цена</th>
+            <th className="border border-gray-400 px-2 py-1 w-28">Сумма</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((it: any, i: number) => (
+            <tr key={i}>
+              <td className="border border-gray-400 px-2 py-1 text-center">{i + 1}</td>
+              <td className="border border-gray-400 px-2 py-1 text-center">{i + 1}</td>
+              <td className="border border-gray-400 px-2 py-1">{it.name}</td>
+              <td className="border border-gray-400 px-2 py-1 text-center">{it.qty} {it.unit}</td>
+              <td className="border border-gray-400 px-2 py-1 text-right">{Number(it.price).toLocaleString('ru-RU')}</td>
+              <td className="border border-gray-400 px-2 py-1 text-right">{(it.qty * it.price).toLocaleString('ru-RU')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="text-right space-y-1 mb-2">
+        {doc.has_vat && <p>в т.ч. НДС 12%: <b>{fmt(doc.vat_total)}</b></p>}
+        <p className="text-sm">Всего к оплате: <b>{fmt(doc.total)}</b></p>
+      </div>
+      <p className="mb-1">Всего наименований {items.length}, на сумму {Number(doc.total).toLocaleString('ru-RU')} ₸</p>
+      <p className="font-medium mb-6">Всего к оплате: {amountToWords(Number(doc.total))}</p>
+
+      <div className="mt-10">
+        <p className="mb-8">Исполнитель _______________________ {company?.director || ''}</p>
+        <p className="text-xs text-gray-400">М.П.</p>
+      </div>
+    </div>
+  );
+}
+
+function AvrView({ doc, company, counterparty, items, fmt }: any) {
+  const dateStr = new Date(doc.doc_date).toLocaleDateString('ru-RU');
+  return (
+    <div className="text-[13px] text-gray-900 leading-relaxed">
+      <table className="w-full border-collapse mb-3">
+        <tbody>
+          <tr><td className="border border-gray-400 px-2 py-1 w-28 font-medium align-top">Заказчик</td><td className="border border-gray-400 px-2 py-1">{counterparty?.name}{counterparty?.bin ? `, БИН ${counterparty.bin}` : ''}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}</td></tr>
+          <tr><td className="border border-gray-400 px-2 py-1 font-medium align-top">Исполнитель</td><td className="border border-gray-400 px-2 py-1">{company?.name}{company?.bin ? `, БИН ${company.bin}` : ''}{company?.address ? `, Адрес: ${company.address}` : ''}</td></tr>
+          <tr><td className="border border-gray-400 px-2 py-1 font-medium">Договор (контракт)</td><td className="border border-gray-400 px-2 py-1">{doc.contract || '—'}</td></tr>
+        </tbody>
+      </table>
+
+      <h2 className="text-center text-base font-bold my-4">АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ)<br />№{doc.number} от {dateStr}</h2>
+
+      <table className="w-full border-collapse my-3">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-400 px-2 py-1 w-12">№</th>
+            <th className="border border-gray-400 px-2 py-1 text-left">Наименование работ (услуг)</th>
+            <th className="border border-gray-400 px-2 py-1 w-16">Кол-во</th>
+            <th className="border border-gray-400 px-2 py-1 w-24">Цена</th>
+            <th className="border border-gray-400 px-2 py-1 w-28">Сумма</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((it: any, i: number) => (
+            <tr key={i}>
+              <td className="border border-gray-400 px-2 py-1 text-center">{i + 1}</td>
+              <td className="border border-gray-400 px-2 py-1">{it.name}</td>
+              <td className="border border-gray-400 px-2 py-1 text-center">{it.qty} {it.unit}</td>
+              <td className="border border-gray-400 px-2 py-1 text-right">{Number(it.price).toLocaleString('ru-RU')}</td>
+              <td className="border border-gray-400 px-2 py-1 text-right">{(it.qty * it.price).toLocaleString('ru-RU')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="text-right mb-2">
+        {doc.has_vat && <p>в т.ч. НДС 12%: <b>{fmt(doc.vat_total)}</b></p>}
+        <p className="text-sm">Итого: <b>{fmt(doc.total)}</b></p>
+      </div>
+      <p className="mb-6">Всего на сумму: {amountToWords(Number(doc.total))}</p>
+
+      <div className="grid grid-cols-2 gap-8 mt-10">
+        <div>
+          <p className="mb-8 font-medium">Сдал (Исполнитель)</p>
+          <p className="border-t border-gray-400 pt-1">{company?.director || ''}</p>
+          <p className="text-xs text-gray-400 mt-1">должность, подпись</p>
+          <p className="text-xs text-gray-400 mt-3">М.П.</p>
+        </div>
+        <div>
+          <p className="mb-8 font-medium">Принял (Заказчик)</p>
+          <p className="border-t border-gray-400 pt-1">{counterparty?.director || ''}</p>
+          <p className="text-xs text-gray-400 mt-1">должность, подпись</p>
+          <p className="text-xs text-gray-400 mt-3">М.П.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SfView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
+  const dateStr = new Date(doc.doc_date).toLocaleDateString('ru-RU');
+  return (
+    <div className="text-[12px] text-gray-900 leading-relaxed">
+      <h2 className="text-base font-bold mb-3">Счёт-фактура № {doc.number} от {dateStr} г.</h2>
+      <div className="space-y-0.5 mb-3">
+        <p><b>Поставщик:</b> {company?.name}</p>
+        <p>ИИН/БИН и адрес поставщика: {company?.bin || ''}{company?.address ? `, ${company.address}` : ''}</p>
+        {bankAcc && <p>ИИК: {bankAcc.iban}, Банк: {bankAcc.bank}</p>}
+        <p>Договор (контракт): {doc.contract || '—'}</p>
+        <p>Условия оплаты: Безналичный расчёт</p>
+        <p className="pt-1"><b>Грузоотправитель:</b> {company?.name}{company?.address ? `, Адрес: ${company.address}` : ''}</p>
+        <p><b>Грузополучатель:</b> {counterparty?.name}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}</p>
+        <p><b>Получатель:</b> {counterparty?.name}</p>
+        <p>БИН/ИИН и адрес получателя: {counterparty?.bin || ''}{counterparty?.address ? `, ${counterparty.address}` : ''}</p>
+      </div>
+
+      <table className="w-full border-collapse my-3 text-[11px]">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-400 px-1 py-1 w-6">№</th>
+            <th className="border border-gray-400 px-1 py-1 text-left">Наименование товаров (работ, услуг)</th>
+            <th className="border border-gray-400 px-1 py-1 w-12">Ед.изм</th>
+            <th className="border border-gray-400 px-1 py-1 w-12">Кол-во</th>
+            <th className="border border-gray-400 px-1 py-1 w-16">Цена</th>
+            <th className="border border-gray-400 px-1 py-1 w-20">Стоимость без НДС</th>
+            <th className="border border-gray-400 px-1 py-1 w-12">Ставка НДС</th>
+            <th className="border border-gray-400 px-1 py-1 w-16">Сумма НДС</th>
+            <th className="border border-gray-400 px-1 py-1 w-20">Всего</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((it: any, i: number) => {
+            const total = it.qty * it.price;
+            const noVat = doc.has_vat ? Math.round(total / 1.12) : total;
+            const vat = doc.has_vat ? total - noVat : 0;
+            return (
+              <tr key={i}>
+                <td className="border border-gray-400 px-1 py-1 text-center">{i + 1}</td>
+                <td className="border border-gray-400 px-1 py-1">{it.name}</td>
+                <td className="border border-gray-400 px-1 py-1 text-center">{it.unit}</td>
+                <td className="border border-gray-400 px-1 py-1 text-center">{it.qty}</td>
+                <td className="border border-gray-400 px-1 py-1 text-right">{Number(it.price).toLocaleString('ru-RU')}</td>
+                <td className="border border-gray-400 px-1 py-1 text-right">{noVat.toLocaleString('ru-RU')}</td>
+                <td className="border border-gray-400 px-1 py-1 text-center">{doc.has_vat ? '12%' : 'Без НДС'}</td>
+                <td className="border border-gray-400 px-1 py-1 text-right">{doc.has_vat ? vat.toLocaleString('ru-RU') : '—'}</td>
+                <td className="border border-gray-400 px-1 py-1 text-right">{total.toLocaleString('ru-RU')}</td>
+              </tr>
+            );
+          })}
+          <tr className="font-semibold bg-gray-50">
+            <td colSpan={8} className="border border-gray-400 px-1 py-1 text-right">Всего по счёту:</td>
+            <td className="border border-gray-400 px-1 py-1 text-right">{Number(doc.total).toLocaleString('ru-RU')}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p className="mb-4">Всего на сумму: {amountToWords(Number(doc.total))}</p>
+
+      <div className="grid grid-cols-2 gap-8 mt-8">
+        <div>
+          <p className="mb-6">Руководитель: {company?.director || ''}</p>
+          <p className="text-xs text-gray-400">(Ф.И.О., подпись)</p>
+        </div>
+        <div>
+          <p className="mb-6">Главный бухгалтер: ___________</p>
+          <p className="text-xs text-gray-400">(Ф.И.О., подпись)</p>
+        </div>
+      </div>
+      <p className="text-xs text-gray-400 mt-4">Примечание: Без печати недействительно. М.П.</p>
+    </div>
+  );
+}
+
 export const dynamic = 'force-dynamic';
