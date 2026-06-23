@@ -248,60 +248,134 @@ function InvoiceView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
 function AvrView({ doc, company, counterparty, items, fmt }: any) {
   const dateStr = new Date(doc.doc_date).toLocaleDateString('ru-RU');
   return (
-    <div className="text-[13px] text-gray-900 leading-relaxed">
-      <table className="w-full border-collapse mb-3">
+    <div className="text-[11px] text-gray-900 leading-snug">
+      {/* Шапка формы */}
+      <div className="flex justify-between items-start mb-2">
+        <div className="text-[10px]">
+          <p>ИИН/БИН</p>
+        </div>
+        <div className="text-right text-[9px] leading-tight">
+          <p>Приложение 50</p>
+          <p>к приказу Министра финансов</p>
+          <p>Республики Казахстан</p>
+          <p>от 20 декабря 2012 года № 562</p>
+          <p className="font-bold mt-1">Форма Р-1</p>
+        </div>
+      </div>
+
+      {/* Заказчик */}
+      <table className="w-full border-collapse mb-1 text-[10px]">
         <tbody>
-          <tr><td className="border border-gray-400 px-2 py-1 w-28 font-medium align-top">Заказчик</td><td className="border border-gray-400 px-2 py-1">{counterparty?.name}{counterparty?.bin ? `, БИН ${counterparty.bin}` : ''}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}</td></tr>
-          <tr><td className="border border-gray-400 px-2 py-1 font-medium align-top">Исполнитель</td><td className="border border-gray-400 px-2 py-1">{company?.name}{company?.bin ? `, БИН ${company.bin}` : ''}{company?.address ? `, Адрес: ${company.address}` : ''}</td></tr>
-          <tr><td className="border border-gray-400 px-2 py-1 font-medium">Договор (контракт)</td><td className="border border-gray-400 px-2 py-1">{doc.contract || '—'}</td></tr>
+          <tr>
+            <td className="px-1 py-1 align-top font-medium" style={{ width: '90px' }}>Заказчик</td>
+            <td className="px-1 py-1 border-b border-gray-700">
+              {counterparty?.name}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}
+            </td>
+            <td className="px-1 py-1 align-top text-right" style={{ width: '120px' }}>{counterparty?.bin || ''}</td>
+          </tr>
+          <tr><td></td><td className="px-1 text-[8px] text-gray-400 text-center">полное наименование, адрес, данные о средствах связи</td><td></td></tr>
+          <tr>
+            <td className="px-1 py-1 align-top font-medium">Исполнитель</td>
+            <td className="px-1 py-1 border-b border-gray-700">
+              {company?.name}{company?.address ? `, Адрес: ${company.address}` : ''}
+            </td>
+            <td className="px-1 py-1 align-top text-right">{company?.bin || ''}</td>
+          </tr>
+          <tr><td></td><td className="px-1 text-[8px] text-gray-400 text-center">полное наименование, адрес, данные о средствах связи</td><td></td></tr>
         </tbody>
       </table>
 
-      <h2 className="text-center text-base font-bold my-4">АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ)<br />№{doc.number} от {dateStr}</h2>
+      {/* Договор / номер / дата */}
+      <table className="w-full border-collapse mb-2 text-[10px]">
+        <tbody>
+          <tr>
+            <td className="border border-gray-700 px-2 py-1 text-center font-medium">Договор (контракт)</td>
+            <td className="border border-gray-700 px-2 py-1 text-center font-medium">Номер документа</td>
+            <td className="border border-gray-700 px-2 py-1 text-center font-medium">Дата составления</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-700 px-2 py-1 text-center">{doc.contract || ''}</td>
+            <td className="border border-gray-700 px-2 py-1 text-center">{doc.number}</td>
+            <td className="border border-gray-700 px-2 py-1 text-center">{dateStr}</td>
+          </tr>
+        </tbody>
+      </table>
 
-      <table className="w-full border-collapse my-3">
+      <h2 className="text-center text-[13px] font-bold my-3">АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ)</h2>
+
+      {/* Основная таблица — 8 колонок формы Р-1 */}
+      <table className="w-full border-collapse text-[9px]">
         <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-400 px-2 py-1 w-12">№</th>
-            <th className="border border-gray-400 px-2 py-1 text-left">Наименование работ (услуг)</th>
-            <th className="border border-gray-400 px-2 py-1 w-16">Кол-во</th>
-            <th className="border border-gray-400 px-2 py-1 w-24">Цена</th>
-            <th className="border border-gray-400 px-2 py-1 w-28">Сумма</th>
+          <tr>
+            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '32px' }}>Номер по порядку</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle">Наименование работ (услуг)</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '60px' }}>Дата выполнения работ (оказания услуг)</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '80px' }}>Сведения о наличии отчета о маркетинговых исследованиях, консультационных и прочих услуг (дата, номер, количество страниц)</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '40px' }}>Единица измерения</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '40px' }}>количество</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '55px' }}>цена за единицу</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '60px' }}>стоимость</th>
+          </tr>
+          <tr className="text-[8px] text-gray-500">
+            {[1,2,3,4,5,6,7,8].map(n => <td key={n} className="border border-gray-700 px-1 text-center">{n}</td>)}
           </tr>
         </thead>
         <tbody>
           {items.map((it: any, i: number) => (
             <tr key={i}>
-              <td className="border border-gray-400 px-2 py-1 text-center">{i + 1}</td>
-              <td className="border border-gray-400 px-2 py-1">{it.name}</td>
-              <td className="border border-gray-400 px-2 py-1 text-center">{it.qty} {it.unit}</td>
-              <td className="border border-gray-400 px-2 py-1 text-right">{Number(it.price).toLocaleString('ru-RU')}</td>
-              <td className="border border-gray-400 px-2 py-1 text-right">{(it.qty * it.price).toLocaleString('ru-RU')}</td>
+              <td className="border border-gray-700 px-1 py-1 text-center">{i + 1}</td>
+              <td className="border border-gray-700 px-1 py-1">{it.name}</td>
+              <td className="border border-gray-700 px-1 py-1 text-center">{dateStr}</td>
+              <td className="border border-gray-700 px-1 py-1"></td>
+              <td className="border border-gray-700 px-1 py-1 text-center">{it.unit}</td>
+              <td className="border border-gray-700 px-1 py-1 text-center">{it.qty}</td>
+              <td className="border border-gray-700 px-1 py-1 text-right">{Number(it.price).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+              <td className="border border-gray-700 px-1 py-1 text-right">{(it.qty * it.price).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
             </tr>
           ))}
+          <tr className="font-semibold">
+            <td className="border border-gray-700 px-1 py-1 text-center" colSpan={5}>Итого</td>
+            <td className="border border-gray-700 px-1 py-1 text-center">{items.reduce((s: number, it: any) => s + Number(it.qty), 0)}</td>
+            <td className="border border-gray-700 px-1 py-1 text-center">х</td>
+            <td className="border border-gray-700 px-1 py-1 text-right">{Number(doc.total).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+          </tr>
         </tbody>
       </table>
 
-      <div className="text-right mb-2">
-        {doc.has_vat && <p>в т.ч. НДС 12%: <b>{fmt(doc.vat_total)}</b></p>}
-        <p className="text-sm">Итого: <b>{fmt(doc.total)}</b></p>
+      {/* Сведения о запасах */}
+      <div className="mt-2 text-[9px]">
+        <p>Сведения об использовании запасов, полученных от заказчика</p>
+        <p className="border-b border-gray-700 h-4"></p>
+        <p className="text-center text-gray-400 text-[8px]">наименование, количество, стоимость</p>
       </div>
-      <p className="mb-6">Всего на сумму: {amountToWords(Number(doc.total))}</p>
+      <p className="mt-2 text-[9px]">Приложение: Перечень документации</p>
 
-      <div className="grid grid-cols-2 gap-8 mt-10">
+      {/* Подписи */}
+      <div className="grid grid-cols-2 gap-6 mt-5 text-[10px]">
         <div>
-          <p className="mb-8 font-medium">Сдал (Исполнитель)</p>
-          <p className="border-t border-gray-400 pt-1">{company?.director || ''}</p>
-          <p className="text-xs text-gray-400 mt-1">должность, подпись</p>
-          <p className="text-xs text-gray-400 mt-3">М.П.</p>
+          <div className="flex items-baseline gap-1">
+            <span className="font-medium">Сдал (Исполнитель)</span>
+            <span>Директор</span>
+            <span className="flex-1 border-b border-gray-700"></span>
+            <span>/ /</span>
+            <span>{company?.director || ''}</span>
+          </div>
+          <div className="flex text-[7px] text-gray-400 mt-0.5"><span className="w-24">должность</span><span className="flex-1 text-center">подпись</span><span>расшифровка подписи</span></div>
+          <p className="mt-3">М.П.</p>
         </div>
         <div>
-          <p className="mb-8 font-medium">Принял (Заказчик)</p>
-          <p className="border-t border-gray-400 pt-1">{counterparty?.director || ''}</p>
-          <p className="text-xs text-gray-400 mt-1">должность, подпись</p>
-          <p className="text-xs text-gray-400 mt-3">М.П.</p>
+          <div className="flex items-baseline gap-1">
+            <span className="font-medium">Принял (Заказчик)</span>
+            <span>Директор</span>
+            <span className="flex-1 border-b border-gray-700"></span>
+            <span>/ /</span>
+            <span>{counterparty?.director || ''}</span>
+          </div>
+          <div className="flex text-[7px] text-gray-400 mt-0.5"><span className="w-24">должность</span><span className="flex-1 text-center">подпись</span><span>расшифровка подписи</span></div>
+          <p className="mt-3">М.П.</p>
         </div>
       </div>
+      <p className="mt-2 text-[9px]">Дата подписания (принятия) работ (услуг) {dateStr}</p>
     </div>
   );
 }

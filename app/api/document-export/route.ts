@@ -141,55 +141,74 @@ function buildInvoice(wb: ExcelJS.Workbook, doc: any, company: any, cp: any, ban
   ws.getCell(`D${r}`).value = company?.director || '';
 }
 
-// ===== АВР =====
+// ===== АВР (Форма Р-1) =====
 function buildAvr(wb: ExcelJS.Workbook, doc: any, company: any, cp: any, items: any[], dateStr: string) {
-  const ws = wb.addWorksheet('АВР');
-  ws.columns = [{ width: 6 }, { width: 35 }, { width: 12 }, { width: 12 }, { width: 14 }, { width: 16 }];
+  const ws = wb.addWorksheet('АВР Р-1');
+  ws.columns = [{ width: 6 }, { width: 30 }, { width: 12 }, { width: 18 }, { width: 10 }, { width: 10 }, { width: 14 }, { width: 16 }];
 
-  ws.getCell('A1').value = 'Заказчик'; ws.getCell('A1').font = { bold: true };
-  ws.mergeCells('B1:F1'); ws.getCell('B1').value = `${cp?.name || ''}${cp?.bin ? ', БИН ' + cp.bin : ''}${cp?.address ? ', Адрес: ' + cp.address : ''}`;
-  ws.getCell('A3').value = 'Исполнитель'; ws.getCell('A3').font = { bold: true };
-  ws.mergeCells('B3:F3'); ws.getCell('B3').value = `${company?.name || ''}${company?.bin ? ', БИН ' + company.bin : ''}${company?.address ? ', Адрес: ' + company.address : ''}`;
-  ws.getCell('A5').value = 'Договор (контракт)'; ws.getCell('A5').font = { bold: true };
-  ws.getCell('B5').value = doc.contract || '';
+  ws.getCell('F1').value = 'Приложение 50 к приказу Министра финансов РК от 20.12.2012 № 562';
+  ws.getCell('F1').font = { size: 8 }; ws.getCell('F1').alignment = { wrapText: true, horizontal: 'right' };
+  ws.getCell('H3').value = 'Форма Р-1'; ws.getCell('H3').font = { bold: true };
 
-  ws.mergeCells('A7:F7');
-  const title = ws.getCell('A7');
-  title.value = `АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ) №${doc.number} от ${dateStr}`;
-  title.font = { bold: true, size: 12 }; title.alignment = { horizontal: 'center' };
+  ws.getCell('A5').value = 'Заказчик'; ws.getCell('A5').font = { bold: true };
+  ws.mergeCells('B5:G5'); ws.getCell('B5').value = `${cp?.name || ''}${cp?.address ? ', Адрес: ' + cp.address : ''}`;
+  ws.getCell('H5').value = cp?.bin || '';
+  ws.getCell('A7').value = 'Исполнитель'; ws.getCell('A7').font = { bold: true };
+  ws.mergeCells('B7:G7'); ws.getCell('B7').value = `${company?.name || ''}${company?.address ? ', Адрес: ' + company.address : ''}`;
+  ws.getCell('H7').value = company?.bin || '';
 
-  const hr = 9;
-  ['№', 'Наименование работ (услуг)', 'Кол-во', 'Ед.', 'Цена', 'Сумма'].forEach((h, i) => {
+  ws.getCell('A9').value = 'Договор (контракт)'; ws.getCell('A9').border = thin; ws.getCell('A9').font = { bold: true, size: 9 };
+  ws.getCell('B9').value = 'Номер документа'; ws.getCell('B9').border = thin; ws.getCell('B9').font = { bold: true, size: 9 };
+  ws.getCell('C9').value = 'Дата составления'; ws.getCell('C9').border = thin; ws.getCell('C9').font = { bold: true, size: 9 };
+  ws.getCell('A10').value = doc.contract || ''; ws.getCell('A10').border = thin;
+  ws.getCell('B10').value = doc.number; ws.getCell('B10').border = thin; ws.getCell('B10').alignment = { horizontal: 'center' };
+  ws.getCell('C10').value = dateStr; ws.getCell('C10').border = thin; ws.getCell('C10').alignment = { horizontal: 'center' };
+
+  ws.mergeCells('A12:H12');
+  ws.getCell('A12').value = 'АКТ ВЫПОЛНЕННЫХ РАБОТ (ОКАЗАННЫХ УСЛУГ)';
+  ws.getCell('A12').font = { bold: true, size: 12 }; ws.getCell('A12').alignment = { horizontal: 'center' };
+
+  const hr = 14;
+  const heads = ['Номер по порядку', 'Наименование работ (услуг)', 'Дата выполнения', 'Сведения об отчёте', 'Ед. изм.', 'Количество', 'Цена за единицу', 'Стоимость'];
+  heads.forEach((h, i) => {
     const cell = ws.getCell(hr, i + 1);
-    cell.value = h; cell.font = { bold: true }; cell.alignment = { horizontal: 'center' };
+    cell.value = h; cell.font = { bold: true, size: 8 }; cell.alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
     cell.border = thin; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
   });
-  let r = hr + 1;
+  ws.getRow(hr).height = 40;
+  for (let c = 1; c <= 8; c++) { const cell = ws.getCell(hr + 1, c); cell.value = c; cell.border = thin; cell.alignment = { horizontal: 'center' }; cell.font = { size: 8, color: { argb: 'FF999999' } }; }
+
+  let r = hr + 2;
   items.forEach((it, i) => {
     ws.getCell(r, 1).value = i + 1;
     ws.getCell(r, 2).value = it.name;
-    ws.getCell(r, 3).value = it.qty;
-    ws.getCell(r, 4).value = it.unit;
-    ws.getCell(r, 5).value = it.price; ws.getCell(r, 5).numFmt = '#,##0.00';
-    ws.getCell(r, 6).value = it.qty * it.price; ws.getCell(r, 6).numFmt = '#,##0.00';
-    for (let c = 1; c <= 6; c++) ws.getCell(r, c).border = thin;
+    ws.getCell(r, 3).value = dateStr;
+    ws.getCell(r, 4).value = '';
+    ws.getCell(r, 5).value = it.unit;
+    ws.getCell(r, 6).value = it.qty;
+    ws.getCell(r, 7).value = it.price; ws.getCell(r, 7).numFmt = '#,##0.00';
+    ws.getCell(r, 8).value = it.qty * it.price; ws.getCell(r, 8).numFmt = '#,##0.00';
+    for (let c = 1; c <= 8; c++) { ws.getCell(r, c).border = thin; if (c !== 2) ws.getCell(r, c).alignment = { horizontal: 'center' }; }
     r++;
   });
-  r++;
-  ws.getCell(r, 5).value = 'Итого:'; ws.getCell(r, 5).font = { bold: true };
-  ws.getCell(r, 6).value = doc.total; ws.getCell(r, 6).numFmt = '#,##0.00';
-  r++;
-  ws.mergeCells(`A${r}:F${r}`);
-  ws.getCell(`A${r}`).value = `Всего на сумму: ${amountToWords(Number(doc.total))}`;
-  r += 3;
-  ws.getCell(`A${r}`).value = 'Сдал (Исполнитель)'; ws.getCell(`A${r}`).font = { bold: true };
-  ws.getCell(`D${r}`).value = 'Принял (Заказчик)'; ws.getCell(`D${r}`).font = { bold: true };
-  r++;
-  ws.getCell(`A${r}`).value = company?.director || '';
-  ws.getCell(`D${r}`).value = cp?.director || '';
+  ws.mergeCells(`A${r}:E${r}`);
+  ws.getCell(`A${r}`).value = 'Итого'; ws.getCell(`A${r}`).font = { bold: true }; ws.getCell(`A${r}`).alignment = { horizontal: 'center' };
+  ws.getCell(r, 6).value = items.reduce((s, it) => s + Number(it.qty), 0); ws.getCell(r, 6).alignment = { horizontal: 'center' };
+  ws.getCell(r, 7).value = 'х'; ws.getCell(r, 7).alignment = { horizontal: 'center' };
+  ws.getCell(r, 8).value = doc.total; ws.getCell(r, 8).numFmt = '#,##0.00';
+  for (let c = 1; c <= 8; c++) ws.getCell(r, c).border = thin;
+  r += 2;
+
+  ws.getCell(`A${r}`).value = 'Сведения об использовании запасов, полученных от заказчика'; r += 2;
+  ws.getCell(`A${r}`).value = 'Приложение: Перечень документации'; r += 2;
+
+  ws.getCell(`A${r}`).value = `Сдал (Исполнитель)  Директор ______________ ${company?.director || ''}`; ws.getCell(`A${r}`).font = { size: 9 };
+  ws.getCell(`E${r}`).value = `Принял (Заказчик)  Директор ______________ ${cp?.director || ''}`; ws.getCell(`E${r}`).font = { size: 9 };
   r += 2;
   ws.getCell(`A${r}`).value = 'М.П.';
-  ws.getCell(`D${r}`).value = 'М.П.';
+  ws.getCell(`E${r}`).value = 'М.П.';
+  r++;
+  ws.getCell(`A${r}`).value = `Дата подписания (принятия) работ (услуг) ${dateStr}`; ws.getCell(`A${r}`).font = { size: 9 };
 }
 
 // ===== СЧЁТ-ФАКТУРА =====
