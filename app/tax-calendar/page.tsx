@@ -6,19 +6,20 @@ import { Calendar, Bell, BellOff, ChevronLeft, ChevronRight, Info, CheckCircle2 
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
 import MobileToolsNav from '../components/MobileToolsNav';
+import { useI18n } from '@/lib/i18n';
 
 interface TaxEvent { key: string; title: string; desc: string; type: 'monthly' | 'quarterly' | 'yearly' | 'halfyear'; day: number; months: number[]; who: string; }
 
 const TAX_EVENTS: TaxEvent[] = [
-  { key: 'ipn_son', title: 'ИПН, СН, ОПВ, СО, ОСМС', desc: 'Уплата индивидуального подоходного налога, социального налога, пенсионных и социальных отчислений за сотрудников', type: 'monthly', day: 25, months: [1,2,3,4,5,6,7,8,9,10,11,12], who: 'Работодатели' },
-  { key: 'nds_import', title: 'НДС по импорту ЕАЭС (ФНО 320.00)', desc: 'Декларация и уплата косвенных налогов при импорте из ЕАЭС', type: 'monthly', day: 20, months: [1,2,3,4,5,6,7,8,9,10,11,12], who: 'Импортёры из ЕАЭС' },
-  { key: 'fno_200', title: 'ФНО 200.00 (ИПН и соцналог)', desc: 'Квартальная декларация по ИПН и социальному налогу', type: 'quarterly', day: 15, months: [2,5,8,11], who: 'ИП на ОУР, ТОО' },
-  { key: 'fno_300', title: 'ФНО 300.00 (НДС)', desc: 'Квартальная декларация по НДС. Подаётся не раньше 15 числа месяца после квартала', type: 'quarterly', day: 15, months: [2,5,8,11], who: 'Плательщики НДС' },
-  { key: 'fno_101_04', title: 'ФНО 101.04 (КПН у источника)', desc: 'Расчёт по КПН, удержанному у источника выплаты', type: 'quarterly', day: 15, months: [2,5,8,11], who: 'ТОО' },
-  { key: 'fno_910', title: 'ФНО 910.00 (упрощёнка)', desc: 'Упрощённая декларация для малого бизнеса на СНР. Сдаётся за полугодие', type: 'halfyear', day: 15, months: [2,8], who: 'ИП и ТОО на упрощёнке' },
-  { key: 'fno_100', title: 'ФНО 100.00 (КПН годовая)', desc: 'Годовая декларация по корпоративному подоходному налогу', type: 'yearly', day: 31, months: [3], who: 'ТОО на ОУР' },
-  { key: 'fno_220', title: 'ФНО 220.00 (ИПН годовая)', desc: 'Годовая декларация по индивидуальному подоходному налогу', type: 'yearly', day: 31, months: [3], who: 'ИП на ОУР' },
-  { key: 'fno_250', title: 'ФНО 250.00 (декларация об активах)', desc: 'Декларация об активах и обязательствах физического лица', type: 'yearly', day: 15, months: [9], who: 'Всеобщее декларирование' },
+  { key: 'ipn_son', title: 'ИПН, СН, ОПВ, СО, ОСМС', desc: 'Уплата индивидуального подоходного налога, социального налога, пенсионных и социальных отчислений за сотрудников', type: 'monthly', day: 25, months: [1,2,3,4,5,6,7,8,9,10,11,12], who: 'tax.who.employers' },
+  { key: 'nds_import', title: 'НДС по импорту ЕАЭС (ФНО 320.00)', desc: 'Декларация и уплата косвенных налогов при импорте из ЕАЭС', type: 'monthly', day: 20, months: [1,2,3,4,5,6,7,8,9,10,11,12], who: 'tax.who.importers' },
+  { key: 'fno_200', title: 'ФНО 200.00 (ИПН и соцналог)', desc: 'Квартальная декларация по ИПН и социальному налогу', type: 'quarterly', day: 15, months: [2,5,8,11], who: 'tax.who.ipOurToo' },
+  { key: 'fno_300', title: 'ФНО 300.00 (НДС)', desc: 'Квартальная декларация по НДС. Подаётся не раньше 15 числа месяца после квартала', type: 'quarterly', day: 15, months: [2,5,8,11], who: 'tax.who.vatPayers' },
+  { key: 'fno_101_04', title: 'ФНО 101.04 (КПН у источника)', desc: 'Расчёт по КПН, удержанному у источника выплаты', type: 'quarterly', day: 15, months: [2,5,8,11], who: 'tax.who.too' },
+  { key: 'fno_910', title: 'ФНО 910.00 (упрощёнка)', desc: 'Упрощённая декларация для малого бизнеса на СНР. Сдаётся за полугодие', type: 'halfyear', day: 15, months: [2,8], who: 'tax.who.simplified' },
+  { key: 'fno_100', title: 'ФНО 100.00 (КПН годовая)', desc: 'Годовая декларация по корпоративному подоходному налогу', type: 'yearly', day: 31, months: [3], who: 'tax.who.tooOur' },
+  { key: 'fno_220', title: 'ФНО 220.00 (ИПН годовая)', desc: 'Годовая декларация по индивидуальному подоходному налогу', type: 'yearly', day: 31, months: [3], who: 'tax.who.ipOur' },
+  { key: 'fno_250', title: 'ФНО 250.00 (декларация об активах)', desc: 'Декларация об активах и обязательствах физического лица', type: 'yearly', day: 15, months: [9], who: 'tax.who.universal' },
 ];
 
 const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -32,6 +33,7 @@ function adjustForWeekend(year: number, month: number, day: number): Date {
 }
 
 export default function TaxCalendarPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState('');
@@ -70,7 +72,7 @@ export default function TaxCalendarPage() {
   const isToday = (d: Date) => toISO(d) === toISO(today);
   const daysUntil = (d: Date) => Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   const typeColors: Record<string, string> = { monthly: 'bg-blue-50 text-blue-700 border-blue-200', quarterly: 'bg-violet-50 text-violet-700 border-violet-200', halfyear: 'bg-amber-50 text-amber-700 border-amber-200', yearly: 'bg-rose-50 text-rose-700 border-rose-200' };
-  const typeLabels: Record<string, string> = { monthly: 'Ежемесячно', quarterly: 'Квартал', halfyear: 'Полугодие', yearly: 'Год' };
+  const typeLabels: Record<string, string> = { monthly: t('tax.monthly'), quarterly: t('tax.quarterly'), halfyear: t('tax.halfyear'), yearly: t('tax.yearly') };
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
 
@@ -78,23 +80,23 @@ export default function TaxCalendarPage() {
     <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
       <ToolsSidebar />
       <div className="lg:pl-60">
-        <DashboardHeader title="Налоговый календарь" />
+        <DashboardHeader title={t('tax.title')} />
         <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /> Налоговый календарь {year}</h1>
-          <p className="text-sm text-gray-500">Сроки сдачи отчётности и уплаты налогов в Казахстане</p>
+          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /> {t('tax.title')} {year}</h1>
+          <p className="text-sm text-gray-500">{t('tax.subtitle')}</p>
         </div>
 
         <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
           <button onClick={() => setCurrentMonth(m => (m + 11) % 12)} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronLeft className="w-5 h-5 text-gray-500" /></button>
-          <h2 className="font-bold text-lg text-gray-900">{MONTHS_RU[currentMonth]} {year}</h2>
+          <h2 className="font-bold text-lg text-gray-900">{t('month.' + currentMonth)} {year}</h2>
           <button onClick={() => setCurrentMonth(m => (m + 1) % 12)} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronRight className="w-5 h-5 text-gray-500" /></button>
         </div>
 
         {monthEvents.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-12 text-center">
             <CheckCircle2 className="w-10 h-10 text-emerald-200 mx-auto mb-3" />
-            <p className="text-gray-400">В этом месяце нет налоговых событий</p>
+            <p className="text-gray-400">{t('tax.noEvents')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -109,7 +111,7 @@ export default function TaxCalendarPage() {
                     <div className="flex items-start gap-3 min-w-0">
                       <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 ${urgent ? 'bg-amber-100' : 'bg-gray-50'}`}>
                         <span className={`text-lg font-extrabold ${urgent ? 'text-amber-700' : 'text-gray-700'}`}>{e.date.getDate()}</span>
-                        <span className="text-[10px] text-gray-400 uppercase">{MONTHS_RU[e.date.getMonth()].slice(0,3)}</span>
+                        <span className="text-[10px] text-gray-400 uppercase">{t('month.' + e.date.getMonth()).slice(0,3)}</span>
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -117,10 +119,10 @@ export default function TaxCalendarPage() {
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${typeColors[e.type]}`}>{typeLabels[e.type]}</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1 leading-relaxed">{e.desc}</p>
-                        <p className="text-xs text-gray-400 mt-1.5">👤 {e.who}</p>
+                        <p className="text-xs text-gray-400 mt-1.5">👤 {t(e.who)}</p>
                         {days >= 0 && (
                           <p className={`text-xs mt-1.5 font-medium ${urgent ? 'text-amber-600' : 'text-gray-400'}`}>
-                            {days === 0 ? '⚠️ Сегодня крайний срок!' : days === 1 ? 'Завтра' : `Через ${days} дн.`}
+                            {days === 0 ? t('tax.todayDeadline') : days === 1 ? t('tax.tomorrow') : `${t('tax.inDays')} ${days} ${t('tax.daysShort')}`}
                           </p>
                         )}
                       </div>
@@ -139,8 +141,8 @@ export default function TaxCalendarPage() {
         <div className="mt-6 bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3">
           <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-gray-600 leading-relaxed">
-            <p className="mb-1">Если крайний срок выпадает на выходной или праздник — он переносится на следующий рабочий день (уже учтено в датах).</p>
-            <p>Включите 🔔 напоминание, чтобы не пропустить срок. Календарь справочный — уточняйте сроки у вашего бухгалтера.</p>
+            <p className="mb-1">{t('tax.infoWeekend')}</p>
+            <p>{t('tax.infoReminder')}</p>
           </div>
         </div>
       </main>
