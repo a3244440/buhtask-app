@@ -7,6 +7,7 @@ import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
 import MobileToolsNav from '../components/MobileToolsNav';
 import { KZ_BANKS, getBik } from '@/lib/kzBanks';
+import { useI18n } from '@/lib/i18n';
 
 interface BankAccount { bank: string; iban: string; bik?: string; }
 interface Company {
@@ -26,6 +27,7 @@ const TAX_REGIMES = [
 const BANKS = KZ_BANKS.map(b => b.name).concat('Другой');
 
 export default function CompaniesPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState('');
@@ -141,23 +143,23 @@ export default function CompaniesPage() {
     <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
       <ToolsSidebar />
       <div className="lg:pl-60">
-        <DashboardHeader title="Мои компании" />
+        <DashboardHeader title={t('company.title')} />
         <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Мои компании</h1>
-            <p className="text-sm text-gray-500">{companies.length} из {FREE_LIMIT} (бесплатно)</p>
+            <h1 className="text-xl font-bold text-gray-900">{t('company.title')}</h1>
+            <p className="text-sm text-gray-500">{companies.length} {t('comp.of')} {FREE_LIMIT} ({t('comp.free')})</p>
           </div>
           <button onClick={openAdd} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
-            <Plus className="w-4 h-4" /> Добавить компанию
+            <Plus className="w-4 h-4" /> {t('comp.addCompany')}
           </button>
         </div>
 
         {companies.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center">
             <Building2 className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-400 mb-4">У вас пока нет добавленных компаний</p>
-            <button onClick={openAdd} className="text-blue-600 font-medium text-sm hover:underline">+ Добавить первую компанию</button>
+            <p className="text-gray-400 mb-4">{t('comp.noCompanies')}</p>
+            <button onClick={openAdd} className="text-blue-600 font-medium text-sm hover:underline">{t('comp.addFirst')}</button>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -185,7 +187,7 @@ export default function CompaniesPage() {
                 </div>
                 {c.bank_accounts && c.bank_accounts.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-50">
-                    <p className="text-xs text-gray-400 mb-1.5">Счета:</p>
+                    <p className="text-xs text-gray-400 mb-1.5">{t('comp.accounts')}</p>
                     <div className="flex flex-wrap gap-2">
                       {c.bank_accounts.map((b, i) => (
                         <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-lg text-xs text-gray-600">
@@ -208,13 +210,13 @@ export default function CompaniesPage() {
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setModalOpen(false)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-              <h3 className="font-bold text-gray-900">{editingId ? 'Редактировать компанию' : 'Новая компания'}</h3>
+              <h3 className="font-bold text-gray-900">{editingId ? t('comp.editCompany') : t('comp.newCompany')}</h3>
               <button onClick={() => setModalOpen(false)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
               {/* BIN with autofill */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">БИН / ИИН</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('comp.binIin')}</label>
                 <div className="flex gap-2">
                   <input type="text" value={form.bin} maxLength={12}
                     onChange={e => setForm(f => ({ ...f, bin: e.target.value.replace(/\D/g, '') }))}
@@ -222,28 +224,28 @@ export default function CompaniesPage() {
                   <button onClick={lookupBin} disabled={lookupLoading}
                     className="flex items-center gap-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white rounded-xl text-sm font-medium whitespace-nowrap transition-colors">
                     {lookupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    Найти
+                    {t('comp.find')}
                   </button>
                 </div>
                 {lookupMsg && <p className={`text-xs mt-1.5 ${lookupMsg.startsWith('✓') ? 'text-emerald-600' : 'text-amber-600'}`}>{lookupMsg}</p>}
                 {attribution && <p className="text-[11px] text-gray-400 mt-1">{attribution}</p>}
-                <p className="text-xs text-gray-400 mt-1">Введите БИН и нажмите «Найти» — данные подтянутся автоматически</p>
+                <p className="text-xs text-gray-400 mt-1">{t('comp.binHint')}</p>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Наименование *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('comp.name')} *</label>
                 <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="ТОО «Компания»" className={inp} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Директор</label>
-                <input type="text" value={form.director} onChange={e => setForm(f => ({ ...f, director: e.target.value }))} placeholder="Фамилия Имя Отчество" className={inp} />
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('comp.director')}</label>
+                <input type="text" value={form.director} onChange={e => setForm(f => ({ ...f, director: e.target.value }))} placeholder={t('comp.fioPlaceholder')} className={inp} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Юридический адрес</label>
-                <input type="text" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="г. Астана, ул. ..." className={inp} />
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('comp.legalAddress')}</label>
+                <input type="text" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder={t('comp.addressPlaceholder')} className={inp} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Налоговый режим</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('comp.taxRegime')}</label>
                 <select value={form.tax_regime} onChange={e => setForm(f => ({ ...f, tax_regime: e.target.value }))} className={inp}>
                   {TAX_REGIMES.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
@@ -252,8 +254,8 @@ export default function CompaniesPage() {
               {/* Bank accounts */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-semibold text-gray-700">Банковские счета</label>
-                  <button onClick={addBankAccount} className="text-xs text-blue-600 hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Добавить счёт</button>
+                  <label className="block text-sm font-semibold text-gray-700">{t('comp.bankAccounts')}</label>
+                  <button onClick={addBankAccount} className="text-xs text-blue-600 hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> {t('comp.addAccount')}</button>
                 </div>
                 <div className="space-y-3">
                   {form.bank_accounts.map((b, i) => (
@@ -297,27 +299,27 @@ export default function CompaniesPage() {
               <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-3">
                 <Building2 className="w-7 h-7" />
               </div>
-              <h3 className="text-lg font-bold">Лимит бесплатных компаний</h3>
+              <h3 className="text-lg font-bold">{t('comp.limitTitle')}</h3>
               <p className="text-sm text-blue-100 mt-1">На бесплатном тарифе можно добавить {FREE_LIMIT} компании</p>
             </div>
             <div className="p-6">
-              <p className="text-sm text-gray-600 mb-4">Чтобы добавить больше компаний, оформите подписку <b>BuhTask Pro</b> — управляйте неограниченным количеством компаний, ведите учёт и аналитику по каждой отдельно.</p>
+              <p className="text-sm text-gray-600 mb-4">{t('comp.limitDesc')}</p>
               <div className="bg-gray-50 rounded-xl p-4 mb-5">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-gray-900">BuhTask Pro</span>
-                  <span className="text-blue-600 font-bold">скоро</span>
+                  <span className="text-blue-600 font-bold">{t('comp.soon')}</span>
                 </div>
                 <ul className="space-y-1.5 text-sm text-gray-600">
-                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Неограниченно компаний</li>
-                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Финансовая аналитика по каждой</li>
-                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> Приоритетная поддержка</li>
+                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('comp.unlimited')}</li>
+                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('comp.analyticsEach')}</li>
+                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('comp.prioritySupport')}</li>
                 </ul>
               </div>
               <button onClick={() => { setShowPaywall(false); alert('Подписка скоро будет доступна. Следите за обновлениями!'); }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors mb-2">
-                Оформить подписку
+                {t('comp.subscribe')}
               </button>
-              <button onClick={() => setShowPaywall(false)} className="w-full text-gray-500 py-2 text-sm hover:text-gray-700">Позже</button>
+              <button onClick={() => setShowPaywall(false)} className="w-full text-gray-500 py-2 text-sm hover:text-gray-700">{t('comp.later')}</button>
             </div>
           </div>
         </div>
