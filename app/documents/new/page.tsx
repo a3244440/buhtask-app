@@ -6,10 +6,12 @@ import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 import ToolsSidebar from '../../components/ToolsSidebar';
 import { getActiveCompany } from '@/lib/activeCompany';
+import { useI18n } from '@/lib/i18n';
 
 interface Item { name: string; unit: string; qty: number; price: number; }
 
 function NewDocInner() {
+  const { t } = useI18n();
   const router = useRouter();
   const sp = useSearchParams();
   const type = (sp.get('type') || 'invoice') as 'invoice' | 'avr' | 'sf';
@@ -28,7 +30,7 @@ function NewDocInner() {
   const [items, setItems] = useState<Item[]>([{ name: '', unit: 'усл.', qty: 1, price: 0 }]);
   const [saving, setSaving] = useState(false);
 
-  const TYPE_LABEL = { invoice: 'Счёт на оплату', avr: 'Акт выполненных работ', sf: 'Счёт-фактура' }[type];
+  const TYPE_LABEL = { invoice: t('nd.typeInvoice'), avr: t('nd.typeAvr'), sf: t('nd.typeSf') }[type];
 
   useEffect(() => { init(); }, []);
 
@@ -75,9 +77,9 @@ function NewDocInner() {
   const vatTotal = hasVat ? Math.round(total - total / 1.12) : 0;
 
   const save = async () => {
-    if (!counterpartyId) { alert('Выберите контрагента (покупателя)'); return; }
-    if (!companyId) { alert('Выберите компанию-поставщика'); return; }
-    if (items.every(it => !it.name.trim())) { alert('Добавьте хотя бы одну позицию'); return; }
+    if (!counterpartyId) { alert(t('nd.selectBuyer')); return; }
+    if (!companyId) { alert(t('nd.selectSupplierAlert')); return; }
+    if (items.every(it => !it.name.trim())) { alert(t('nd.addItemAlert')); return; }
     setSaving(true);
     const payload = {
       owner_id: userId, company_id: companyId, counterparty_id: counterpartyId,
@@ -101,76 +103,76 @@ function NewDocInner() {
         <DashboardHeader title={TYPE_LABEL} />
         <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
           <button onClick={() => router.push('/documents')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-5">
-            <ArrowLeft className="w-4 h-4" /> К документам
+            <ArrowLeft className="w-4 h-4" /> {t('nd.toDocuments')}
           </button>
-          <h1 className="text-xl font-bold text-gray-900 mb-1">Новый: {TYPE_LABEL}</h1>
-          {parentId && <p className="text-sm text-blue-600 mb-5">Создаётся на основании документа</p>}
+          <h1 className="text-xl font-bold text-gray-900 mb-1">{t('nd.new')}: {TYPE_LABEL}</h1>
+          {parentId && <p className="text-sm text-blue-600 mb-5">{t('nd.basedOnDoc')}</p>}
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5 mt-4">
             {/* Поставщик / покупатель */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Поставщик (вы)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('nd.supplier')}</label>
                 <select value={companyId} onChange={e => setCompanyId(e.target.value)} className={inp}>
-                  <option value="">— выберите компанию —</option>
+                  <option value="">{t('nd.selectCompany')}</option>
                   {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                {companies.length === 0 && <p className="text-xs text-amber-600 mt-1">Сначала добавьте компанию в «Мои компании»</p>}
+                {companies.length === 0 && <p className="text-xs text-amber-600 mt-1">{t('nd.addCompanyFirst')}</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Покупатель</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('nd.buyer')}</label>
                 <select value={counterpartyId} onChange={e => setCounterpartyId(e.target.value)} className={inp}>
-                  <option value="">— выберите контрагента —</option>
+                  <option value="">{t('nd.selectCp')}</option>
                   {counterparties.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                {counterparties.length === 0 && <p className="text-xs text-amber-600 mt-1">Добавьте контрагента на странице «Документы»</p>}
+                {counterparties.length === 0 && <p className="text-xs text-amber-600 mt-1">{t('nd.addCpFirst')}</p>}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Номер</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('nd.number')}</label>
                 <input value={number} onChange={e => setNumber(e.target.value)} className={inp} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Дата</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('nd.date')}</label>
                 <input type="date" value={docDate} onChange={e => setDocDate(e.target.value)} className={inp} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Договор</label>
-                <input value={contract} onChange={e => setContract(e.target.value)} placeholder="Без договора" className={inp} />
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('nd.contract')}</label>
+                <input value={contract} onChange={e => setContract(e.target.value)} placeholder={t('nd.noContract')} className={inp} />
               </div>
             </div>
 
             {/* Позиции */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-semibold text-gray-700">Товары / услуги</label>
-                <button onClick={addItem} className="text-xs text-blue-600 hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Добавить</button>
+                <label className="block text-sm font-semibold text-gray-700">{t('nd.itemsGoods')}</label>
+                <button onClick={addItem} className="text-xs text-blue-600 hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> {t('btn.add')}</button>
               </div>
               <div className="space-y-3">
                 {items.map((it, i) => (
                   <div key={i} className="border border-gray-100 rounded-xl p-3 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">Позиция {i + 1}</span>
+                      <span className="text-xs text-gray-400">{t('nd.position')} {i + 1}</span>
                       {items.length > 1 && <button onClick={() => removeItem(i)} className="text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>}
                     </div>
-                    <input value={it.name} onChange={e => updateItem(i, 'name', e.target.value)} placeholder="Наименование работы/услуги/товара" className={inp} />
+                    <input value={it.name} onChange={e => updateItem(i, 'name', e.target.value)} placeholder={t('nd.itemNamePlaceholder')} className={inp} />
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="block text-[11px] text-gray-400 mb-1">Ед.изм</label>
+                        <label className="block text-[11px] text-gray-400 mb-1">{t('nd.unit')}</label>
                         <input value={it.unit} onChange={e => updateItem(i, 'unit', e.target.value)} className={inp} />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-gray-400 mb-1">Кол-во</label>
+                        <label className="block text-[11px] text-gray-400 mb-1">{t('nd.qty')}</label>
                         <input type="number" value={it.qty} onChange={e => updateItem(i, 'qty', parseFloat(e.target.value) || 0)} className={inp} />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-gray-400 mb-1">Цена</label>
+                        <label className="block text-[11px] text-gray-400 mb-1">{t('nd.price')}</label>
                         <input type="number" value={it.price} onChange={e => updateItem(i, 'price', parseFloat(e.target.value) || 0)} className={inp} />
                       </div>
                     </div>
-                    <p className="text-right text-sm text-gray-600">Сумма: <b>{(it.qty * it.price).toLocaleString('ru-RU')} ₸</b></p>
+                    <p className="text-right text-sm text-gray-600">{t('nd.sum')}: <b>{(it.qty * it.price).toLocaleString('ru-RU')} ₸</b></p>
                   </div>
                 ))}
               </div>
@@ -179,17 +181,17 @@ function NewDocInner() {
             {/* НДС */}
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input type="checkbox" checked={hasVat} onChange={e => setHasVat(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-blue-600" />
-              <span className="text-sm text-gray-700">Включить НДС 12% (в т.ч.)</span>
+              <span className="text-sm text-gray-700">{t('nd.includeVat')}</span>
             </label>
 
             {/* Итого */}
             <div className="bg-gray-50 rounded-xl p-4 text-right">
-              {hasVat && <p className="text-sm text-gray-500">в т.ч. НДС 12%: {vatTotal.toLocaleString('ru-RU')} ₸</p>}
-              <p className="text-lg font-bold text-gray-900">Итого: {total.toLocaleString('ru-RU')} ₸</p>
+              {hasVat && <p className="text-sm text-gray-500">{t('nd.vatIncl')}: {vatTotal.toLocaleString('ru-RU')} ₸</p>}
+              <p className="text-lg font-bold text-gray-900">{t('nd.total')}: {total.toLocaleString('ru-RU')} ₸</p>
             </div>
 
             <button onClick={save} disabled={saving} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
-              <Save className="w-4 h-4" /> {saving ? 'Сохраняем...' : 'Создать документ'}
+              <Save className="w-4 h-4" /> {saving ? t('doc.saving') : t('nd.createDoc')}
             </button>
           </div>
         </main>
