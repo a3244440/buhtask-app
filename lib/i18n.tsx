@@ -184,6 +184,24 @@ const translations: Record<string, Record<Lang, string>> = {
   'td.providerChosen': { ru: 'Исполнитель выбран', kz: 'Орындаушы таңдалды', en: 'Provider Chosen' },
   'td.otherChosen': { ru: 'Выбран другой исполнитель', kz: 'Басқа орындаушы таңдалды', en: 'Another provider was chosen' },
 
+  // === Публичный профиль бухгалтера ===
+  'accp.notFound': { ru: 'Профиль не найден', kz: 'Профиль табылмады', en: 'Profile not found' },
+  'accp.accountant': { ru: 'Бухгалтер', kz: 'Бухгалтер', en: 'Accountant' },
+  'accp.verified': { ru: 'Проверен', kz: 'Расталған', en: 'Verified' },
+  'accp.noRating': { ru: 'Нет оценок', kz: 'Бағалар жоқ', en: 'No ratings' },
+  'accp.since': { ru: 'на платформе с', kz: 'платформада', en: 'member since' },
+  'accp.tasksDone': { ru: 'Выполнено задач', kz: 'Орындалған тапсырмалар', en: 'Tasks Done' },
+  'accp.rating': { ru: 'Рейтинг', kz: 'Рейтинг', en: 'Rating' },
+  'accp.yearsExp': { ru: 'Лет опыта', kz: 'Тәжірибе жылы', en: 'Years Exp.' },
+  'accp.verificationTitle': { ru: 'Проверка пройдена', kz: 'Тексеруден өтті', en: 'Verification Passed' },
+  'accp.identityVerified': { ru: 'Личность подтверждена', kz: 'Жеке тұлға расталды', en: 'Identity verified' },
+  'accp.docsVerified': { ru: 'Документы проверены', kz: 'Құжаттар тексерілді', en: 'Documents verified' },
+  'accp.expVerified': { ru: 'Опыт подтверждён', kz: 'Тәжірибе расталды', en: 'Experience verified' },
+  'accp.specialization': { ru: 'Специализация', kz: 'Мамандану', en: 'Specialization' },
+  'accp.about': { ru: 'О специалисте', kz: 'Маман туралы', en: 'About' },
+  'accp.minPrice': { ru: 'Минимальная стоимость услуг', kz: 'Қызметтің ең төмен құны', en: 'Minimum service price' },
+  'accp.viewProfile': { ru: 'Посмотреть профиль', kz: 'Профильді қарау', en: 'View Profile' },
+
   // === Дашборд бухгалтера ===
   'acc.availableTasks': { ru: 'Доступные задачи', kz: 'Қолжетімді тапсырмалар', en: 'Available Tasks' },
   'acc.myOrders': { ru: 'Мои заказы', kz: 'Менің тапсырыстарым', en: 'My Orders' },
