@@ -40,6 +40,7 @@ export default function TaxCalendarPage() {
   const [userId, setUserId] = useState('');
   const [reminders, setReminders] = useState<Set<string>>(new Set());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [selectedISO, setSelectedISO] = useState<string | null>(null);
   const year = 2026;
 
   useEffect(() => { init(); }, []);
@@ -57,6 +58,26 @@ export default function TaxCalendarPage() {
     .filter(e => e.months.includes(currentMonth + 1))
     .map(e => { const date = adjustForWeekend(year, currentMonth + 1, e.day); return { ...e, date, iso: toISO(date) }; })
     .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  // Карта: iso-дата → события (дедлайны), для подсветки в сетке
+  const eventsByDate: Record<string, typeof monthEvents> = {};
+  monthEvents.forEach(e => { (eventsByDate[e.iso] = eventsByDate[e.iso] || []).push(e); });
+
+  // Построение сетки месяца (недели по 7 дней, понедельник первый)
+  const buildGrid = () => {
+    const first = new Date(year, currentMonth, 1);
+    const startDow = (first.getDay() + 6) % 7; // 0=Пн
+    const daysInMonth = new Date(year, currentMonth + 1, 0).getDate();
+    const cells: ({ day: number; iso: string } | null)[] = [];
+    for (let i = 0; i < startDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, iso: toISO(new Date(year, currentMonth, d)) });
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  };
+  const grid = buildGrid();
+  const selectedEvents = selectedISO ? (eventsByDate[selectedISO] || []) : [];
+  const isHoliday = (iso: string) => HOLIDAYS_2026.has(iso);
+  const isWeekend = (iso: string) => { const d = new Date(iso); return d.getDay() === 0 || d.getDay() === 6; };
 
   const toggleReminder = async (eventKey: string, title: string, iso: string) => {
     const reminderKey = `${eventKey}_${iso}`;
@@ -90,12 +111,97 @@ export default function TaxCalendarPage() {
 
         <ReportingBanner />
 
-        <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
-          <button onClick={() => setCurrentMonth(m => (m + 11) % 12)} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronLeft className="w-5 h-5 text-gray-500" /></button>
+        <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3">
+          <button onClick={() => { setCurrentMonth(m => (m + 11) % 12); setSelectedISO(null); }} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronLeft className="w-5 h-5 text-gray-500" /></button>
           <h2 className="font-bold text-lg text-gray-900">{t('month.' + currentMonth)} {year}</h2>
-          <button onClick={() => setCurrentMonth(m => (m + 1) % 12)} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronRight className="w-5 h-5 text-gray-500" /></button>
+          <button onClick={() => { setCurrentMonth(m => (m + 1) % 12); setSelectedISO(null); }} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronRight className="w-5 h-5 text-gray-500" /></button>
         </div>
 
+        {/* Сетка-календарь */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3">
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {['tax.wd.mon','tax.wd.tue','tax.wd.wed','tax.wd.thu','tax.wd.fri','tax.wd.sat','tax.wd.sun'].map((k, i) => (
+              <div key={k} className={`text-center text-[11px] font-semibold py-1 ${i >= 5 ? 'text-red-400' : 'text-gray-400'}`}>{t(k)}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {grid.map((cell, i) => {
+              if (!cell) return <div key={i} />;
+              const evs = eventsByDate[cell.iso] || [];
+              const hasEvents = evs.length > 0;
+              const today = isToday(new Date(cell.iso));
+              const selected = selectedISO === cell.iso;
+              const weekend = isWeekend(cell.iso);
+              const holiday = isHoliday(cell.iso);
+              return (
+                <button key={i} onClick={() => setSelectedISO(cell.iso)}
+                  className={`relative aspect-square rounded-xl flex flex-col items-center justify-center text-sm transition-all
+                    ${selected ? 'bg-blue-600 text-white font-bold shadow-md' :
+                      hasEvents ? 'bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100' :
+                      today ? 'bg-gray-100 text-gray-900 font-semibold' :
+                      'hover:bg-gray-50 ' + (holiday || weekend ? 'text-red-400' : 'text-gray-600')}`}>
+                  <span>{cell.day}</span>
+                  {today && !selected && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-blue-500" />}
+                  {hasEvents && (
+                    <span className="absolute top-1.5 right-1.5 flex gap-0.5">
+                      {evs.slice(0, 3).map((e, j) => (
+                        <span key={j} className={`w-1.5 h-1.5 rounded-full ${selected ? 'bg-white' : (e.type === 'monthly' ? 'bg-blue-400' : e.type === 'quarterly' ? 'bg-violet-400' : e.type === 'halfyear' ? 'bg-amber-400' : 'bg-rose-400')}`} />
+                      ))}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Панель выбранной даты */}
+        {selectedISO && (
+          <div className="bg-white rounded-2xl border border-blue-200 shadow-sm p-5 mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-4 h-4 text-blue-600" />
+              <h3 className="font-semibold text-gray-900 text-sm">
+                {t('tax.eventsOn')} {new Date(selectedISO).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                {isToday(new Date(selectedISO)) && <span className="ml-2 text-[10px] px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full">{t('tax.todayLabel')}</span>}
+              </h3>
+            </div>
+            {selectedEvents.length === 0 ? (
+              <div className="py-6 text-center">
+                <CheckCircle2 className="w-8 h-8 text-emerald-200 mx-auto mb-2" />
+                <p className="text-gray-400 text-sm">{t('tax.noEventsOnDate')}</p>
+                {(isHoliday(selectedISO) || isWeekend(selectedISO)) && <p className="text-xs text-red-300 mt-1">{t('tax.holiday')}</p>}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {selectedEvents.map(e => {
+                  const reminderKey = `${e.key}_${e.iso}`;
+                  const hasReminder = reminders.has(reminderKey);
+                  return (
+                    <div key={e.key} className="border border-gray-100 rounded-xl p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full font-medium">⏰ {t('tax.deadline')}</span>
+                            <h4 className="font-semibold text-gray-900 text-sm">{e.title}</h4>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${typeColors[e.type]}`}>{typeLabels[e.type]}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">{e.desc}</p>
+                          <p className="text-xs text-gray-400 mt-1">👤 {t(e.who)}</p>
+                        </div>
+                        <button onClick={() => toggleReminder(e.key, e.title, e.iso)}
+                          className={`p-2 rounded-xl flex-shrink-0 transition-colors ${hasReminder ? 'bg-blue-100 text-blue-600' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>
+                          {hasReminder ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Список всех событий месяца */}
         {monthEvents.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-12 text-center">
             <CheckCircle2 className="w-10 h-10 text-emerald-200 mx-auto mb-3" />
@@ -109,7 +215,7 @@ export default function TaxCalendarPage() {
               const days = daysUntil(e.date);
               const urgent = days >= 0 && days <= 5;
               return (
-                <div key={e.key} className={`bg-white rounded-2xl border shadow-sm p-5 ${isToday(e.date) ? 'border-blue-400 ring-1 ring-blue-100' : urgent ? 'border-amber-200' : 'border-gray-100'}`}>
+                <div key={e.key} onClick={() => setSelectedISO(e.iso)} className={`bg-white rounded-2xl border shadow-sm p-5 cursor-pointer hover:shadow-md transition-shadow ${isToday(e.date) ? 'border-blue-400 ring-1 ring-blue-100' : urgent ? 'border-amber-200' : 'border-gray-100'}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
                       <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 ${urgent ? 'bg-amber-100' : 'bg-gray-50'}`}>
@@ -130,7 +236,7 @@ export default function TaxCalendarPage() {
                         )}
                       </div>
                     </div>
-                    <button onClick={() => toggleReminder(e.key, e.title, e.iso)}
+                    <button onClick={(ev) => { ev.stopPropagation(); toggleReminder(e.key, e.title, e.iso); }}
                       className={`p-2.5 rounded-xl flex-shrink-0 transition-colors ${hasReminder ? 'bg-blue-100 text-blue-600' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>
                       {hasReminder ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
                     </button>

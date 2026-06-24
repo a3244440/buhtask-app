@@ -376,14 +376,15 @@ const translations: Record<string, Record<Lang, string>> = {
   'tax.who.universal': { ru: 'Всеобщее декларирование', kz: 'Жалпыға бірдей декларациялау', en: 'Universal declaration' },
 
   // === Баннер приёма отчётности ===
-  'tax.reportingOpen': { ru: 'Идёт приём отчётности', kz: 'Есептілік қабылдануда', en: 'Reporting period is open' },
-  'tax.reportingSoon': { ru: 'Скоро откроется приём', kz: 'Жақында қабылдау басталады', en: 'Reporting opens soon' },
-  'tax.acceptUntil': { ru: 'приём до', kz: 'қабылдау', en: 'submit by' },
-  'tax.opensIn': { ru: 'откроется через', kz: 'кейін ашылады', en: 'opens in' },
+  'tax.reportingOpen': { ru: 'Идёт отчётный период', kz: 'Есепті кезең жүріп жатыр', en: 'Reporting period is active' },
+  'tax.reportingSoon': { ru: 'Скоро начинается отчётный период', kz: 'Жақында есепті кезең басталады', en: 'Reporting period starts soon' },
+  'tax.acceptUntil': { ru: 'сдать до', kz: 'тапсыру', en: 'submit by' },
+  'tax.opensIn': { ru: 'начинается через', kz: 'кейін басталады', en: 'starts in' },
   'tax.daysShort2': { ru: 'дн.', kz: 'күн', en: 'd' },
   'tax.openFrom': { ru: 'с', kz: 'бастап', en: 'from' },
   'tax.deadlineWord': { ru: 'срок до', kz: 'мерзім', en: 'due' },
   'tax.viewCalendar': { ru: 'Открыть календарь', kz: 'Күнтізбені ашу', en: 'Open calendar' },
+  'tax.periodStarts': { ru: 'начинается отчётный период', kz: 'есепті кезең басталады', en: 'reporting period starts' },
   // описания форм для баннера
   'tax.rep.910': { ru: 'Упрощёнка (полугодие)', kz: 'Оңайлатылған (жартыжылдық)', en: 'Simplified (half-year)' },
   'tax.rep.200': { ru: 'ИПН и соцналог (квартал)', kz: 'ЖТС және әлеум. салық (тоқсан)', en: 'PIT & social tax (quarter)' },
@@ -391,6 +392,22 @@ const translations: Record<string, Record<Lang, string>> = {
   'tax.rep.101': { ru: 'КПН у источника (квартал)', kz: 'Көзден КТС (тоқсан)', en: 'CIT at source (quarter)' },
   'tax.rep.100': { ru: 'КПН (годовая)', kz: 'КТС (жылдық)', en: 'CIT (annual)' },
   'tax.rep.220': { ru: 'ИПН (годовая)', kz: 'ЖТС (жылдық)', en: 'PIT (annual)' },
+
+  // Сетка-календарь
+  'tax.wd.mon': { ru: 'Пн', kz: 'Дс', en: 'Mon' },
+  'tax.wd.tue': { ru: 'Вт', kz: 'Сс', en: 'Tue' },
+  'tax.wd.wed': { ru: 'Ср', kz: 'Ср', en: 'Wed' },
+  'tax.wd.thu': { ru: 'Чт', kz: 'Бс', en: 'Thu' },
+  'tax.wd.fri': { ru: 'Пт', kz: 'Жм', en: 'Fri' },
+  'tax.wd.sat': { ru: 'Сб', kz: 'Сб', en: 'Sat' },
+  'tax.wd.sun': { ru: 'Вс', kz: 'Жс', en: 'Sun' },
+  'tax.selectDate': { ru: 'Выберите дату', kz: 'Күнді таңдаңыз', en: 'Select a date' },
+  'tax.selectDateHint': { ru: 'Нажмите на дату в календаре, чтобы увидеть налоговые события', kz: 'Салық оқиғаларын көру үшін күнтізбеден күнді басыңыз', en: 'Tap a date to see tax events' },
+  'tax.noEventsOnDate': { ru: 'На эту дату нет налоговых событий', kz: 'Бұл күнге салық оқиғалары жоқ', en: 'No tax events on this date' },
+  'tax.eventsOn': { ru: 'События на', kz: 'Оқиғалар:', en: 'Events on' },
+  'tax.deadline': { ru: 'Крайний срок', kz: 'Соңғы мерзім', en: 'Deadline' },
+  'tax.holiday': { ru: 'Праздничный/выходной день', kz: 'Мереке/демалыс күні', en: 'Holiday/weekend' },
+  'tax.todayLabel': { ru: 'Сегодня', kz: 'Бүгін', en: 'Today' },
 
   // === Калькулятор зарплаты ===
   'sal.title': { ru: 'Калькулятор зарплаты', kz: 'Жалақы калькуляторы', en: 'Salary Calculator' },
