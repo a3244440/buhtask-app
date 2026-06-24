@@ -246,10 +246,10 @@ function ClientDashboardInner() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
 
   const stats = [
-    { label: 'Всего задач', value: tasks.length, color: 'text-gray-900' },
-    { label: 'Открытые', value: tasks.filter(t => t.status === 'open').length, color: 'text-emerald-600' },
-    { label: 'В работе', value: tasks.filter(t => t.status === 'in_progress').length, color: 'text-blue-600' },
-    { label: 'Завершённые', value: tasks.filter(t => t.status === 'completed').length, color: 'text-purple-600' },
+    { label: t('stat.totalTasks'), value: tasks.length, color: 'text-gray-900' },
+    { label: t('stat.open'), value: tasks.filter(t => t.status === 'open').length, color: 'text-emerald-600' },
+    { label: t('stat.inProgress'), value: tasks.filter(t => t.status === 'in_progress').length, color: 'text-blue-600' },
+    { label: t('stat.completed'), value: tasks.filter(t => t.status === 'completed').length, color: 'text-purple-600' },
   ];
 
   return (

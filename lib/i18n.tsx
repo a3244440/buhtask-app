@@ -55,6 +55,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'stat.open': { ru: 'Открытые', kz: 'Ашық', en: 'Open' },
   'stat.inProgress': { ru: 'В работе', kz: 'Жұмыста', en: 'In Progress' },
   'stat.recentTasks': { ru: 'Последние задачи', kz: 'Соңғы тапсырмалар', en: 'Recent Tasks' },
+  'stat.completed': { ru: 'Завершённые', kz: 'Аяқталған', en: 'Completed' },
 
   // Кнопки общие
   'btn.save': { ru: 'Сохранить', kz: 'Сақтау', en: 'Save' },
