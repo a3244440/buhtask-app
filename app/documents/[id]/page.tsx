@@ -369,33 +369,27 @@ function SfView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
     <div className="text-[10px] text-gray-900 leading-snug">
       <h2 className="text-[14px] font-bold mb-3 text-center">Счет-фактура № {doc.number} от {dateStr} г.</h2>
 
-      {/* Реквизиты поставщика */}
-      <div className="space-y-0.5 mb-2">
-        <p><b>Поставщик:</b> {company?.name || ''}</p>
-        <p>ИИН/БИН и адрес местонахождения поставщика: {company?.bin || ''}{company?.address ? `, Адрес: ${company.address}` : ''}</p>
-        {bankAcc && <p>ИИК: {bankAcc.iban || ''}, БИК: {bankAcc.bik || ''}</p>}
-        <p>Договор(контракт) на поставку товаров(работ,услуг): {doc.contract || 'Без договора'}</p>
-        <p>Условия оплаты по договору (контракту): Безналичный расчет</p>
-        <p>Пункт назначения поставляемых товаров(работ,услуг): {counterparty?.address || ''}</p>
-        <p className="text-[8px] text-gray-400 ml-2">государство, регион, область, город, район</p>
-        <p>Поставка товаров(работ,услуг) осуществлена по доверенности: </p>
-        <p>Способ отправления: </p>
-        <p>Товарно-транспортная накладная: </p>
-      </div>
-
-      {/* Грузоотправитель / Получатель */}
-      <div className="space-y-0.5 mb-3">
-        <p><b>Грузоотправитель:</b> {company?.name || ''}{company?.address ? `, Адрес: ${company.address}` : ''}</p>
-        <p className="text-[8px] text-gray-400 ml-2">(ИИН, наименование и адрес)</p>
-        <p><b>Грузополучатель:</b> {counterparty?.name || ''}{counterparty?.address ? `, ${counterparty.address}` : ''}</p>
-        <p className="text-[8px] text-gray-400 ml-2">(БИН, наименование и адрес)</p>
-        <p><b>Получатель:</b> {counterparty?.name || ''}</p>
-        <p>БИН/ИИН и адрес местонахождения получателя: {counterparty?.bin || ''}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}</p>
-        {cpBank && <p>{cpBank}</p>}
-      </div>
+      {/* Реквизиты поставщика — в рамках */}
+      <table className="w-full border-collapse mb-0 text-[10px]">
+        <tbody>
+          <tr><td className="border border-gray-700 px-1 py-0.5"><b>Поставщик:</b> {company?.name || ''}</td></tr>
+          <tr><td className="border border-gray-700 px-1 py-0.5">ИИН/БИН и адрес местонахождения поставщика: {company?.bin || ''}{company?.address ? `, Адрес: ${company.address}` : ''}</td></tr>
+          {bankAcc && <tr><td className="border border-gray-700 px-1 py-0.5">ИИК: {bankAcc.iban || ''}, БИК: {bankAcc.bik || ''}</td></tr>}
+          <tr><td className="border border-gray-700 px-1 py-0.5">Договор(контракт) на поставку товаров(работ,услуг): {doc.contract || 'Без договора'}</td></tr>
+          <tr><td className="border border-gray-700 px-1 py-0.5">Условия оплаты по договору (контракту): Безналичный расчет</td></tr>
+          <tr><td className="border border-gray-700 px-1 py-0.5">Пункт назначения поставляемых товаров(работ,услуг): {counterparty?.address || ''}<br /><span className="text-[8px] text-gray-400">государство, регион, область, город, район</span></td></tr>
+          <tr><td className="border border-gray-700 px-1 py-0.5">Поставка товаров(работ,услуг) осуществлена по доверенности: </td></tr>
+          <tr><td className="border border-gray-700 px-1 py-0.5">Способ отправления: </td></tr>
+          <tr><td className="border border-gray-700 px-1 py-0.5">Товарно-транспортная накладная: </td></tr>
+          <tr><td className="border border-gray-700 px-1 py-0.5"><b>Грузоотправитель:</b> {company?.name || ''}{company?.address ? `, Адрес: ${company.address}` : ''}<br /><span className="text-[8px] text-gray-400">(ИИН, наименование и адрес)</span></td></tr>
+          <tr><td className="border border-gray-700 px-1 py-0.5"><b>Грузополучатель:</b> {counterparty?.name || ''}{counterparty?.address ? `, ${counterparty.address}` : ''}<br /><span className="text-[8px] text-gray-400">(БИН, наименование и адрес)</span></td></tr>
+          <tr><td className="border border-gray-700 px-1 py-0.5"><b>Получатель:</b> {counterparty?.name || ''}</td></tr>
+          <tr><td className="border border-gray-700 px-1 py-0.5">БИН/ИИН и адрес местонахождения получателя: {counterparty?.bin || ''}{counterparty?.address ? `, Адрес: ${counterparty.address}` : ''}{cpBank ? ` | ${cpBank}` : ''}</td></tr>
+        </tbody>
+      </table>
 
       {/* Таблица 11 колонок */}
-      <table className="w-full border-collapse text-[8px]">
+      <table className="w-full border-collapse text-[8px]" style={{ marginTop: '-1px' }}>
         <thead>
           <tr>
             <th className="border border-gray-700 px-0.5 py-1 align-middle" rowSpan={2} style={{ width: '20px' }}>№ п/п</th>
@@ -442,28 +436,41 @@ function SfView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
         </tbody>
       </table>
 
-      {/* Всего по счету — слева под таблицей */}
-      <div className="flex items-center mt-1 mb-4">
-        <span className="font-bold">Всего по счету:</span>
-        <span className="ml-4 font-bold">{Number(doc.total).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</span>
-      </div>
+      {/* Всего по счету — в рамке слева под таблицей */}
+      <table className="w-full border-collapse text-[10px]" style={{ marginTop: '-1px' }}>
+        <tbody>
+          <tr>
+            <td className="border border-gray-700 px-1 py-1 font-bold">Всего по счету:</td>
+          </tr>
+        </tbody>
+      </table>
 
-      {/* Подписи */}
-      <div className="grid grid-cols-2 gap-6 mt-5 text-[10px]">
-        <div>
-          <p className="mb-4">Руководитель: <span className="font-medium">{company?.director || ''}</span></p>
-          <p className="text-[8px] text-gray-400">(Ф.И.О., подпись)  М.П.</p>
-          <p className="mt-3 mb-4">Главный бухгалтер: </p>
-          <p className="text-[8px] text-gray-400">(Ф.И.О., подпись)</p>
-        </div>
-        <div>
-          <p className="mb-4">ВЫДАЛ (ответственное лицо поставщика)</p>
-          <p className="text-[8px] text-gray-400">(должность)</p>
-          <p className="mt-3 mb-4 border-b border-gray-700 h-4"></p>
-          <p className="text-[8px] text-gray-400">(Ф.И.О., подпись)</p>
-        </div>
-      </div>
-      <p className="text-[8px] text-gray-500 mt-4">Примечание: Без печати недействительно. Оригинал (первый экземпляр) - покупателю. Копия (второй экземпляр) - поставщику.</p>
+      {/* Подписи в рамках */}
+      <table className="w-full border-collapse text-[10px]" style={{ marginTop: '-1px' }}>
+        <tbody>
+          <tr>
+            <td className="border border-gray-700 px-1 py-1 align-top" style={{ width: '50%' }}>
+              <p className="font-medium">Руководитель: {company?.director || ''}</p>
+            </td>
+            <td className="border border-gray-700 px-1 py-1 align-top">
+              <p>ВЫДАЛ (ответственное лицо поставщика)</p>
+            </td>
+          </tr>
+          <tr>
+            <td className="border border-gray-700 px-1 py-2 text-center text-[8px] text-gray-400 align-bottom">(Ф.И.О., подпись) &nbsp;&nbsp; М.П.</td>
+            <td className="border border-gray-700 px-1 py-2 text-center text-[8px] text-gray-400 align-bottom">(должность)</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-700 px-1 py-1">Главный бухгалтер: </td>
+            <td className="border border-gray-700 px-1 py-2"></td>
+          </tr>
+          <tr>
+            <td className="border border-gray-700 px-1 py-1 text-center text-[8px] text-gray-400">(Ф.И.О., подпись)</td>
+            <td className="border border-gray-700 px-1 py-1 text-center text-[8px] text-gray-400">(Ф.И.О., подпись)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="text-[8px] text-gray-500 mt-2">Примечание: Без печати недействительно. Оригинал (первый экземпляр) - покупателю. Копия (второй экземпляр) - поставщику.</p>
     </div>
   );
 }
