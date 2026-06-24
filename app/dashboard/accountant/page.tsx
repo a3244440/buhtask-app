@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 import { shortCompanyName } from '@/lib/companyName';
+import { useI18n } from '@/lib/i18n';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; final_price?: number; commission_amount?: number; commission_paid?: boolean; paid_by_client?: boolean; company_id?: string; company_name?: string; }
 interface Conversation { id: string; other_name: string; other_id: string; last_message: string; updated_at: string; task_title?: string; task_id?: string; }
@@ -30,13 +31,14 @@ const CATS: Record<string, string> = {
 };
 
 const NAV = [
-  { id: 'home', icon: Home, label: 'Главная' },
-  { id: 'tools', icon: Wrench, label: 'Инструменты' },
-  { id: 'tasks', icon: Briefcase, label: 'Задачи' },
-  { id: 'messages', icon: MessageSquare, label: 'Чат' },
+  { id: 'home', icon: Home, key: 'nav.home' },
+  { id: 'tools', icon: Wrench, key: 'nav.tools' },
+  { id: 'tasks', icon: Briefcase, key: 'nav.tasks' },
+  { id: 'messages', icon: MessageSquare, key: 'nav.messages' },
 ];
 
 function AccountantDashboardInner() {
+  const { t } = useI18n();
   const [tab, setTab] = useState('home');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [myOrders, setMyOrders] = useState<Task[]>([]);
@@ -264,11 +266,11 @@ function AccountantDashboardInner() {
         </div>
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {[
-            { id: 'home', icon: Home, label: 'Главная' },
-            { id: 'tasks', icon: Briefcase, label: 'Доступные задачи' },
-            { id: 'my_orders', icon: TrendingUp, label: 'Мои заказы' },
-            { id: 'balance', icon: Wallet, label: 'Баланс и комиссии' },
-            { id: 'messages', icon: MessageSquare, label: 'Сообщения' },
+            { id: 'home', icon: Home, label: t('nav.home') },
+            { id: 'tasks', icon: Briefcase, label: t('acc.availableTasks') },
+            { id: 'my_orders', icon: TrendingUp, label: t('acc.myOrders') },
+            { id: 'balance', icon: Wallet, label: t('acc.balance') },
+            { id: 'messages', icon: MessageSquare, label: t('nav.messages') },
           ].map(item => (
             <button key={item.id} onClick={() => setTab(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${tab === item.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
@@ -281,31 +283,31 @@ function AccountantDashboardInner() {
 
           {/* Инструменты */}
           <div className="pt-3 mt-2 border-t border-gray-100">
-            <p className="px-4 pb-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Инструменты</p>
+            <p className="px-4 pb-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t('tools.title')}</p>
             <button onClick={() => router.push('/tax-calendar')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-              <CalendarDays className="w-4 h-4 flex-shrink-0" /> Налоговый календарь
+              <CalendarDays className="w-4 h-4 flex-shrink-0" /> {t('tools.taxCalendar')}
             </button>
             <button onClick={() => router.push('/salary-calculator')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-              <Calculator className="w-4 h-4 flex-shrink-0" /> Калькулятор зарплаты
+              <Calculator className="w-4 h-4 flex-shrink-0" /> {t('tools.salaryCalc')}
             </button>
           </div>
         </nav>
         <div className="p-3 border-t border-gray-100">
           <button onClick={() => setTab('tasks')}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors">
-            <Briefcase className="w-4 h-4" /> Найти задачи
+            <Briefcase className="w-4 h-4" /> {t('acc.findTasks')}
           </button>
         </div>
       </aside>
 
       <div className="lg:pl-60">
-        <DashboardHeader title="Кабинет бухгалтера"
+        <DashboardHeader title={t('role.accountant')}
           right={tab === 'tasks' ? (
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input type="text" placeholder="Поиск задач..." value={search} onChange={e => setSearch(e.target.value)}
+              <input type="text" placeholder={t('acc.searchTasks')} value={search} onChange={e => setSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white" />
             </div>
           ) : undefined}
@@ -318,10 +320,10 @@ function AccountantDashboardInner() {
             <>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {[
-                  { label: 'Открытых задач', value: tasks.length, color: 'text-blue-600' },
-                  { label: 'Мои заказы', value: myOrders.length, color: 'text-emerald-600' },
-                  { label: 'Диалогов', value: conversations.length, color: 'text-purple-600' },
-                  { label: 'Рейтинг', value: '—', color: 'text-amber-500' },
+                  { label: t('acc.openTasks'), value: tasks.length, color: 'text-blue-600' },
+                  { label: t('acc.myOrders'), value: myOrders.length, color: 'text-emerald-600' },
+                  { label: t('acc.dialogs'), value: conversations.length, color: 'text-purple-600' },
+                  { label: t('acc.rating'), value: '—', color: 'text-amber-500' },
                 ].map(s => (
                   <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
                     <p className="text-xs text-gray-500 mb-2">{s.label}</p>
@@ -332,8 +334,8 @@ function AccountantDashboardInner() {
               {tab === 'my_orders' && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
                   <div className="px-6 py-5 border-b border-gray-100">
-                    <h2 className="font-semibold text-gray-900">Мои заказы</h2>
-                    <p className="text-xs text-gray-400 mt-0.5">Задачи, на которые вы откликнулись</p>
+                    <h2 className="font-semibold text-gray-900">{t('acc.myOrders')}</h2>
+                    <p className="text-xs text-gray-400 mt-0.5">{t('acc.myOrdersDesc')}</p>
                   </div>
                   {myOrders.length === 0 ? (
                     <div className="py-16 text-center">
@@ -347,11 +349,11 @@ function AccountantDashboardInner() {
                     <div className="divide-y divide-gray-50">
                       {myOrders.map(task => {
                         const statusLabels: Record<string, {label: string; color: string}> = {
-                          open: { label: 'Ожидает ответа', color: 'bg-amber-100 text-amber-700' },
-                          in_progress: { label: '✓ Вы выбраны!', color: 'bg-emerald-100 text-emerald-700' },
-                          completed: { label: 'Завершена', color: 'bg-gray-100 text-gray-500' },
-                          paid: { label: 'Оплачен', color: 'bg-blue-100 text-blue-700' },
-                          cancelled: { label: 'Отменена', color: 'bg-red-100 text-red-500' },
+                          open: { label: t('acc.waitingResponse'), color: 'bg-amber-100 text-amber-700' },
+                          in_progress: { label: t('acc.youChosen'), color: 'bg-emerald-100 text-emerald-700' },
+                          completed: { label: t('acc.completed'), color: 'bg-gray-100 text-gray-500' },
+                          paid: { label: t('acc.paid'), color: 'bg-blue-100 text-blue-700' },
+                          cancelled: { label: t('acc.cancelled'), color: 'bg-red-100 text-red-500' },
                         };
                         const sl = statusLabels[task.status] || statusLabels.open;
                         const price = myProposalPrices[task.id] || task.budget || 0;
@@ -363,7 +365,7 @@ function AccountantDashboardInner() {
                               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => router.push(`/dashboard/accountant/tasks/${task.id}`)}>
                                 <h3 className="font-medium text-gray-900 group-hover:text-blue-600 text-sm mb-1">{task.title}</h3>
                                 <div className="flex gap-2 text-xs text-gray-400 flex-wrap">
-                                  <span className="text-blue-600 font-medium">{CATS[task.category]}</span>
+                                  <span className="text-blue-600 font-medium">{t('taskcat.' + task.category)}</span>
                                   {task.city && <span>📍 {task.city}</span>}
                                   {price > 0 && <span className="text-emerald-600 font-medium">💰 {price.toLocaleString()} ₸</span>}
                                 </div>
@@ -375,9 +377,9 @@ function AccountantDashboardInner() {
                               <div className="mt-3 flex items-center gap-2">
                                 <button onClick={() => markOrderPaid(task)}
                                   className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors">
-                                  <CheckCircle2 className="w-3.5 h-3.5" /> Заказ выполнен и оплачен
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> {t('acc.orderDonePaid')}
                                 </button>
-                                <span className="text-xs text-gray-400">Комиссия {platformKaspi.percent}%: {commission.toLocaleString()} ₸</span>
+                                <span className="text-xs text-gray-400">{t('acc.commission')} {platformKaspi.percent}%: {commission.toLocaleString()} ₸</span>
                               </div>
                             )}
                             {/* Статус комиссии для оплаченных */}
@@ -385,13 +387,13 @@ function AccountantDashboardInner() {
                               <div className="mt-3 flex items-center gap-2">
                                 <button onClick={() => setPayModal(task)}
                                   className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-medium transition-colors">
-                                  <Wallet className="w-3.5 h-3.5" /> Оплатить комиссию {(task.commission_amount || commission).toLocaleString()} ₸
+                                  <Wallet className="w-3.5 h-3.5" /> {t('acc.payCommission')} {(task.commission_amount || commission).toLocaleString()} ₸
                                 </button>
                               </div>
                             )}
                             {task.status === 'paid' && task.commission_paid && (
                               <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-600">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Комиссия оплачена ✓
+                                <CheckCircle2 className="w-3.5 h-3.5" /> {t('acc.commissionPaid')} ✓
                               </div>
                             )}
                           </div>
@@ -411,9 +413,9 @@ function AccountantDashboardInner() {
                     {/* Stats cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                        <p className="text-xs text-gray-500 mb-1">Заработано всего</p>
+                        <p className="text-xs text-gray-500 mb-1">{t('acc.totalEarned')}</p>
                         <p className="text-2xl font-extrabold text-emerald-600">{totalEarned.toLocaleString()} ₸</p>
-                        <p className="text-xs text-gray-400 mt-1">{paidOrders.length} выполненных заказов</p>
+                        <p className="text-xs text-gray-400 mt-1">{paidOrders.length} {t('acc.completedOrders')}</p>
                       </div>
                       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                         <p className="text-xs text-gray-500 mb-1">Долг по комиссии</p>
@@ -473,9 +475,9 @@ function AccountantDashboardInner() {
               {tab === 'home' && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
                   <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-                    <h2 className="font-semibold text-gray-900">Новые задачи</h2>
+                    <h2 className="font-semibold text-gray-900">{t('stat.recentTasks')}</h2>
                     <button onClick={() => setTab('tasks')} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                      Все задачи <ChevronRight className="w-3 h-3" />
+                      {t('dash.allTasks')} <ChevronRight className="w-3 h-3" />
                     </button>
                   </div>
                   {tasks.slice(0, 4).map(task => (
@@ -483,7 +485,7 @@ function AccountantDashboardInner() {
                       className="px-6 py-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer group transition-colors last:border-0">
                       <h3 className="font-medium text-gray-900 group-hover:text-blue-600 text-sm mb-1">{task.title}</h3>
                       <div className="flex gap-3 text-xs text-gray-400 flex-wrap">
-                        <span className="text-blue-600 font-medium">{CATS[task.category]}</span>
+                        <span className="text-blue-600 font-medium">{t('taskcat.' + task.category)}</span>
                         {task.city && <span>📍 {task.city}</span>}
                         {task.budget && <span className="text-emerald-600">💰 {task.budget.toLocaleString()} ₸</span>}
                       </div>
@@ -498,13 +500,13 @@ function AccountantDashboardInner() {
           {tab === 'tasks' && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="px-6 py-5 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-900">Доступные задачи</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{filtered.length} задач открыто для откликов</p>
+                <h2 className="font-semibold text-gray-900">{t('acc.availableTasks')}</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{filtered.length} {t('td.tasksWord')}</p>
               </div>
               {filtered.length === 0 ? (
                 <div className="py-16 text-center">
                   <Briefcase className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                  <p className="text-gray-400">Задачи не найдены</p>
+                  <p className="text-gray-400">{t('acc.noTasks')}</p>
                 </div>
               ) : filtered.map(task => (
                 <div key={task.id} onClick={() => router.push(`/dashboard/accountant/tasks/${task.id}`)}
@@ -514,7 +516,7 @@ function AccountantDashboardInner() {
                       <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 mb-1">{task.title}</h3>
                       <p className="text-sm text-gray-400 line-clamp-2 mb-3">{task.description}</p>
                       <div className="flex flex-wrap gap-2 text-xs">
-                        <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-medium">{CATS[task.category]}</span>
+                        <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-medium">{t('taskcat.' + task.category)}</span>
                         {task.company_name && <span className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full font-medium"><Building2 className="w-3 h-3" />{task.company_name}</span>}
                         {task.city && <span className="flex items-center gap-1 text-gray-400"><MapPin className="w-3 h-3" />{task.city}</span>}
                         {task.budget && <span className="text-emerald-600 font-medium">💰 {task.budget.toLocaleString()} ₸</span>}
@@ -523,7 +525,7 @@ function AccountantDashboardInner() {
                     </div>
                     <button onClick={e => { e.stopPropagation(); router.push(`/dashboard/accountant/tasks/${task.id}`); }}
                       className="flex-shrink-0 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors whitespace-nowrap">
-                      Откликнуться
+                      {t('acc.respond')}
                     </button>
                   </div>
                 </div>
@@ -537,13 +539,13 @@ function AccountantDashboardInner() {
               {!activeConv ? (
                 <>
                   <div className="px-6 py-5 border-b border-gray-100">
-                    <h2 className="font-semibold text-gray-900">Сообщения</h2>
-                    <p className="text-xs text-gray-400 mt-0.5">{conversations.length} диалогов</p>
+                    <h2 className="font-semibold text-gray-900">{t('nav.messages')}</h2>
+                    <p className="text-xs text-gray-400 mt-0.5">{conversations.length} {t('dash.dialogs')}</p>
                   </div>
                   {conversations.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64">
                       <MessageSquare className="w-12 h-12 text-gray-200 mb-3" />
-                      <p className="text-gray-400 text-sm">Нет активных диалогов</p>
+                      <p className="text-gray-400 text-sm">{t('dash.noDialogs')}</p>
                       <p className="text-gray-300 text-xs mt-1">Заказчики смогут написать вам после выбора</p>
                     </div>
                   ) : conversations.map(conv => (
@@ -570,7 +572,7 @@ function AccountantDashboardInner() {
                     <div className="absolute inset-0 z-20 bg-blue-500/10 border-2 border-dashed border-blue-500 rounded-2xl flex items-center justify-center pointer-events-none">
                       <div className="bg-white rounded-2xl px-6 py-4 shadow-lg flex items-center gap-3">
                         <Paperclip className="w-5 h-5 text-blue-600" />
-                        <span className="text-sm font-semibold text-blue-700">Отпустите файл, чтобы прикрепить</span>
+                        <span className="text-sm font-semibold text-blue-700">{t('dash.dropFile')}</span>
                       </div>
                     </div>
                   )}
@@ -648,7 +650,7 @@ function AccountantDashboardInner() {
                     <div className="px-4 py-3 flex gap-2">
                     <input type="text" value={newMsg} onChange={e => { setNewMsg(e.target.value); if (chatError) setChatError(''); }}
                       onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                      placeholder="Напишите сообщение..." disabled={sending}
+                      placeholder={t('dash.writeMessage')} disabled={sending}
                       className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white" />
                     <button onClick={sendMessage} disabled={!newMsg.trim() || sending}
                       className="p-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white rounded-xl transition-colors flex-shrink-0">
