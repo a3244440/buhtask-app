@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import NavWrapper from "./components/NavWrapper";
+import { useI18n } from "@/lib/i18n";
 import {
   Calculator, FileText, Users, Building2, Search, Star,
   ArrowRight, ChevronRight, Briefcase, TrendingUp, Shield,
@@ -95,6 +96,7 @@ function useTypingAnimation(words: string[], typingSpeed = 100, deletingSpeed = 
 export default function HomePage() {
   const { user, loading, fetchUser } = useAuthStore();
   const router = useRouter();
+  const { t } = useI18n();
   const [dark, setDark] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { displayed, showCursor } = useTypingAnimation(TYPING_WORDS);
@@ -148,31 +150,31 @@ export default function HomePage() {
         }} />
         <div className="relative max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/20 bg-white/10 text-xs text-white/90 mb-6">
-            <MapPin className="w-3.5 h-3.5" /> Маркетплейс бухгалтерских услуг Казахстана
+            <MapPin className="w-3.5 h-3.5" /> {t('land.badge')}
           </div>
 
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] mb-5">
-            Найти <span className="text-yellow-300">бухгалтера</span><br />просто и быстро
+            {t('land.hero1')} <span className="text-yellow-300">{t('land.hero2')}</span><br />{t('land.hero3')}
           </h1>
 
           <p className="text-lg text-blue-100 max-w-2xl mx-auto mb-8 leading-relaxed">
-            BuhTask — цифровая платформа, где предприниматели находят проверенных бухгалтеров и получают бухгалтерские услуги из любой точки Казахстана.
+            {t('land.heroDesc')}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={() => router.push("/auth")}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white text-blue-700 font-bold text-base hover:bg-blue-50 transition-all shadow-xl hover:-translate-y-0.5">
-              Разместить задачу <ArrowRight className="w-5 h-5" />
+              {t('land.postTask')} <ArrowRight className="w-5 h-5" />
             </button>
             <button onClick={() => router.push("/auth")}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl border-2 border-white/30 text-white font-semibold text-base hover:bg-white/10 transition-all">
-              Я бухгалтер — найти заказы
+              {t('land.imAccountant')}
             </button>
           </div>
 
           {/* Typing animation between buttons */}
           <div className="mt-8 flex items-center justify-center gap-3">
-            <span className="text-white/50 text-sm">Например:</span>
+            <span className="text-white/50 text-sm">{t('land.forExample')}</span>
             <div className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-sm min-w-[260px] justify-start">
               <span className="text-yellow-300 text-sm font-medium">{displayed}</span>
               <span className={`inline-block w-0.5 h-4 bg-yellow-300 ml-0.5 align-middle transition-opacity ${showCursor ? 'opacity-100' : 'opacity-0'}`} />
@@ -199,7 +201,7 @@ export default function HomePage() {
       <section id="categories" className={`py-24 px-4 sm:px-6 ${bg}`}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Категории услуг</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">{t('land.categories')}</h2>
             <p className={mutedText}>Найдите нужного специалиста — от регистрации бизнеса до полного аудита</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -231,7 +233,7 @@ export default function HomePage() {
       <section id="how-it-works" className={`py-24 px-4 sm:px-6 border-t ${sectionBg}`}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Как это работает</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">{t('land.howItWorks')}</h2>
             <p className={mutedText}>Шесть простых шагов от регистрации до выполненной задачи</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -338,14 +340,14 @@ export default function HomePage() {
       {/* CTA */}
       <section className={`py-24 px-4 sm:px-6 ${D ? 'bg-gradient-to-br from-blue-950 to-gray-950' : 'bg-gradient-to-br from-blue-700 to-indigo-700'}`}>
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-5">Начните прямо сейчас</h2>
+          <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-5">{t('land.startNow')}</h2>
           <p className="text-blue-100 mb-8 max-w-xl mx-auto">
             Разместите первую задачу бесплатно или создайте профиль бухгалтера за 3 минуты.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={() => router.push("/auth")}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white text-blue-700 font-bold hover:bg-blue-50 transition-all shadow-xl">
-              Разместить задачу <ArrowRight className="w-5 h-5" />
+              {t('land.postTask')} <ArrowRight className="w-5 h-5" />
             </button>
             <button onClick={() => router.push("/auth")}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl border-2 border-white/30 text-white font-semibold hover:bg-white/10 transition-all">

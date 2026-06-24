@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 type Mode = 'login' | 'register' | 'forgot';
 type UserRole = 'client' | 'accountant';
@@ -19,6 +21,7 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const router = useRouter();
+  const { t } = useI18n();
 
   const reset = () => { setError(''); setSuccess(''); };
 
@@ -115,7 +118,10 @@ export default function AuthPage() {
   const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm bg-white";
 
   return (
-    <div className="min-h-screen flex" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="min-h-screen flex relative" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSwitcher />
+      </div>
       {/* Left branding */}
       <div className="hidden lg:flex lg:w-5/12 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-12 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
@@ -155,7 +161,7 @@ export default function AuthPage() {
                 <button onClick={() => { setMode('login'); reset(); }} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6 transition-colors">
                   <ArrowLeft className="w-4 h-4" /> Назад к входу
                 </button>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">Забыли пароль?</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('auth.forgotPassword')}</h2>
                 <p className="text-sm text-gray-500 mb-6">Введите email — мы пришлём ссылку для сброса пароля</p>
                 <div className="space-y-4">
                   <input type="email" placeholder="Ваш email" value={email} onChange={e => setEmail(e.target.value)} className={inputClass} />
@@ -173,15 +179,15 @@ export default function AuthPage() {
             {/* LOGIN */}
             {mode === 'login' && (
               <>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">Вход в BuhTask</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('auth.loginTitle')}</h2>
                 <p className="text-sm text-gray-500 mb-6">Войдите в свой аккаунт</p>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.email')}</label>
                     <input type="email" placeholder="example@email.com" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Пароль</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.password')}</label>
                     <div className="relative">
                       <input type={showPass ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} className={inputClass + ' pr-11'} />
                       <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -189,12 +195,12 @@ export default function AuthPage() {
                       </button>
                     </div>
                     <button onClick={() => { setMode('forgot'); reset(); }} className="text-xs text-blue-600 hover:underline mt-1.5 block text-right">
-                      Забыли пароль?
+                      {t('auth.forgotPassword')}
                     </button>
                   </div>
                   {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
                   <button onClick={handleLogin} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
-                    {loading ? 'Входим...' : 'Войти'}
+                    {loading ? '...' : t('auth.loginBtn')}
                   </button>
 
                   <div className="flex items-center gap-3 my-1">
@@ -211,12 +217,12 @@ export default function AuthPage() {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Войти через Google
+                    {t('auth.googleBtn')}
                   </button>
 
                   <p className="text-center text-sm text-gray-500">
-                    Нет аккаунта?{' '}
-                    <button onClick={() => { setMode('register'); reset(); }} className="text-blue-600 hover:underline font-medium">Зарегистрироваться</button>
+                    {t('auth.noAccount')}{' '}
+                    <button onClick={() => { setMode('register'); reset(); }} className="text-blue-600 hover:underline font-medium">{t('auth.signupBtn')}</button>
                   </p>
                 </div>
               </>
@@ -230,9 +236,9 @@ export default function AuthPage() {
                 <div className="space-y-4">
                   {/* Role */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Я регистрируюсь как:</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('auth.iAm')}</label>
                     <div className="grid grid-cols-2 gap-3">
-                      {([{ v: 'client', icon: '🏢', label: 'Заказчик', sub: 'ИП / ТОО' }, { v: 'accountant', icon: '👨‍💼', label: 'Бухгалтер', sub: 'Специалист' }] as const).map(r => (
+                      {([{ v: 'client', icon: '🏢', label: t('auth.asClient'), sub: 'ИП / ТОО' }, { v: 'accountant', icon: '👨‍💼', label: t('auth.asAccountant'), sub: 'Специалист' }] as const).map(r => (
                         <button key={r.v} type="button" onClick={() => setRole(r.v as UserRole)}
                           className={`p-4 border-2 rounded-xl text-left transition-all ${role === r.v ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
                           <div className="text-2xl mb-1">{r.icon}</div>
@@ -243,11 +249,11 @@ export default function AuthPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.email')}</label>
                     <input type="email" placeholder="example@email.com" value={email} onChange={e => setEmail(e.target.value)} className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Пароль</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.password')}</label>
                     <div className="relative">
                       <input type={showPass ? 'text' : 'password'} placeholder="Минимум 6 символов" value={password} onChange={e => setPassword(e.target.value)} className={inputClass + ' pr-11'} />
                       <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -277,7 +283,7 @@ export default function AuthPage() {
                   )}
 
                   <button onClick={handleRegister} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
-                    {loading ? 'Создаём аккаунт...' : 'Создать аккаунт'}
+                    {loading ? '...' : t('auth.signupBtn')}
                   </button>
 
                   <div className="flex items-center gap-3 my-1">
@@ -294,12 +300,12 @@ export default function AuthPage() {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Регистрация через Google
+                    {t('auth.googleBtn')}
                   </button>
 
                   <p className="text-center text-sm text-gray-500">
-                    Уже есть аккаунт?{' '}
-                    <button onClick={() => { setMode('login'); reset(); }} className="text-blue-600 hover:underline font-medium">Войти</button>
+                    {t('auth.haveAccount')}{' '}
+                    <button onClick={() => { setMode('login'); reset(); }} className="text-blue-600 hover:underline font-medium">{t('auth.loginBtn')}</button>
                   </p>
                 </div>
               </>

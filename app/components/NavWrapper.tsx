@@ -3,16 +3,19 @@ import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/lib/i18n";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const NAV_LINKS = [
-  { label: "Категории", href: "/#categories" },
-  { label: "Как работает", href: "/#how-it-works" },
-  { label: "Для бухгалтеров", href: "/#for-accountants" },
+  { key: "land.categories", href: "/#categories" },
+  { key: "land.howItWorks", href: "/#how-it-works" },
+  { key: "land.becomeAccountant", href: "/#for-accountants" },
 ];
 
 interface Props { dark?: boolean; }
 
 export default function NavWrapper({ dark = false }: Props) {
+  const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -64,26 +67,27 @@ export default function NavWrapper({ dark = false }: Props) {
         {isLanding && (
           <nav className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map(l => (
-              <a key={l.href} href={l.href} className={`text-sm font-medium transition-colors ${textColor}`}>{l.label}</a>
+              <a key={l.href} href={l.href} className={`text-sm font-medium transition-colors ${textColor}`}>{t(l.key)}</a>
             ))}
           </nav>
         )}
 
         <div className="hidden md:flex items-center gap-3">
+          <LanguageSwitcher />
           {user ? (
             <button onClick={() => router.push(dashHref)}
               className="text-sm font-semibold text-white px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors">
-              Личный кабинет
+              {t('menu.personal')}
             </button>
           ) : (
             <>
               <button onClick={() => router.push("/auth")}
                 className={`text-sm font-medium px-4 py-2 rounded-xl transition-colors ${isLanding && !scrolled ? 'text-white hover:bg-white/10' : dark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'}`}>
-                Войти
+                {t('land.login')}
               </button>
               <button onClick={() => router.push("/auth")}
                 className="text-sm font-semibold text-white px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm">
-                Начать бесплатно
+                {t('land.getStarted')}
               </button>
             </>
           )}
@@ -97,11 +101,11 @@ export default function NavWrapper({ dark = false }: Props) {
       {mobileOpen && (
         <div className={`md:hidden border-t px-4 py-4 flex flex-col gap-2 ${dark ? 'bg-gray-950 border-gray-800' : 'bg-white border-gray-100'}`}>
           {isLanding && NAV_LINKS.map(l => (
-            <a key={l.href} href={l.href} className={`text-sm py-2 ${dark ? 'text-gray-300' : 'text-gray-700'}`} onClick={() => setMobileOpen(false)}>{l.label}</a>
+            <a key={l.href} href={l.href} className={`text-sm py-2 ${dark ? 'text-gray-300' : 'text-gray-700'}`} onClick={() => setMobileOpen(false)}>{t(l.key)}</a>
           ))}
           <button onClick={() => { setMobileOpen(false); router.push("/auth"); }}
             className="w-full text-sm font-semibold text-white py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors mt-2">
-            {user ? "Личный кабинет" : "Войти / Регистрация"}
+            {user ? t('menu.personal') : `${t('land.login')} / ${t('land.signup')}`}
           </button>
         </div>
       )}
