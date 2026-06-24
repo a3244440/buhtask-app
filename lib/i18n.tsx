@@ -375,6 +375,23 @@ const translations: Record<string, Record<Lang, string>> = {
   'tax.who.ipOur': { ru: 'ИП на ОУР', kz: 'ЖКД режиміндегі ЖК', en: 'Sole prop (general regime)' },
   'tax.who.universal': { ru: 'Всеобщее декларирование', kz: 'Жалпыға бірдей декларациялау', en: 'Universal declaration' },
 
+  // === Баннер приёма отчётности ===
+  'tax.reportingOpen': { ru: 'Идёт приём отчётности', kz: 'Есептілік қабылдануда', en: 'Reporting period is open' },
+  'tax.reportingSoon': { ru: 'Скоро откроется приём', kz: 'Жақында қабылдау басталады', en: 'Reporting opens soon' },
+  'tax.acceptUntil': { ru: 'приём до', kz: 'қабылдау', en: 'submit by' },
+  'tax.opensIn': { ru: 'откроется через', kz: 'кейін ашылады', en: 'opens in' },
+  'tax.daysShort2': { ru: 'дн.', kz: 'күн', en: 'd' },
+  'tax.openFrom': { ru: 'с', kz: 'бастап', en: 'from' },
+  'tax.deadlineWord': { ru: 'срок до', kz: 'мерзім', en: 'due' },
+  'tax.viewCalendar': { ru: 'Открыть календарь', kz: 'Күнтізбені ашу', en: 'Open calendar' },
+  // описания форм для баннера
+  'tax.rep.910': { ru: 'Упрощёнка (полугодие)', kz: 'Оңайлатылған (жартыжылдық)', en: 'Simplified (half-year)' },
+  'tax.rep.200': { ru: 'ИПН и соцналог (квартал)', kz: 'ЖТС және әлеум. салық (тоқсан)', en: 'PIT & social tax (quarter)' },
+  'tax.rep.300': { ru: 'НДС (квартал)', kz: 'ҚҚС (тоқсан)', en: 'VAT (quarter)' },
+  'tax.rep.101': { ru: 'КПН у источника (квартал)', kz: 'Көзден КТС (тоқсан)', en: 'CIT at source (quarter)' },
+  'tax.rep.100': { ru: 'КПН (годовая)', kz: 'КТС (жылдық)', en: 'CIT (annual)' },
+  'tax.rep.220': { ru: 'ИПН (годовая)', kz: 'ЖТС (жылдық)', en: 'PIT (annual)' },
+
   // === Калькулятор зарплаты ===
   'sal.title': { ru: 'Калькулятор зарплаты', kz: 'Жалақы калькуляторы', en: 'Salary Calculator' },
   'sal.subtitle': { ru: 'Расчёт налогов и удержаний по ставкам Казахстана 2026 года', kz: '2026 жылғы Қазақстан мөлшерлемелері бойынша салық пен ұстамдарды есептеу', en: 'Tax and deduction calculation by Kazakhstan 2026 rates' },

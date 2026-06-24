@@ -7,6 +7,7 @@ import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
 import MobileToolsNav from '../components/MobileToolsNav';
 import { useI18n } from '@/lib/i18n';
+import ReportingBanner from '../components/ReportingBanner';
 
 interface TaxEvent { key: string; title: string; desc: string; type: 'monthly' | 'quarterly' | 'yearly' | 'halfyear'; day: number; months: number[]; who: string; }
 
@@ -86,6 +87,8 @@ export default function TaxCalendarPage() {
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /> {t('tax.title')} {year}</h1>
           <p className="text-sm text-gray-500">{t('tax.subtitle')}</p>
         </div>
+
+        <ReportingBanner />
 
         <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
           <button onClick={() => setCurrentMonth(m => (m + 11) % 12)} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronLeft className="w-5 h-5 text-gray-500" /></button>

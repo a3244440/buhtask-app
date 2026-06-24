@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/lib/i18n';
 import { containsContact as detectContact } from '@/lib/contactFilter';
+import ReportingBanner from '../../components/ReportingBanner';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3, Wrench, Users } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
@@ -300,6 +301,8 @@ function ClientDashboardInner() {
         <DashboardHeader title={tab === 'home' ? t('nav.home') : tab === 'tasks' ? t('nav.tasks') : t('nav.messages')} />
 
         <main className="p-4 sm:p-8 pb-24 lg:pb-8">
+
+          {tab === 'home' && <ReportingBanner />}
 
           {(tab === 'home' || tab === 'tasks') && (
             <>
