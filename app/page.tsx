@@ -10,47 +10,42 @@ import {
   Clock, MapPin, Zap, DollarSign, BarChart2, Moon, Sun,
 } from "lucide-react";
 
-const TYPING_WORDS = [
-  "Открыть ТОО",
-  "Закрыть ТОО",
-  "Сдать отчёт 910 ФНО",
-  "Расчёт зарплаты сотрудника",
-  "Ведение бухгалтерии",
-  "Консультация по НДС",
-  "Регистрация ИП",
-  "Налоговый аудит",
-];
+const TYPING_WORDS: Record<string, string[]> = {
+  ru: ["Открыть ТОО", "Закрыть ТОО", "Сдать отчёт 910 ФНО", "Расчёт зарплаты сотрудника", "Ведение бухгалтерии", "Консультация по НДС", "Регистрация ИП", "Налоговый аудит"],
+  kz: ["ЖШС ашу", "ЖШС жабу", "910 ФНО есебін тапсыру", "Қызметкер жалақысын есептеу", "Бухгалтерлік есеп жүргізу", "ҚҚС бойынша кеңес", "ЖК тіркеу", "Салықтық аудит"],
+  en: ["Open an LLP", "Close an LLP", "File 910 tax report", "Employee payroll calculation", "Bookkeeping", "VAT consultation", "Register sole prop", "Tax audit"],
+};
 const STATS = [
-  { value: "500+", label: "Проверенных бухгалтеров" },
-  { value: "2 000+", label: "Выполненных задач" },
-  { value: "20+", label: "Видов услуг" },
-  { value: "17", label: "Регионов Казахстана" },
+  { value: "500+", key: "land.statAccountants" },
+  { value: "2 000+", key: "land.statTasks" },
+  { value: "20+", key: "land.statServices" },
+  { value: "17", key: "land.statRegions" },
 ];
 const CATEGORIES = [
-  { icon: FileText, title: "Налоговая отчётность", desc: "Декларации, НДС, КПН, ИПН — сдача отчётности в срок", color: "text-blue-600", bg: "bg-blue-50", darkBg: "dark:bg-blue-900/30", hot: false },
-  { icon: Building2, title: "КС-2 и КС-3 (строительство)", desc: "Акты выполненных работ и справки о стоимости для строительных фирм", color: "text-orange-600", bg: "bg-orange-50", darkBg: "dark:bg-orange-900/30", hot: true },
-  { icon: DollarSign, title: "Декретные и пособия", desc: "Расчёт декретных, пособий по уходу, больничных для сотрудников и ИП", color: "text-pink-600", bg: "bg-pink-50", darkBg: "dark:bg-pink-900/30", hot: true },
-  { icon: DollarSign, title: "Расчёт зарплаты", desc: "Расчёт ЗП, ОПВ, соцотчислений, ИПН и налогов", color: "text-emerald-600", bg: "bg-emerald-50", darkBg: "dark:bg-emerald-900/30", hot: false },
-  { icon: Building2, title: "Регистрация ИП/ТОО", desc: "Открытие бизнеса под ключ: документы, постановка на учёт", color: "text-violet-600", bg: "bg-violet-50", darkBg: "dark:bg-violet-900/30", hot: false },
-  { icon: BarChart2, title: "Аудит", desc: "Проверка финансовой отчётности, выявление ошибок", color: "text-amber-600", bg: "bg-amber-50", darkBg: "dark:bg-amber-900/30", hot: false },
-  { icon: FileText, title: "Ответ на уведомление КГД", desc: "Камеральный контроль, ответы на уведомления налоговой, разблокировка счетов", color: "text-red-600", bg: "bg-red-50", darkBg: "dark:bg-red-900/30", hot: true },
-  { icon: DollarSign, title: "Снятие ареста со счёта", desc: "Разблокировка арестованных счетов ИП и ТОО, работа с налоговой", color: "text-rose-600", bg: "bg-rose-50", darkBg: "dark:bg-rose-900/30", hot: true },
-  { icon: Calculator, title: "Восстановление учёта", desc: "Восстановление бухгалтерии за прошлые периоды, архивирование документов", color: "text-cyan-600", bg: "bg-cyan-50", darkBg: "dark:bg-cyan-900/30", hot: true },
-  { icon: FileText, title: "Выписка ЭСФ / СНТ", desc: "Электронные счета-фактуры, сопроводительные накладные, приход ГТД", color: "text-blue-600", bg: "bg-blue-50", darkBg: "dark:bg-blue-900/30", hot: true },
-  { icon: BarChart2, title: "Помощь с налоговой проверкой", desc: "Сопровождение камеральных и налоговых проверок по новым правилам 2026", color: "text-amber-600", bg: "bg-amber-50", darkBg: "dark:bg-amber-900/30", hot: true },
-  { icon: BarChart2, title: "Возврат НДС", desc: "Возврат превышения НДС, работа с КГД по возврату", color: "text-teal-600", bg: "bg-teal-50", darkBg: "dark:bg-teal-900/30", hot: true },
-  { icon: Building2, title: "Закрытие ИП/ТОО", desc: "Ликвидация без штрафов, прохождение камерального контроля", color: "text-slate-600", bg: "bg-slate-50", darkBg: "dark:bg-slate-900/30", hot: false },
-  { icon: FileText, title: "Декларация 250/270", desc: "Декларация об активах и обязательствах, всеобщее декларирование", color: "text-indigo-600", bg: "bg-indigo-50", darkBg: "dark:bg-indigo-900/30", hot: true },
-  { icon: Users, title: "Консультация", desc: "Разовый вопрос или регулярное налоговое сопровождение", color: "text-cyan-600", bg: "bg-cyan-50", darkBg: "dark:bg-cyan-900/30", hot: false },
-  { icon: Calculator, title: "Ведение бухгалтерии", desc: "Полное ведение учёта: первичка, проводки, отчётность", color: "text-rose-600", bg: "bg-rose-50", darkBg: "dark:bg-rose-900/30", hot: false },
+  { icon: FileText, key: "cat.taxReport", color: "text-blue-600", bg: "bg-blue-50", darkBg: "dark:bg-blue-900/30", hot: false },
+  { icon: Building2, key: "cat.construction", color: "text-orange-600", bg: "bg-orange-50", darkBg: "dark:bg-orange-900/30", hot: true },
+  { icon: DollarSign, key: "cat.maternity", color: "text-pink-600", bg: "bg-pink-50", darkBg: "dark:bg-pink-900/30", hot: true },
+  { icon: DollarSign, key: "cat.salary", color: "text-emerald-600", bg: "bg-emerald-50", darkBg: "dark:bg-emerald-900/30", hot: false },
+  { icon: Building2, key: "cat.register", color: "text-violet-600", bg: "bg-violet-50", darkBg: "dark:bg-violet-900/30", hot: false },
+  { icon: BarChart2, key: "cat.audit", color: "text-amber-600", bg: "bg-amber-50", darkBg: "dark:bg-amber-900/30", hot: false },
+  { icon: FileText, key: "cat.kgdNotice", color: "text-red-600", bg: "bg-red-50", darkBg: "dark:bg-red-900/30", hot: true },
+  { icon: DollarSign, key: "cat.unblock", color: "text-rose-600", bg: "bg-rose-50", darkBg: "dark:bg-rose-900/30", hot: true },
+  { icon: Calculator, key: "cat.restore", color: "text-cyan-600", bg: "bg-cyan-50", darkBg: "dark:bg-cyan-900/30", hot: true },
+  { icon: FileText, key: "cat.esf", color: "text-blue-600", bg: "bg-blue-50", darkBg: "dark:bg-blue-900/30", hot: true },
+  { icon: BarChart2, key: "cat.taxInspection", color: "text-amber-600", bg: "bg-amber-50", darkBg: "dark:bg-amber-900/30", hot: true },
+  { icon: BarChart2, key: "cat.vatReturn", color: "text-teal-600", bg: "bg-teal-50", darkBg: "dark:bg-teal-900/30", hot: true },
+  { icon: Building2, key: "cat.closing", color: "text-slate-600", bg: "bg-slate-50", darkBg: "dark:bg-slate-900/30", hot: false },
+  { icon: FileText, key: "cat.declaration", color: "text-indigo-600", bg: "bg-indigo-50", darkBg: "dark:bg-indigo-900/30", hot: true },
+  { icon: Users, key: "cat.consult", color: "text-cyan-600", bg: "bg-cyan-50", darkBg: "dark:bg-cyan-900/30", hot: false },
+  { icon: Calculator, key: "cat.bookkeeping", color: "text-rose-600", bg: "bg-rose-50", darkBg: "dark:bg-rose-900/30", hot: false },
 ];
 const STEPS = [
-  { num: "01", title: "Зарегистрируйтесь", desc: "Создайте аккаунт как заказчик или бухгалтер" },
-  { num: "02", title: "Создайте задачу", desc: "Опишите задачу, укажите бюджет и сроки" },
-  { num: "03", title: "Получите отклики", desc: "Проверенные бухгалтеры пришлют предложения" },
-  { num: "04", title: "Выберите исполнителя", desc: "Изучите профили, рейтинги и отзывы" },
-  { num: "05", title: "Работайте онлайн", desc: "Общайтесь в чате, отслеживайте статус" },
-  { num: "06", title: "Оплатите результат", desc: "Быстрая и безопасная оплата через Kaspi" },
+  { num: "01", key: "step.1" },
+  { num: "02", key: "step.2" },
+  { num: "03", key: "step.3" },
+  { num: "04", key: "step.4" },
+  { num: "05", key: "step.5" },
+  { num: "06", key: "step.6" },
 ];
 
 // Detect Astana time and set dark mode accordingly
@@ -96,10 +91,10 @@ function useTypingAnimation(words: string[], typingSpeed = 100, deletingSpeed = 
 export default function HomePage() {
   const { user, loading, fetchUser } = useAuthStore();
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [dark, setDark] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { displayed, showCursor } = useTypingAnimation(TYPING_WORDS);
+  const { displayed, showCursor } = useTypingAnimation(TYPING_WORDS[lang] || TYPING_WORDS.ru);
 
   useEffect(() => {
     fetchUser();
@@ -190,7 +185,7 @@ export default function HomePage() {
             {STATS.map(s => (
               <div key={s.label} className="flex flex-col items-center gap-1 py-8 px-4">
                 <span className="text-4xl md:text-5xl font-extrabold text-blue-500">{s.value}</span>
-                <span className={`text-sm text-center ${mutedText}`}>{s.label}</span>
+                <span className={`text-sm text-center ${mutedText}`}>{t(s.key)}</span>
               </div>
             ))}
           </div>
@@ -202,7 +197,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-extrabold mb-4">{t('land.categories')}</h2>
-            <p className={mutedText}>Найдите нужного специалиста — от регистрации бизнеса до полного аудита</p>
+            <p className={mutedText}>{t('land.categoriesSub')}</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {CATEGORIES.map(cat => (
@@ -210,18 +205,18 @@ export default function HomePage() {
                 className={`group relative rounded-2xl border p-6 flex flex-col gap-4 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer ${cardBg}`}>
                 {cat.hot && (
                   <span className="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full text-[10px] font-bold">
-                    🔥 Высокий спрос
+                    {t('land.highDemand')}
                   </span>
                 )}
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${D ? 'bg-white/10' : cat.bg}`}>
                   <cat.icon className={`w-5 h-5 ${cat.color}`} />
                 </div>
                 <div>
-                  <p className="font-semibold mb-1">{cat.title}</p>
-                  <p className={`text-sm leading-relaxed ${mutedText}`}>{cat.desc}</p>
+                  <p className="font-semibold mb-1">{t(cat.key)}</p>
+                  <p className={`text-sm leading-relaxed ${mutedText}`}>{t(cat.key + 'Desc')}</p>
                 </div>
                 <div className="mt-auto flex items-center gap-1 text-xs text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                  Найти специалиста <ChevronRight className="w-3.5 h-3.5" />
+                  {t('land.findSpecialist')} <ChevronRight className="w-3.5 h-3.5" />
                 </div>
               </div>
             ))}
@@ -234,7 +229,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-extrabold mb-4">{t('land.howItWorks')}</h2>
-            <p className={mutedText}>Шесть простых шагов от регистрации до выполненной задачи</p>
+            <p className={mutedText}>{t('land.howSub')}</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {STEPS.map((step, i) => (
@@ -243,8 +238,8 @@ export default function HomePage() {
                   <span className="text-blue-500 font-bold text-sm font-mono">{step.num}</span>
                 </div>
                 <div className="pt-1">
-                  <p className="font-semibold mb-1">{step.title}</p>
-                  <p className={`text-sm leading-relaxed ${mutedText}`}>{step.desc}</p>
+                  <p className="font-semibold mb-1">{t(step.key)}</p>
+                  <p className={`text-sm leading-relaxed ${mutedText}`}>{t(step.key + 'desc')}</p>
                 </div>
               </div>
             ))}
@@ -259,16 +254,16 @@ export default function HomePage() {
             <div className="grid md:grid-cols-2 gap-10 items-center">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-xs text-blue-400 mb-5">
-                  <Briefcase className="w-3.5 h-3.5" /> Для бухгалтеров
+                  <Briefcase className="w-3.5 h-3.5" /> {t('land.forAccountants')}
                 </div>
                 <h2 className="text-3xl font-extrabold mb-4 leading-tight">
-                  Найдите клиентов <span className="text-emerald-500">без посредников</span>
+                  {t('land.findClients1')} <span className="text-emerald-500">{t('land.findClients2')}</span>
                 </h2>
                 <p className={`mb-6 leading-relaxed ${mutedText}`}>
-                  Создайте профиль, получайте заявки от реальных предпринимателей по всему Казахстану.
+                  {t('land.forAccDesc')}
                 </p>
                 <ul className="space-y-3 mb-8">
-                  {['Регистрация с указанием специализации', 'Просмотр задач по всему Казахстану', 'Система рейтингов и отзывов', 'Чат с заказчиками'].map(f => (
+                  {[t('land.accFeat1'), t('land.accFeat2'), t('land.accFeat3'), t('land.accFeat4')].map(f => (
                     <li key={f} className="flex items-center gap-3 text-sm">
                       <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                         <svg className="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
@@ -281,7 +276,7 @@ export default function HomePage() {
                 </ul>
                 <button onClick={() => router.push("/auth")}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors">
-                  Зарегистрироваться как бухгалтер <ArrowRight className="w-4 h-4" />
+                  {t('land.registerAccountant')} <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
               {/* Accountant profile card */}
@@ -302,11 +297,11 @@ export default function HomePage() {
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
                         {[1,2,3,4,5].map(s => <Star key={s} className="w-3 h-3 text-amber-400 fill-amber-400" />)}
-                        <span className={`text-xs ml-1 ${mutedText}`}>5.0 · 48 задач</span>
+                        <span className={`text-xs ml-1 ${mutedText}`}>5.0 · 48 {t('land.tasksLabel')}</span>
                       </div>
                       <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-semibold">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-                        Проверен BuhTask
+                        {t('land.verifiedBadge')}
                       </span>
                     </div>
                   </div>
@@ -319,7 +314,7 @@ export default function HomePage() {
                     ))}
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    {[{ label: "Задач", value: "48" }, { label: "Отзывов", value: "41" }, { label: "Рейтинг", value: "5.0" }].map(m => (
+                    {[{ label: t('land.tasksCount'), value: "48" }, { label: t('land.reviewsCount'), value: "41" }, { label: t('land.ratingCount'), value: "5.0" }].map(m => (
                       <div key={m.label} className={`rounded-xl p-3 text-center ${D ? 'bg-gray-900' : 'bg-gray-50'}`}>
                         <p className="text-xl font-extrabold text-blue-500">{m.value}</p>
                         <p className={`text-xs mt-0.5 ${mutedText}`}>{m.label}</p>
@@ -328,7 +323,7 @@ export default function HomePage() {
                   </div>
                   <div className={`mt-4 rounded-xl px-4 py-3 flex items-center gap-3 ${D ? 'bg-emerald-900/30 border border-emerald-800' : 'bg-emerald-50 border border-emerald-200'}`}>
                     <Zap className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <p className="text-sm text-emerald-500">3 новых задачи доступны прямо сейчас</p>
+                    <p className="text-sm text-emerald-500">{t('land.newTasksAvailable')}</p>
                   </div>
                 </div>
               </div>
@@ -342,7 +337,7 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-5">{t('land.startNow')}</h2>
           <p className="text-blue-100 mb-8 max-w-xl mx-auto">
-            Разместите первую задачу бесплатно или создайте профиль бухгалтера за 3 минуты.
+            {t('land.ctaDesc')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={() => router.push("/auth")}
@@ -351,7 +346,7 @@ export default function HomePage() {
             </button>
             <button onClick={() => router.push("/auth")}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl border-2 border-white/30 text-white font-semibold hover:bg-white/10 transition-all">
-              Зарегистрироваться как бухгалтер
+              {t('land.registerAccountant')}
             </button>
           </div>
         </div>
@@ -361,9 +356,9 @@ export default function HomePage() {
       <footer className={`py-10 px-4 sm:px-6 ${D ? 'bg-gray-950 border-t border-gray-800' : 'bg-gray-900'}`}>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <img src="/images/logo-new.png" alt="BuhTask" className="h-9 w-auto brightness-0 invert" />
-          <p className="text-xs text-gray-400">© 2026 BuhTask. Маркетплейс бухгалтерских услуг Казахстана.</p>
+          <p className="text-xs text-gray-400">{t('land.footerRights')}</p>
           <div className="flex gap-5">
-            {["Условия","Конфиденциальность","Контакты"].map(l => (
+            {[t('land.footerTerms'), t('land.footerPrivacy'), t('land.footerContacts')].map(l => (
               <a key={l} href="#" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{l}</a>
             ))}
           </div>
