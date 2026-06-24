@@ -3,10 +3,12 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Home, Building2, CalendarDays, Calculator, BarChart3, FileText } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 export default function ToolsSidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useI18n();
   const [role, setRole] = useState('client');
 
   useEffect(() => {
@@ -21,11 +23,11 @@ export default function ToolsSidebar() {
   const isAccountant = role === 'accountant';
 
   const tools = [
-    { href: '/companies', icon: Building2, label: 'Мои компании', hide: isAccountant },
-    { href: '/documents', icon: FileText, label: 'Документы', hide: isAccountant },
-    { href: '/tax-calendar', icon: CalendarDays, label: 'Налоговый календарь', hide: false },
-    { href: '/salary-calculator', icon: Calculator, label: 'Калькулятор зарплаты', hide: false },
-    { href: '/finance', icon: BarChart3, label: 'Финансовая аналитика', hide: isAccountant },
+    { href: '/companies', icon: Building2, label: t('tools.companies'), hide: isAccountant },
+    { href: '/documents', icon: FileText, label: t('tools.documents'), hide: isAccountant },
+    { href: '/tax-calendar', icon: CalendarDays, label: t('tools.taxCalendar'), hide: false },
+    { href: '/salary-calculator', icon: Calculator, label: t('tools.salaryCalc'), hide: false },
+    { href: '/finance', icon: BarChart3, label: t('tools.finance'), hide: isAccountant },
   ];
 
   return (
@@ -38,10 +40,10 @@ export default function ToolsSidebar() {
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         <button onClick={() => router.push(dashHref)}
           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-          <Home className="w-4 h-4 flex-shrink-0" /> Главная
+          <Home className="w-4 h-4 flex-shrink-0" /> {t('nav.home')}
         </button>
         <div className="pt-3 mt-2 border-t border-gray-100">
-          <p className="px-4 pb-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Инструменты</p>
+          <p className="px-4 pb-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t('tools.title')}</p>
           {tools.filter(t => !t.hide).map(t => {
             const active = pathname === t.href || pathname.startsWith(t.href + '/');
             return (

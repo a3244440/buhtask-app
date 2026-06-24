@@ -5,11 +5,14 @@ import { supabase } from '@/lib/supabase';
 import { LogOut, User, Settings, ChevronDown, Building2, Check, Plus } from 'lucide-react';
 import { getActiveCompany, setActiveCompany } from '@/lib/activeCompany';
 import { shortCompanyName } from '@/lib/companyName';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useI18n } from '@/lib/i18n';
 
 interface Props { title?: string; right?: React.ReactNode; }
 
 export default function DashboardHeader({ title, right }: Props) {
   const router = useRouter();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
@@ -48,7 +51,7 @@ export default function DashboardHeader({ title, right }: Props) {
     setActiveCompanyState(id);
     setCompanyMenuOpen(false);
   };
-  const activeCompanyName = activeCompany === 'personal' ? 'Личный кабинет' : shortCompanyName(companies.find(c => c.id === activeCompany)?.name || 'Личный кабинет');
+  const activeCompanyName = activeCompany === 'personal' ? t('menu.personal') : shortCompanyName(companies.find(c => c.id === activeCompany)?.name || t('menu.personal'));
 
   const handleSignOut = async () => { await supabase.auth.signOut(); router.push('/'); };
   const initials = fullName ? fullName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : (email[0]?.toUpperCase() || '?');
@@ -76,11 +79,11 @@ export default function DashboardHeader({ title, right }: Props) {
             </button>
             {companyMenuOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-50">
-                <p className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase">Выберите организацию</p>
+                <p className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase">{t('menu.selectOrg')}</p>
                 <button onClick={() => chooseCompany('personal')}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
                   <User className="w-4 h-4 text-gray-400" />
-                  <span className="flex-1 text-left text-gray-700">Личный кабинет</span>
+                  <span className="flex-1 text-left text-gray-700">{t('menu.personal')}</span>
                   {activeCompany === 'personal' && <Check className="w-4 h-4 text-blue-600" />}
                 </button>
                 {companies.map(c => (
@@ -94,7 +97,7 @@ export default function DashboardHeader({ title, right }: Props) {
                 <div className="border-t border-gray-100 mt-1 pt-1">
                   <button onClick={() => { setCompanyMenuOpen(false); router.push('/companies'); }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50">
-                    <Plus className="w-4 h-4" /> Управление компаниями
+                    <Plus className="w-4 h-4" /> {t('menu.manageCompanies')}
                   </button>
                 </div>
               </div>
@@ -102,8 +105,13 @@ export default function DashboardHeader({ title, right }: Props) {
           </div>
         )}
 
+        {/* Language switcher */}
+        <div className={`flex-shrink-0 ${role === 'accountant' ? 'ml-auto' : ''}`}>
+          <LanguageSwitcher />
+        </div>
+
         {/* Profile dropdown */}
-        <div className={`relative flex-shrink-0 ${role === 'accountant' ? 'ml-auto' : ''}`} ref={ref}>
+        <div className="relative flex-shrink-0" ref={ref}>
           <button onClick={() => setOpen(v => !v)}
             className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors">
             {avatarUrl ? (
@@ -112,8 +120,8 @@ export default function DashboardHeader({ title, right }: Props) {
               <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{initials}</div>
             )}
             <div className="hidden sm:block text-left min-w-0">
-              <p className="text-xs font-semibold text-gray-900 leading-tight truncate max-w-[120px]">{fullName || (role === 'accountant' ? 'Бухгалтер' : role === 'admin' ? 'Админ' : 'Заказчик')}</p>
-              <p className="text-[10px] text-gray-400">{role === 'accountant' ? 'Бухгалтер' : 'Заказчик'}</p>
+              <p className="text-xs font-semibold text-gray-900 leading-tight truncate max-w-[120px]">{fullName || (role === 'accountant' ? t('role.accountant') : role === 'admin' ? t('menu.admin') : t('role.client'))}</p>
+              <p className="text-[10px] text-gray-400">{role === 'accountant' ? t('role.accountant') : t('role.client')}</p>
             </div>
             <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
           </button>
@@ -129,12 +137,12 @@ export default function DashboardHeader({ title, right }: Props) {
                 <p className="text-sm font-semibold text-gray-900 truncate">{fullName || '—'}</p>
                 <p className="text-xs text-gray-400 truncate">{email}</p>
                 <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-medium">
-                  {role === 'accountant' ? 'Бухгалтер' : 'Заказчик'}
+                  {role === 'accountant' ? t('role.accountant') : t('role.client')}
                 </span>
               </div>
               <button onClick={() => { setOpen(false); router.push('/profile'); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                <User className="w-4 h-4 text-gray-400" /> Мой профиль
+                <User className="w-4 h-4 text-gray-400" /> {t('menu.profile')}
               </button>
               {role === 'admin' && (
                 <button onClick={() => { setOpen(false); router.push('/admin'); }}
@@ -146,12 +154,12 @@ export default function DashboardHeader({ title, right }: Props) {
               {role !== 'accountant' && (
                 <button onClick={() => { setOpen(false); router.push('/profile'); }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                  <Settings className="w-4 h-4 text-gray-400" /> Настройки
+                  <Settings className="w-4 h-4 text-gray-400" /> {t('menu.settings')}
                 </button>
               )}
               <div className="border-t border-gray-100 mt-1 pt-1">
                 <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50">
-                  <LogOut className="w-4 h-4" /> Выйти
+                  <LogOut className="w-4 h-4" /> {t('menu.logout')}
                 </button>
               </div>
             </div>

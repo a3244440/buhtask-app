@@ -3,10 +3,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Home, Wrench, Briefcase, MessageSquare } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 // Нижнее меню для страниц инструментов (мобильное)
 export default function MobileToolsNav() {
   const router = useRouter();
+  const { t } = useI18n();
   const [role, setRole] = useState('client');
 
   useEffect(() => {
@@ -20,10 +22,10 @@ export default function MobileToolsNav() {
   const dash = role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client';
 
   const items = [
-    { icon: Home, label: 'Главная', onClick: () => router.push(dash) },
-    { icon: Wrench, label: 'Инструменты', onClick: () => router.push('/tools') },
-    { icon: Briefcase, label: 'Задачи', onClick: () => router.push(dash + '?tab=tasks') },
-    { icon: MessageSquare, label: 'Чат', onClick: () => router.push(dash + '?tab=messages') },
+    { icon: Home, label: t('nav.home'), onClick: () => router.push(dash) },
+    { icon: Wrench, label: t('nav.tools'), onClick: () => router.push('/tools') },
+    { icon: Briefcase, label: t('nav.tasks'), onClick: () => router.push(dash + '?tab=tasks') },
+    { icon: MessageSquare, label: t('nav.messages'), onClick: () => router.push(dash + '?tab=messages') },
   ];
 
   return (
