@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/lib/i18n';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3, Wrench } from 'lucide-react';
+import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3, Wrench, Users } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; }
@@ -278,6 +278,10 @@ function ClientDashboardInner() {
             <button onClick={() => router.push('/companies')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <Building2 className="w-4 h-4 flex-shrink-0" /> {t('tools.companies')}
+            </button>
+            <button onClick={() => router.push('/counterparties')}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <Users className="w-4 h-4 flex-shrink-0" /> {t('tools.counterparties')}
             </button>
             <button onClick={() => router.push('/documents')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">

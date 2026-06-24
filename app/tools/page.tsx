@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Building2, CalendarDays, Calculator, BarChart3, ChevronRight, ArrowLeft, FileText } from 'lucide-react';
+import { Building2, CalendarDays, Calculator, BarChart3, ChevronRight, ArrowLeft, FileText, Users } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import DashboardHeader from '../components/DashboardHeader';
 import MobileToolsNav from '../components/MobileToolsNav';
@@ -25,6 +25,7 @@ export default function ToolsPage() {
 
   const tools = [
     { href: '/companies', icon: Building2, label: t('tools.companies'), desc: t('tools.companiesDesc'), hide: isAccountant, color: 'bg-blue-50 text-blue-600' },
+    { href: '/counterparties', icon: Users, label: t('tools.counterparties'), desc: t('tools.counterpartiesDesc'), hide: isAccountant, color: 'bg-indigo-50 text-indigo-600' },
     { href: '/documents', icon: FileText, label: t('tools.documents'), desc: t('tools.documentsDesc'), hide: isAccountant, color: 'bg-sky-50 text-sky-600' },
     { href: '/tax-calendar', icon: CalendarDays, label: t('tools.taxCalendar'), desc: t('tools.taxCalendarDesc'), hide: false, color: 'bg-violet-50 text-violet-600' },
     { href: '/salary-calculator', icon: Calculator, label: t('tools.salaryCalc'), desc: t('tools.salaryCalcDesc'), hide: false, color: 'bg-emerald-50 text-emerald-600' },
