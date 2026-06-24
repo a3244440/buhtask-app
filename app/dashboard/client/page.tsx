@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/lib/i18n';
+import { containsContact as detectContact } from '@/lib/contactFilter';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3, Wrench, Users } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
@@ -146,21 +147,7 @@ function ClientDashboardInner() {
     }
   };
 
-  const containsContact = (text: string): boolean => {
-    if (!text) return false;
-    // Телефоны: 8/+7 форматы, 10+ цифр подряд (с разделителями), казахстанские номера
-    const phonePatterns = [
-      /(\+?7|8)[\s\-(]*\d{3}[\s\-)]*\d{3}[\s\-]*\d{2}[\s\-]*\d{2}/,  // +7/8 XXX XXX XX XX
-      /\d{10,}/,  // 10+ цифр подряд
-      /\d{3}[\s\-]\d{3}[\s\-]\d{2}[\s\-]\d{2}/,  // XXX-XXX-XX-XX
-    ];
-    // Email
-    const emailPattern = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
-    // Мессенджеры / соцсети (попытка увести с платформы)
-    const messengerPattern = /(whats\s?app|вотс\s?ап|ватсап|телеграм|telegram|@[a-zA-Z0-9_]{4,}|instagram|инстаграм|вайбер|viber)/i;
-    const cleaned = text.replace(/\s+/g, ' ');
-    return phonePatterns.some(p => p.test(cleaned)) || emailPattern.test(cleaned) || messengerPattern.test(cleaned);
-  };
+  const containsContact = (text: string): boolean => detectContact(text);
 
   const sendMessage = async () => {
     if ((!newMsg.trim() && !attachedFile) || !activeConv || !userId) return;

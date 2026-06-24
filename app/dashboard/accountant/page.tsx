@@ -6,6 +6,7 @@ import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRig
 import DashboardHeader from '../../components/DashboardHeader';
 import { shortCompanyName } from '@/lib/companyName';
 import { useI18n } from '@/lib/i18n';
+import { containsContact as detectContact } from '@/lib/contactFilter';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; final_price?: number; commission_amount?: number; commission_paid?: boolean; paid_by_client?: boolean; company_id?: string; company_name?: string; }
 interface Conversation { id: string; other_name: string; other_id: string; last_message: string; updated_at: string; task_title?: string; task_id?: string; }
@@ -224,18 +225,7 @@ function AccountantDashboardInner() {
     }
   };
 
-  const containsContact = (text: string): boolean => {
-    if (!text) return false;
-    const phonePatterns = [
-      /(\+?7|8)[\s\-(]*\d{3}[\s\-)]*\d{3}[\s\-]*\d{2}[\s\-]*\d{2}/,
-      /\d{10,}/,
-      /\d{3}[\s\-]\d{3}[\s\-]\d{2}[\s\-]\d{2}/,
-    ];
-    const emailPattern = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
-    const messengerPattern = /(whats\s?app|вотс\s?ап|ватсап|телеграм|telegram|@[a-zA-Z0-9_]{4,}|instagram|инстаграм|вайбер|viber)/i;
-    const cleaned = text.replace(/\s+/g, ' ');
-    return phonePatterns.some(p => p.test(cleaned)) || emailPattern.test(cleaned) || messengerPattern.test(cleaned);
-  };
+  const containsContact = (text: string): boolean => detectContact(text);
 
   const sendMessage = async () => {
     if (!newMsg.trim() || !activeConv || !userId) return;
