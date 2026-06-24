@@ -89,6 +89,25 @@ const translations: Record<string, Record<Lang, string>> = {
   'finance.period': { ru: 'Период', kz: 'Кезең', en: 'Period' },
   'finance.byCategory': { ru: 'Расходы по категориям', kz: 'Санаттар бойынша шығыстар', en: 'Expenses by Category' },
 
+  // === Дашборд заказчика ===
+  'dash.allTasks': { ru: 'Все задачи', kz: 'Барлық тапсырмалар', en: 'All Tasks' },
+  'dash.noTasks': { ru: 'У вас пока нет задач', kz: 'Сізде әзірге тапсырма жоқ', en: 'You have no tasks yet' },
+  'dash.createFirst': { ru: 'Создать первую задачу', kz: 'Алғашқы тапсырманы құру', en: 'Create your first task' },
+  'dash.dialogs': { ru: 'диалогов', kz: 'диалог', en: 'dialogs' },
+  'dash.noDialogs': { ru: 'Нет активных диалогов', kz: 'Белсенді диалогтар жоқ', en: 'No active dialogs' },
+  'dash.dialogsAppear': { ru: 'Диалоги появятся после выбора бухгалтера', kz: 'Бухгалтерді таңдағаннан кейін диалогтар пайда болады', en: 'Dialogs appear after choosing an accountant' },
+  'dash.noMessages': { ru: 'Нет сообщений', kz: 'Хабарлама жоқ', en: 'No messages' },
+  'dash.dropFile': { ru: 'Отпустите файл, чтобы прикрепить', kz: 'Тіркеу үшін файлды жіберіңіз', en: 'Drop file to attach' },
+  'dash.writeMessage': { ru: 'Напишите сообщение...', kz: 'Хабарлама жазыңыз...', en: 'Write a message...' },
+  'dash.accountant': { ru: 'Бухгалтер', kz: 'Бухгалтер', en: 'Accountant' },
+
+  // Статусы задач
+  'status.open': { ru: 'Открыта', kz: 'Ашық', en: 'Open' },
+  'status.in_progress': { ru: 'В работе', kz: 'Жұмыста', en: 'In Progress' },
+  'status.completed': { ru: 'Завершена', kz: 'Аяқталды', en: 'Completed' },
+  'status.cancelled': { ru: 'Отменена', kz: 'Бас тартылды', en: 'Cancelled' },
+  'status.paid': { ru: 'Оплачена', kz: 'Төленді', en: 'Paid' },
+
   // === Лендинг ===
   'land.login': { ru: 'Войти', kz: 'Кіру', en: 'Log in' },
   'land.signup': { ru: 'Регистрация', kz: 'Тіркелу', en: 'Sign up' },

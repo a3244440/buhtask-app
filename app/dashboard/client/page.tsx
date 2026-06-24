@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useI18n } from '@/lib/i18n';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3, Wrench } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
@@ -34,13 +35,14 @@ const STATUS: Record<string, { label: string; color: string }> = {
   cancelled: { label: 'Отменена', color: 'bg-red-100 text-red-500' },
 };
 const NAV = [
-  { id: 'home', icon: Home, label: 'Главная' },
-  { id: 'tools', icon: Wrench, label: 'Инструменты' },
-  { id: 'tasks', icon: Briefcase, label: 'Задачи' },
-  { id: 'messages', icon: MessageSquare, label: 'Чат' },
+  { id: 'home', icon: Home, key: 'nav.home' },
+  { id: 'tools', icon: Wrench, key: 'nav.tools' },
+  { id: 'tasks', icon: Briefcase, key: 'nav.tasks' },
+  { id: 'messages', icon: MessageSquare, key: 'nav.messages' },
 ];
 
 function ClientDashboardInner() {
+  const { t } = useI18n();
   const [tab, setTab] = useState('home');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -257,9 +259,9 @@ function ClientDashboardInner() {
           <img src="/images/logo-new.png" alt="BuhTask" className="h-14 w-auto" /></div>
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {[
-            { id: 'home', icon: Home, label: 'Главная' },
-            { id: 'tasks', icon: Briefcase, label: 'Мои задачи' },
-            { id: 'messages', icon: MessageSquare, label: 'Сообщения' },
+            { id: 'home', icon: Home, label: t('nav.home') },
+            { id: 'tasks', icon: Briefcase, label: t('nav.tasks') },
+            { id: 'messages', icon: MessageSquare, label: t('nav.messages') },
           ].map(item => (
             <button key={item.id} onClick={() => setTab(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${tab === item.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
@@ -272,39 +274,39 @@ function ClientDashboardInner() {
 
           {/* Инструменты */}
           <div className="pt-3 mt-2 border-t border-gray-100">
-            <p className="px-4 pb-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Инструменты</p>
+            <p className="px-4 pb-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t('tools.title')}</p>
             <button onClick={() => router.push('/companies')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-              <Building2 className="w-4 h-4 flex-shrink-0" /> Мои компании
+              <Building2 className="w-4 h-4 flex-shrink-0" /> {t('tools.companies')}
             </button>
             <button onClick={() => router.push('/documents')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-              <FileText className="w-4 h-4 flex-shrink-0" /> Документы
+              <FileText className="w-4 h-4 flex-shrink-0" /> {t('tools.documents')}
             </button>
             <button onClick={() => router.push('/tax-calendar')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-              <CalendarDays className="w-4 h-4 flex-shrink-0" /> Налоговый календарь
+              <CalendarDays className="w-4 h-4 flex-shrink-0" /> {t('tools.taxCalendar')}
             </button>
             <button onClick={() => router.push('/salary-calculator')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-              <Calculator className="w-4 h-4 flex-shrink-0" /> Калькулятор зарплаты
+              <Calculator className="w-4 h-4 flex-shrink-0" /> {t('tools.salaryCalc')}
             </button>
             <button onClick={() => router.push('/finance')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-              <BarChart3 className="w-4 h-4 flex-shrink-0" /> Финансовая аналитика
+              <BarChart3 className="w-4 h-4 flex-shrink-0" /> {t('tools.finance')}
             </button>
           </div>
         </nav>
         <div className="p-3 border-t border-gray-100 space-y-1">
           <button onClick={() => router.push('/dashboard/client/create-task')}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors">
-            <Plus className="w-4 h-4" /> Новая задача
+            <Plus className="w-4 h-4" /> {t('nav.newTask')}
           </button>
         </div>
       </aside>
 
       <div className="lg:pl-60">
-        <DashboardHeader title={tab === 'home' ? 'Главная' : tab === 'tasks' ? 'Мои задачи' : 'Сообщения'} />
+        <DashboardHeader title={tab === 'home' ? t('nav.home') : tab === 'tasks' ? t('nav.tasks') : t('nav.messages')} />
 
         <main className="p-4 sm:p-8 pb-24 lg:pb-8">
 
@@ -320,19 +322,19 @@ function ClientDashboardInner() {
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-                  <h2 className="font-semibold text-gray-900">{tab === 'home' ? 'Последние задачи' : 'Все задачи'}</h2>
+                  <h2 className="font-semibold text-gray-900">{tab === 'home' ? t('stat.recentTasks') : t('dash.allTasks')}</h2>
                   <button onClick={() => router.push('/dashboard/client/create-task')}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors">
-                    <Plus className="w-4 h-4" /> Новая задача
+                    <Plus className="w-4 h-4" /> {t('nav.newTask')}
                   </button>
                 </div>
                 {tasks.length === 0 ? (
                   <div className="py-16 text-center">
                     <FileText className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                    <p className="text-gray-400 mb-4">У вас пока нет задач</p>
+                    <p className="text-gray-400 mb-4">{t('dash.noTasks')}</p>
                     <button onClick={() => router.push('/dashboard/client/create-task')}
                       className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors">
-                      Создать первую задачу
+                      {t('dash.createFirst')}
                     </button>
                   </div>
                 ) : (tab === 'home' ? tasks.slice(0, 5) : tasks).map(task => {
@@ -344,7 +346,7 @@ function ClientDashboardInner() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-1.5 flex-wrap">
                             <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{task.title}</h3>
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${sc.color}`}>{sc.label}</span>
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${sc.color}`}>{t('status.' + task.status)}</span>
                           </div>
                           <p className="text-sm text-gray-400 line-clamp-1 mb-2">{task.description}</p>
                           <div className="flex flex-wrap gap-2 text-xs text-gray-400">
@@ -368,14 +370,14 @@ function ClientDashboardInner() {
               {!activeConv ? (
                 <>
                   <div className="px-6 py-5 border-b border-gray-100">
-                    <h2 className="font-semibold text-gray-900">Сообщения</h2>
-                    <p className="text-xs text-gray-400 mt-0.5">{conversations.length} диалогов</p>
+                    <h2 className="font-semibold text-gray-900">{t('nav.messages')}</h2>
+                    <p className="text-xs text-gray-400 mt-0.5">{conversations.length} {t('dash.dialogs')}</p>
                   </div>
                   {conversations.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64">
                       <MessageSquare className="w-12 h-12 text-gray-200 mb-3" />
-                      <p className="text-gray-400 text-sm">Нет активных диалогов</p>
-                      <p className="text-gray-300 text-xs mt-1">Диалоги появятся после выбора бухгалтера</p>
+                      <p className="text-gray-400 text-sm">{t('dash.noDialogs')}</p>
+                      <p className="text-gray-300 text-xs mt-1">{t('dash.dialogsAppear')}</p>
                     </div>
                   ) : conversations.map(conv => (
                     <div key={conv.id} onClick={() => openConversation(conv)}
@@ -386,7 +388,7 @@ function ClientDashboardInner() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 text-sm truncate">{conv.other_name}</p>
                         {conv.task_title && <p className="text-xs text-blue-600 truncate">📋 {conv.task_title}</p>}
-                        <p className="text-xs text-gray-400 truncate">{conv.last_message || 'Нет сообщений'}</p>
+                        <p className="text-xs text-gray-400 truncate">{conv.last_message || t('dash.noMessages')}</p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
                     </div>
@@ -401,7 +403,7 @@ function ClientDashboardInner() {
                     <div className="absolute inset-0 z-20 bg-blue-500/10 border-2 border-dashed border-blue-500 rounded-2xl flex items-center justify-center pointer-events-none">
                       <div className="bg-white rounded-2xl px-6 py-4 shadow-lg flex items-center gap-3">
                         <Paperclip className="w-5 h-5 text-blue-600" />
-                        <span className="text-sm font-semibold text-blue-700">Отпустите файл, чтобы прикрепить</span>
+                        <span className="text-sm font-semibold text-blue-700">{t('dash.dropFile')}</span>
                       </div>
                     </div>
                   )}
@@ -414,7 +416,7 @@ function ClientDashboardInner() {
                         <button onClick={() => router.push(`/dashboard/client/tasks/${activeConv.task_id}`)}
                           className="text-xs text-blue-600 hover:underline truncate block max-w-full text-left">📋 {activeConv.task_title}</button>
                       ) : (
-                        <p className="text-xs text-gray-400">Бухгалтер</p>
+                        <p className="text-xs text-gray-400">{t('dash.accountant')}</p>
                       )}
                     </div>
                   </div>
@@ -484,7 +486,7 @@ function ClientDashboardInner() {
                         onChange={e => { const f = e.target.files?.[0]; if (f) { if (f.size > 50*1024*1024) { alert('Файл слишком большой (макс 50MB)'); return; } setAttachedFile(f); } }} />
                       <input type="text" value={newMsg} onChange={e => { setNewMsg(e.target.value); if (chatError) setChatError(''); }}
                         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                        placeholder="Напишите сообщение..." disabled={sending}
+                        placeholder={t('dash.writeMessage')} disabled={sending}
                         className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                       <button onClick={sendMessage} disabled={(!newMsg.trim() && !attachedFile) || sending}
                         className="p-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white rounded-xl transition-colors flex-shrink-0">
@@ -505,7 +507,7 @@ function ClientDashboardInner() {
           {NAV.map(item => (
             <button key={item.id} onClick={() => item.id === 'tools' ? router.push('/tools') : setTab(item.id)}
               className={`flex flex-col items-center justify-center gap-1 text-[10px] font-medium relative ${tab === item.id ? 'text-blue-600' : 'text-gray-400'}`}>
-              <item.icon className="w-5 h-5" />{item.label}
+              <item.icon className="w-5 h-5" />{t(item.key)}
               {item.id === 'messages' && conversations.length > 0 && <span className="absolute top-2 right-6 bg-blue-600 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">{conversations.length}</span>}
             </button>
           ))}
