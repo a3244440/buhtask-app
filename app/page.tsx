@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import {
   Calculator, FileText, Users, Building2, Search, Star,
   ArrowRight, ChevronRight, Briefcase, TrendingUp, Shield,
-  Clock, MapPin, Zap, DollarSign, BarChart2, Moon, Sun,
+  Clock, MapPin, Zap, DollarSign, BarChart2, Moon, Sun, Mail,
 } from "lucide-react";
 
 const TYPING_WORDS: Record<string, string[]> = {
@@ -356,11 +356,16 @@ export default function HomePage() {
       <footer className={`py-10 px-4 sm:px-6 ${D ? 'bg-gray-950 border-t border-gray-800' : 'bg-gray-900'}`}>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <img src="/images/logo-new.png" alt="BuhTask" className="h-9 w-auto brightness-0 invert" />
-          <p className="text-xs text-gray-400">{t('land.footerRights')}</p>
+          <div className="text-center">
+            <p className="text-xs text-gray-400">{t('land.footerRights')}</p>
+            <a href="mailto:info@buhtask.kz" className="text-xs text-blue-300 hover:text-blue-200 transition-colors inline-flex items-center gap-1 mt-1">
+              <Mail className="w-3 h-3" /> info@buhtask.kz
+            </a>
+          </div>
           <div className="flex gap-5">
-            {[t('land.footerTerms'), t('land.footerPrivacy'), t('land.footerContacts')].map(l => (
-              <a key={l} href="#" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{l}</a>
-            ))}
+            <a href="/#categories" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{t('land.footerTerms')}</a>
+            <a href="/#how-it-works" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{t('land.footerPrivacy')}</a>
+            <a href="mailto:info@buhtask.kz" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{t('land.footerContacts')}</a>
           </div>
         </div>
       </footer>

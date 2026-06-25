@@ -42,6 +42,8 @@ const translations: Record<string, Record<Lang, string>> = {
   'menu.admin': { ru: 'Админ', kz: 'Әкімші', en: 'Admin' },
   'menu.settings': { ru: 'Настройки', kz: 'Параметрлер', en: 'Settings' },
   'menu.logout': { ru: 'Выйти', kz: 'Шығу', en: 'Log out' },
+  'menu.support': { ru: 'Поддержка', kz: 'Қолдау', en: 'Support' },
+  'common.contactUs': { ru: 'Связаться с нами:', kz: 'Бізбен байланысу:', en: 'Contact us:' },
   'menu.personal': { ru: 'Личный кабинет', kz: 'Жеке кабинет', en: 'Personal Account' },
   'menu.selectOrg': { ru: 'ВЫБЕРИТЕ ОРГАНИЗАЦИЮ', kz: 'ҰЙЫМДЫ ТАҢДАҢЫЗ', en: 'SELECT ORGANIZATION' },
   'menu.manageCompanies': { ru: 'Управление компаниями', kz: 'Компанияларды басқару', en: 'Manage Companies' },

@@ -314,6 +314,9 @@ export default function AuthPage() {
           <p className="text-center text-xs text-gray-400 mt-4">
             Регистрируясь, вы соглашаетесь с <a href="#" className="text-blue-500 hover:underline">условиями использования</a>
           </p>
+          <p className="text-center text-xs text-gray-400 mt-2">
+            {t('common.contactUs')} <a href="mailto:info@buhtask.kz" className="text-blue-500 hover:underline">info@buhtask.kz</a>
+          </p>
         </div>
       </div>
     </div>
