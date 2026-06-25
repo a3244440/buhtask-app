@@ -118,10 +118,10 @@ export default function TaxCalendarPage() {
         </div>
 
         {/* Сетка-календарь */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 mb-3 max-w-sm mx-auto">
           <div className="grid grid-cols-7 gap-1 mb-1">
             {['tax.wd.mon','tax.wd.tue','tax.wd.wed','tax.wd.thu','tax.wd.fri','tax.wd.sat','tax.wd.sun'].map((k, i) => (
-              <div key={k} className={`text-center text-[11px] font-semibold py-1 ${i >= 5 ? 'text-red-400' : 'text-gray-400'}`}>{t(k)}</div>
+              <div key={k} className={`text-center text-[10px] font-semibold py-0.5 ${i >= 5 ? 'text-red-400' : 'text-gray-400'}`}>{t(k)}</div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-1">
@@ -135,17 +135,17 @@ export default function TaxCalendarPage() {
               const holiday = isHoliday(cell.iso);
               return (
                 <button key={i} onClick={() => setSelectedISO(cell.iso)}
-                  className={`relative aspect-square rounded-xl flex flex-col items-center justify-center text-sm transition-all
+                  className={`relative h-9 rounded-lg flex items-center justify-center text-xs transition-all
                     ${selected ? 'bg-blue-600 text-white font-bold shadow-md' :
                       hasEvents ? 'bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100' :
                       today ? 'bg-gray-100 text-gray-900 font-semibold' :
                       'hover:bg-gray-50 ' + (holiday || weekend ? 'text-red-400' : 'text-gray-600')}`}>
                   <span>{cell.day}</span>
-                  {today && !selected && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-blue-500" />}
+                  {today && !selected && <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-blue-500" />}
                   {hasEvents && (
-                    <span className="absolute top-1.5 right-1.5 flex gap-0.5">
+                    <span className="absolute top-1 right-1 flex gap-0.5">
                       {evs.slice(0, 3).map((e, j) => (
-                        <span key={j} className={`w-1.5 h-1.5 rounded-full ${selected ? 'bg-white' : (e.type === 'monthly' ? 'bg-blue-400' : e.type === 'quarterly' ? 'bg-violet-400' : e.type === 'halfyear' ? 'bg-amber-400' : 'bg-rose-400')}`} />
+                        <span key={j} className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : (e.type === 'monthly' ? 'bg-blue-400' : e.type === 'quarterly' ? 'bg-violet-400' : e.type === 'halfyear' ? 'bg-amber-400' : 'bg-rose-400')}`} />
                       ))}
                     </span>
                   )}
