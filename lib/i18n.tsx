@@ -402,6 +402,17 @@ const translations: Record<string, Record<Lang, string>> = {
   'tax.who.ipOur': { ru: 'ИП на ОУР', kz: 'ЖКД режиміндегі ЖК', en: 'Sole prop (general regime)' },
   'tax.who.universal': { ru: 'Всеобщее декларирование', kz: 'Жалпыға бірдей декларациялау', en: 'Universal declaration' },
 
+  // Описания налоговых событий
+  'tax.d.ipn_son': { ru: 'Уплата индивидуального подоходного налога, социального налога, пенсионных и социальных отчислений за сотрудников', kz: 'Қызметкерлер үшін жеке табыс салығын, әлеуметтік салықты, зейнетақы және әлеуметтік аударымдарды төлеу', en: 'Payment of individual income tax, social tax, pension and social contributions for employees' },
+  'tax.d.nds_import': { ru: 'Декларация и уплата косвенных налогов при импорте из ЕАЭС', kz: 'ЕАЭО-дан импорт кезінде жанама салықтарды декларациялау және төлеу', en: 'Declaration and payment of indirect taxes on EAEU imports' },
+  'tax.d.fno_200': { ru: 'Квартальная декларация по ИПН и социальному налогу', kz: 'ЖТС және әлеуметтік салық бойынша тоқсандық декларация', en: 'Quarterly declaration for income and social tax' },
+  'tax.d.fno_300': { ru: 'Квартальная декларация по НДС. Подаётся не раньше 15 числа месяца после квартала', kz: 'ҚҚС бойынша тоқсандық декларация. Тоқсаннан кейінгі айдың 15-інен ерте емес тапсырылады', en: 'Quarterly VAT declaration. Filed no earlier than the 15th of the month after the quarter' },
+  'tax.d.fno_101_04': { ru: 'Расчёт по КПН, удержанному у источника выплаты', kz: 'Төлем көзінен ұсталған КТС бойынша есеп', en: 'Calculation of CIT withheld at source' },
+  'tax.d.fno_910': { ru: 'Упрощённая декларация для малого бизнеса на СНР. Сдаётся за полугодие', kz: 'АСР-дегі шағын бизнеске арналған оңайлатылған декларация. Жартыжылдыққа тапсырылады', en: 'Simplified declaration for small business. Filed half-yearly' },
+  'tax.d.fno_100': { ru: 'Годовая декларация по корпоративному подоходному налогу', kz: 'Корпоративтік табыс салығы бойынша жылдық декларация', en: 'Annual corporate income tax declaration' },
+  'tax.d.fno_220': { ru: 'Годовая декларация по индивидуальному подоходному налогу', kz: 'Жеке табыс салығы бойынша жылдық декларация', en: 'Annual individual income tax declaration' },
+  'tax.d.fno_250': { ru: 'Декларация об активах и обязательствах физического лица', kz: 'Жеке тұлғаның активтері мен міндеттемелері туралы декларация', en: 'Declaration of assets and liabilities of an individual' },
+
   // === Баннер приёма отчётности ===
   'tax.reportingOpen': { ru: 'Идёт отчётный период', kz: 'Есепті кезең жүріп жатыр', en: 'Reporting period is active' },
   'tax.reportingSoon': { ru: 'Скоро начинается отчётный период', kz: 'Жақында есепті кезең басталады', en: 'Reporting period starts soon' },

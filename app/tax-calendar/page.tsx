@@ -185,7 +185,7 @@ export default function TaxCalendarPage() {
                             <h4 className="font-semibold text-gray-900 text-sm">{e.title}</h4>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${typeColors[e.type]}`}>{typeLabels[e.type]}</span>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">{e.desc}</p>
+                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">{t('tax.d.' + e.key)}</p>
                           <p className="text-xs text-gray-400 mt-1">👤 {t(e.who)}</p>
                         </div>
                         <button onClick={() => toggleReminder(e.key, e.title, e.iso)}
@@ -227,7 +227,7 @@ export default function TaxCalendarPage() {
                           <h3 className="font-semibold text-gray-900 text-sm">{e.title}</h3>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${typeColors[e.type]}`}>{typeLabels[e.type]}</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">{e.desc}</p>
+                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">{t('tax.d.' + e.key)}</p>
                         <p className="text-xs text-gray-400 mt-1.5">👤 {t(e.who)}</p>
                         {days >= 0 && (
                           <p className={`text-xs mt-1.5 font-medium ${urgent ? 'text-amber-600' : 'text-gray-400'}`}>
