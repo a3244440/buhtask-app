@@ -6,6 +6,8 @@ import { ArrowLeft, FileSpreadsheet, Printer, FileCheck, Receipt, Plus, Link2 } 
 import DashboardHeader from '../../components/DashboardHeader';
 import ToolsSidebar from '../../components/ToolsSidebar';
 import { amountToWords } from '@/lib/amountToWords';
+import { VAT_DIVISOR, VAT_PERCENT } from '@/lib/tax';
+import { useI18n } from '@/lib/i18n';
 
 interface Item { name: string; unit: string; qty: number; price: number; }
 
@@ -17,6 +19,7 @@ const TYPE_INFO: Record<string, { label: string; short: string }> = {
 
 export default function DocViewPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const params = useParams();
   const docId = params.id as string;
   const [loading, setLoading] = useState(true);
@@ -73,21 +76,31 @@ export default function DocViewPage() {
             </div>
           </div>
 
-          {/* Создать на основании (только для счёта) */}
-          {doc.type === 'invoice' && (
+          {/* Создать на основании — строгий порядок: Счёт → АВР → Счёт-фактура */}
+          {(doc.type === 'invoice' || doc.type === 'avr') && (
             <div className="print:hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
-              <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2"><Link2 className="w-4 h-4 text-gray-400" /> Создать на основании этого счёта</p>
+              <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2"><Link2 className="w-4 h-4 text-gray-400" /> {t('docflow.next')}</p>
               <div className="flex gap-2 flex-wrap">
-                <button onClick={() => router.push(`/documents/new?type=avr&parent=${docId}`)} className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-sm font-medium">
-                  <FileCheck className="w-4 h-4" /> Акт выполненных работ
-                </button>
-                <button onClick={() => router.push(`/documents/new?type=sf&parent=${docId}`)} className="flex items-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 px-4 py-2 rounded-xl text-sm font-medium">
-                  <FileSpreadsheet className="w-4 h-4" /> Счёт-фактура
-                </button>
+                {doc.type === 'invoice' && (
+                  <button onClick={() => router.push(`/documents/new?type=avr&parent=${docId}`)} className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-sm font-medium">
+                    <FileCheck className="w-4 h-4" /> {t('docflow.createAvr')}
+                  </button>
+                )}
+                {doc.type === 'avr' && (
+                  <button onClick={() => router.push(`/documents/new?type=sf&parent=${docId}`)} className="flex items-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 px-4 py-2 rounded-xl text-sm font-medium">
+                    <FileSpreadsheet className="w-4 h-4" /> {t('docflow.createSf')}
+                  </button>
+                )}
               </div>
+              {doc.type === 'invoice' && (
+                <p className="text-xs text-gray-400 mt-2">{t('docflow.hintInvoice')}</p>
+              )}
+              {doc.type === 'avr' && (
+                <p className="text-xs text-gray-400 mt-2">{t('docflow.hintAvr')}</p>
+              )}
               {children.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-50">
-                  <p className="text-xs text-gray-400 mb-2">Созданные документы:</p>
+                  <p className="text-xs text-gray-400 mb-2">{t('docflow.created')}</p>
                   <div className="flex gap-2 flex-wrap">
                     {children.map(c => (
                       <button key={c.id} onClick={() => router.push(`/documents/${c.id}`)} className="text-xs px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-600">
@@ -415,7 +428,7 @@ function SfView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
         <tbody>
           {items.map((it: any, i: number) => {
             const total = it.qty * it.price;
-            const noVat = doc.has_vat ? Math.round(total / 1.12) : total;
+            const noVat = doc.has_vat ? Math.round(total / VAT_DIVISOR) : total;
             const vat = doc.has_vat ? total - noVat : 0;
             return (
               <tr key={i}>
@@ -425,7 +438,7 @@ function SfView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
                 <td className="border border-gray-700 px-0.5 py-1 text-center">{Number(it.qty).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
                 <td className="border border-gray-700 px-0.5 py-1 text-right">{Number(it.price).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
                 <td className="border border-gray-700 px-0.5 py-1 text-right">{noVat.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
-                <td className="border border-gray-700 px-0.5 py-1 text-center">{doc.has_vat ? '12%' : 'Без НДС'}</td>
+                <td className="border border-gray-700 px-0.5 py-1 text-center">{doc.has_vat ? `${VAT_PERCENT}%` : 'Без НДС'}</td>
                 <td className="border border-gray-700 px-0.5 py-1 text-right">{doc.has_vat ? vat.toLocaleString('ru-RU', { minimumFractionDigits: 2 }) : 'Без НДС'}</td>
                 <td className="border border-gray-700 px-0.5 py-1 text-right">{total.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
                 <td className="border border-gray-700 px-0.5 py-1 text-center"></td>

@@ -202,6 +202,15 @@ const translations: Record<string, Record<Lang, string>> = {
   'accp.minPrice': { ru: 'Минимальная стоимость услуг', kz: 'Қызметтің ең төмен құны', en: 'Minimum service price' },
   'accp.viewProfile': { ru: 'Посмотреть профиль', kz: 'Профильді қарау', en: 'View Profile' },
 
+  // === Порядок документов ===
+  'docflow.next': { ru: 'Следующий документ по цепочке', kz: 'Тізбектегі келесі құжат', en: 'Next document in chain' },
+  'docflow.createAvr': { ru: 'Создать АВР (акт выполненных работ)', kz: 'ОЖА құру (орындалған жұмыс актісі)', en: 'Create Act (work completion)' },
+  'docflow.createSf': { ru: 'Создать счёт-фактуру', kz: 'Шот-фактура құру', en: 'Create Tax Invoice' },
+  'docflow.hintInvoice': { ru: 'Порядок: Счёт на оплату → АВР → Счёт-фактура. Сейчас создаётся АВР на основании этого счёта.', kz: 'Тәртіп: Төлемге шот → ОЖА → Шот-фактура. Қазір осы шот негізінде ОЖА жасалады.', en: 'Order: Invoice → Act → Tax Invoice. Now creating an Act based on this invoice.' },
+  'docflow.hintAvr': { ru: 'Завершающий документ — счёт-фактура на основании этого АВР.', kz: 'Қорытынды құжат — осы ОЖА негізіндегі шот-фактура.', en: 'Final document — a tax invoice based on this Act.' },
+  'docflow.created': { ru: 'Создано на основании:', kz: 'Негізінде жасалды:', en: 'Created from this:' },
+  'docflow.warnNoParent': { ru: 'Этот документ обычно создаётся на основании другого: Счёт → АВР → Счёт-фактура. Рекомендуем начать со счёта на оплату.', kz: 'Бұл құжат әдетте басқа құжат негізінде жасалады: Шот → ОЖА → Шот-фактура. Төлемге шоттан бастаған жөн.', en: 'This document is usually created from another: Invoice → Act → Tax Invoice. We recommend starting with an invoice.' },
+
   // === Дашборд бухгалтера ===
   'acc.availableTasks': { ru: 'Доступные задачи', kz: 'Қолжетімді тапсырмалар', en: 'Available Tasks' },
   'acc.myOrders': { ru: 'Мои заказы', kz: 'Менің тапсырыстарым', en: 'My Orders' },
@@ -346,8 +355,8 @@ const translations: Record<string, Record<Lang, string>> = {
   'nd.qty': { ru: 'Кол-во', kz: 'Саны', en: 'Qty' },
   'nd.price': { ru: 'Цена', kz: 'Баға', en: 'Price' },
   'nd.sum': { ru: 'Сумма', kz: 'Сома', en: 'Sum' },
-  'nd.includeVat': { ru: 'Включить НДС 12% (в т.ч.)', kz: 'ҚҚС 12% қосу (соның ішінде)', en: 'Include VAT 12% (incl.)' },
-  'nd.vatIncl': { ru: 'в т.ч. НДС 12%', kz: 'соның ішінде ҚҚС 12%', en: 'incl. VAT 12%' },
+  'nd.includeVat': { ru: 'Включить НДС 16% (в т.ч.)', kz: 'ҚҚС 16% қосу (соның ішінде)', en: 'Include VAT 16% (incl.)' },
+  'nd.vatIncl': { ru: 'в т.ч. НДС 16%', kz: 'соның ішінде ҚҚС 16%', en: 'incl. VAT 16%' },
   'nd.total': { ru: 'Итого', kz: 'Жиыны', en: 'Total' },
   'nd.createDoc': { ru: 'Создать документ', kz: 'Құжат құру', en: 'Create Document' },
   'nd.selectBuyer': { ru: 'Выберите контрагента (покупателя)', kz: 'Контрагентті (сатып алушыны) таңдаңыз', en: 'Select a counterparty (buyer)' },

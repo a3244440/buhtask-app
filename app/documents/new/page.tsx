@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 import ToolsSidebar from '../../components/ToolsSidebar';
 import { getActiveCompany } from '@/lib/activeCompany';
+import { VAT_DIVISOR } from '@/lib/tax';
 import { useI18n } from '@/lib/i18n';
 
 interface Item { name: string; unit: string; qty: number; price: number; }
@@ -74,7 +75,7 @@ function NewDocInner() {
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
 
   const total = items.reduce((s, it) => s + (it.qty * it.price), 0);
-  const vatTotal = hasVat ? Math.round(total - total / 1.12) : 0;
+  const vatTotal = hasVat ? Math.round(total - total / VAT_DIVISOR) : 0;
 
   const save = async () => {
     if (!counterpartyId) { alert(t('nd.selectBuyer')); return; }
@@ -107,6 +108,11 @@ function NewDocInner() {
           </button>
           <h1 className="text-xl font-bold text-gray-900 mb-1">{t('nd.new')}: {TYPE_LABEL}</h1>
           {parentId && <p className="text-sm text-blue-600 mb-5">{t('nd.basedOnDoc')}</p>}
+          {!parentId && (type === 'avr' || type === 'sf') && (
+            <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+              {t('docflow.warnNoParent')}
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5 mt-4">
             {/* Поставщик / покупатель */}
