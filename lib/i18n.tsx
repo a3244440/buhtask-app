@@ -343,6 +343,12 @@ const translations: Record<string, Record<Lang, string>> = {
   'plan.pro.f2': { ru: 'Полная аналитика', kz: 'Толық талдау', en: 'Full analytics' },
   'plan.pro.f3': { ru: 'Приоритетная поддержка', kz: 'Басым қолдау', en: 'Priority support' },
   'plan.docLimitReached': { ru: 'Достигнут лимит документов на бесплатном тарифе (10 на компанию). Оформите подписку для большего.', kz: 'Тегін тарифте құжат лимиті бітті (компанияға 10). Көбірегі үшін жазылыңыз.', en: 'Free plan document limit reached (10 per company). Subscribe for more.' },
+  'plan.payTitle': { ru: 'Оплата подписки', kz: 'Жазылым төлемі', en: 'Subscription Payment' },
+  'plan.payScan': { ru: 'Отсканируйте QR в приложении Kaspi и оплатите', kz: 'Kaspi қолданбасында QR сканерлеп төлеңіз', en: 'Scan the QR in the Kaspi app and pay' },
+  'plan.payAmount': { ru: 'Сумма к оплате', kz: 'Төленетін сома', en: 'Amount to pay' },
+  'plan.payAfter': { ru: 'После оплаты напишите нам на info@buhtask.kz с чеком — активируем тариф в течение часа.', kz: 'Төлегеннен кейін info@buhtask.kz поштасына чекті жіберіңіз — тарифті бір сағат ішінде белсендіреміз.', en: 'After payment, email info@buhtask.kz with the receipt — we activate the plan within an hour.' },
+  'plan.payDownload': { ru: 'Скачать QR', kz: 'QR жүктеу', en: 'Download QR' },
+  'plan.payBack': { ru: '← Назад к тарифам', kz: '← Тарифтерге оралу', en: '← Back to plans' },
 
   // === Документы (страница) ===
   'doc.selectCompanyNotice': { ru: 'Выберите компанию вверху — её реквизиты будут поставщиком в документах', kz: 'Жоғарыдан компанияны таңдаңыз — оның деректемелері құжаттарда жеткізуші болады', en: 'Select a company above — its details will be the supplier in documents' },
