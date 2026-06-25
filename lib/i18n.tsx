@@ -317,6 +317,33 @@ const translations: Record<string, Record<Lang, string>> = {
   'comp.later': { ru: 'Позже', kz: 'Кейінірек', en: 'Later' },
   'comp.bank': { ru: 'Банк', kz: 'Банк', en: 'Bank' },
 
+  // === Тарифы / Подписка ===
+  'plan.limitTitle': { ru: 'Лимит бесплатного тарифа', kz: 'Тегін тарифтің лимиті', en: 'Free Plan Limit' },
+  'plan.limitDesc': { ru: 'На бесплатном тарифе доступно 2 компании и по 10 документов на каждую. Для большего — оформите подписку BuhTask.', kz: 'Тегін тарифте 2 компания және әрқайсысына 10 құжаттан қолжетімді. Көбірегі үшін — BuhTask жазылымын рәсімдеңіз.', en: 'The free plan allows 2 companies and 10 documents each. For more — get a BuhTask subscription.' },
+  'plan.choosePlan': { ru: 'Выберите тариф', kz: 'Тарифті таңдаңыз', en: 'Choose a Plan' },
+  'plan.perMonth': { ru: '/мес', kz: '/ай', en: '/mo' },
+  'plan.free': { ru: 'Бесплатный', kz: 'Тегін', en: 'Free' },
+  'plan.current': { ru: 'Текущий тариф', kz: 'Ағымдағы тариф', en: 'Current plan' },
+  'plan.popular': { ru: 'Популярный', kz: 'Танымал', en: 'Popular' },
+  'plan.subscribe': { ru: 'Оформить', kz: 'Рәсімдеу', en: 'Subscribe' },
+  'plan.later': { ru: 'Позже', kz: 'Кейінірек', en: 'Later' },
+  'plan.soon': { ru: 'Оплата скоро будет доступна', kz: 'Төлем жақында қолжетімді болады', en: 'Payment available soon' },
+  // Free
+  'plan.free.f1': { ru: '2 компании', kz: '2 компания', en: '2 companies' },
+  'plan.free.f2': { ru: '10 документов на компанию', kz: 'Компанияға 10 құжат', en: '10 documents per company' },
+  'plan.free.f3': { ru: 'Базовые инструменты', kz: 'Негізгі құралдар', en: 'Basic tools' },
+  // Business
+  'plan.biz.name': { ru: 'BuhTask Business', kz: 'BuhTask Business', en: 'BuhTask Business' },
+  'plan.biz.f1': { ru: 'До 10 компаний', kz: '10 компанияға дейін', en: 'Up to 10 companies' },
+  'plan.biz.f2': { ru: 'До 100 документов в месяц', kz: 'Айына 100 құжатқа дейін', en: 'Up to 100 documents/month' },
+  'plan.biz.f3': { ru: 'Базовая аналитика', kz: 'Негізгі талдау', en: 'Basic analytics' },
+  // Pro
+  'plan.pro.name': { ru: 'BuhTask Pro', kz: 'BuhTask Pro', en: 'BuhTask Pro' },
+  'plan.pro.f1': { ru: 'Без ограничений', kz: 'Шектеусіз', en: 'Unlimited' },
+  'plan.pro.f2': { ru: 'Полная аналитика', kz: 'Толық талдау', en: 'Full analytics' },
+  'plan.pro.f3': { ru: 'Приоритетная поддержка', kz: 'Басым қолдау', en: 'Priority support' },
+  'plan.docLimitReached': { ru: 'Достигнут лимит документов на бесплатном тарифе (10 на компанию). Оформите подписку для большего.', kz: 'Тегін тарифте құжат лимиті бітті (компанияға 10). Көбірегі үшін жазылыңыз.', en: 'Free plan document limit reached (10 per company). Subscribe for more.' },
+
   // === Документы (страница) ===
   'doc.selectCompanyNotice': { ru: 'Выберите компанию вверху — её реквизиты будут поставщиком в документах', kz: 'Жоғарыдан компанияны таңдаңыз — оның деректемелері құжаттарда жеткізуші болады', en: 'Select a company above — its details will be the supplier in documents' },
   'doc.basedOn': { ru: 'на основании', kz: 'негізінде', en: 'based on' },

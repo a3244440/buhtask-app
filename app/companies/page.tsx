@@ -8,6 +8,7 @@ import ToolsSidebar from '../components/ToolsSidebar';
 import MobileToolsNav from '../components/MobileToolsNav';
 import { KZ_BANKS, getBik } from '@/lib/kzBanks';
 import { useI18n } from '@/lib/i18n';
+import PricingModal from '../components/PricingModal';
 
 interface BankAccount { bank: string; iban: string; bik?: string; }
 interface Company {
@@ -291,38 +292,9 @@ export default function CompaniesPage() {
         </div>
       )}
 
-      {/* Paywall modal */}
+      {/* Pricing modal */}
       {showPaywall && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowPaywall(false)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-8 text-center text-white">
-              <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-3">
-                <Building2 className="w-7 h-7" />
-              </div>
-              <h3 className="text-lg font-bold">{t('comp.limitTitle')}</h3>
-              <p className="text-sm text-blue-100 mt-1">На бесплатном тарифе можно добавить {FREE_LIMIT} компании</p>
-            </div>
-            <div className="p-6">
-              <p className="text-sm text-gray-600 mb-4">{t('comp.limitDesc')}</p>
-              <div className="bg-gray-50 rounded-xl p-4 mb-5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-900">BuhTask Pro</span>
-                  <span className="text-blue-600 font-bold">{t('comp.soon')}</span>
-                </div>
-                <ul className="space-y-1.5 text-sm text-gray-600">
-                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('comp.unlimited')}</li>
-                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('comp.analyticsEach')}</li>
-                  <li className="flex items-center gap-2"><span className="text-emerald-500">✓</span> {t('comp.prioritySupport')}</li>
-                </ul>
-              </div>
-              <button onClick={() => { setShowPaywall(false); alert('Подписка скоро будет доступна. Следите за обновлениями!'); }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors mb-2">
-                {t('comp.subscribe')}
-              </button>
-              <button onClick={() => setShowPaywall(false)} className="w-full text-gray-500 py-2 text-sm hover:text-gray-700">{t('comp.later')}</button>
-            </div>
-          </div>
-        </div>
+        <PricingModal onClose={() => setShowPaywall(false)} reason={t('plan.limitDesc')} />
       )}
     </div>
   );

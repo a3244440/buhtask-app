@@ -81,6 +81,17 @@ function NewDocInner() {
     if (!counterpartyId) { alert(t('nd.selectBuyer')); return; }
     if (!companyId) { alert(t('nd.selectSupplierAlert')); return; }
     if (items.every(it => !it.name.trim())) { alert(t('nd.addItemAlert')); return; }
+
+    // Лимит бесплатного тарифа: 10 документов на компанию
+    const FREE_DOC_LIMIT = 10;
+    const { count } = await supabase.from('documents')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', userId).eq('company_id', companyId);
+    if ((count || 0) >= FREE_DOC_LIMIT) {
+      alert(t('plan.docLimitReached'));
+      return;
+    }
+
     setSaving(true);
     const payload = {
       owner_id: userId, company_id: companyId, counterparty_id: counterpartyId,
