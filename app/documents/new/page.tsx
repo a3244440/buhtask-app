@@ -7,6 +7,7 @@ import DashboardHeader from '../../components/DashboardHeader';
 import ToolsSidebar from '../../components/ToolsSidebar';
 import { getActiveCompany } from '@/lib/activeCompany';
 import { VAT_DIVISOR } from '@/lib/tax';
+import { getLimits } from '@/lib/plans';
 import { useI18n } from '@/lib/i18n';
 
 interface Item { name: string; unit: string; qty: number; price: number; }
@@ -82,14 +83,17 @@ function NewDocInner() {
     if (!companyId) { alert(t('nd.selectSupplierAlert')); return; }
     if (items.every(it => !it.name.trim())) { alert(t('nd.addItemAlert')); return; }
 
-    // Лимит бесплатного тарифа: 10 документов на компанию
-    const FREE_DOC_LIMIT = 10;
-    const { count } = await supabase.from('documents')
-      .select('id', { count: 'exact', head: true })
-      .eq('owner_id', userId).eq('company_id', companyId);
-    if ((count || 0) >= FREE_DOC_LIMIT) {
-      alert(t('plan.docLimitReached'));
-      return;
+    // Лимит документов по тарифу
+    const { data: prof } = await supabase.from('profiles').select('subscription_plan,subscription_until').eq('id', userId).maybeSingle();
+    const docLimit = getLimits(prof?.subscription_plan, prof?.subscription_until).docsPerCompany;
+    if (docLimit !== Infinity) {
+      const { count } = await supabase.from('documents')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', userId).eq('company_id', companyId);
+      if ((count || 0) >= docLimit) {
+        alert(t('plan.docLimitReached'));
+        return;
+      }
     }
 
     setSaving(true);

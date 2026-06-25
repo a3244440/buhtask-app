@@ -90,6 +90,14 @@ export default function AdminPanel() {
     setLoading(false);
   };
 
+  const setUserPlan = async (userId: string, plan: 'free' | 'business' | 'pro') => {
+    // активируем на 30 дней (free — без срока)
+    const until = plan === 'free' ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { error } = await supabase.from('profiles').update({ subscription_plan: plan, subscription_until: until }).eq('id', userId);
+    if (error) { alert('Ошибка: ' + error.message); return; }
+    setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, subscription_plan: plan, subscription_until: until } : u));
+  };
+
   const saveSettings = async () => {
     setSavingSettings(true);
     setSettingsSaved(false);
@@ -302,6 +310,11 @@ export default function AdminPanel() {
                             {u.role === 'accountant' ? 'Бухгалтер' : u.role === 'admin' ? 'Админ' : 'Заказчик'}
                           </span>
                           {u.verification_status === 'verified' && <BadgeCheck className="w-3.5 h-3.5 text-blue-600" />}
+                          {u.subscription_plan && u.subscription_plan !== 'free' && (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${u.subscription_plan === 'pro' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {u.subscription_plan === 'pro' ? '👑 Pro' : '⚡ Business'}
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-gray-400 truncate">{u.email}{u.phone ? ` · ${u.phone}` : ''}{u.city ? ` · ${u.city}` : ''}</p>
                         {comps.length > 0 && <p className="text-xs text-gray-500 mt-0.5">🏢 {comps.join(', ')}</p>}
@@ -311,6 +324,21 @@ export default function AdminPanel() {
                         <p className="mt-0.5">{userTasks} задач · {userDocs} док.</p>
                       </div>
                     </div>
+                    {/* Управление тарифом (для заказчиков) */}
+                    {u.role !== 'accountant' && u.role !== 'admin' && (
+                      <div className="flex items-center gap-1.5 mt-2 ml-13 pl-13 flex-wrap">
+                        <span className="text-[10px] text-gray-400 mr-1">Тариф:</span>
+                        {(['free', 'business', 'pro'] as const).map(pl => (
+                          <button key={pl} onClick={() => setUserPlan(u.id, pl)}
+                            className={`text-[10px] px-2.5 py-1 rounded-lg font-medium transition-colors ${(u.subscription_plan || 'free') === pl ? (pl === 'pro' ? 'bg-violet-600 text-white' : pl === 'business' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white') : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                            {pl === 'free' ? 'Free' : pl === 'business' ? 'Business' : 'Pro'}
+                          </button>
+                        ))}
+                        {u.subscription_until && u.subscription_plan !== 'free' && (
+                          <span className="text-[10px] text-gray-400">до {new Date(u.subscription_until).toLocaleDateString('ru-RU')}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

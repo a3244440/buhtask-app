@@ -9,6 +9,7 @@ import MobileToolsNav from '../components/MobileToolsNav';
 import { KZ_BANKS, getBik } from '@/lib/kzBanks';
 import { useI18n } from '@/lib/i18n';
 import PricingModal from '../components/PricingModal';
+import { getLimits } from '@/lib/plans';
 
 interface BankAccount { bank: string; iban: string; bik?: string; }
 interface Company {
@@ -41,6 +42,7 @@ export default function CompaniesPage() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [planLimit, setPlanLimit] = useState(2);
 
   const emptyForm: Company = { id: '', name: '', bin: '', director: '', address: '', tax_regime: TAX_REGIMES[0], oked: '', registration_date: '', status: '', bank_accounts: [] };
   const [form, setForm] = useState<Company>(emptyForm);
@@ -53,10 +55,13 @@ export default function CompaniesPage() {
     setUserId(user.id);
     const { data } = await supabase.from('companies').select('*').eq('owner_id', user.id).order('created_at', { ascending: false });
     setCompanies((data as Company[]) || []);
+    // Тариф пользователя → лимит компаний
+    const { data: prof } = await supabase.from('profiles').select('subscription_plan,subscription_until').eq('id', user.id).maybeSingle();
+    setPlanLimit(getLimits(prof?.subscription_plan, prof?.subscription_until).companies);
     setLoading(false);
   };
 
-  const FREE_LIMIT = 2;
+  const FREE_LIMIT = planLimit === Infinity ? 999999 : planLimit;
   const openAdd = () => {
     if (companies.length >= FREE_LIMIT) { setShowPaywall(true); return; }
     setForm(emptyForm); setEditingId(null); setLookupMsg(''); setError(''); setModalOpen(true);
@@ -149,7 +154,7 @@ export default function CompaniesPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-gray-900">{t('company.title')}</h1>
-            <p className="text-sm text-gray-500">{companies.length} {t('comp.of')} {FREE_LIMIT} ({t('comp.free')})</p>
+            <p className="text-sm text-gray-500">{companies.length} {t('comp.of')} {planLimit === Infinity ? "∞" : planLimit}</p>
           </div>
           <button onClick={openAdd} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
             <Plus className="w-4 h-4" /> {t('comp.addCompany')}
