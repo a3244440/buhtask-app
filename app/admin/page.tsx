@@ -20,6 +20,12 @@ export default function AdminPanel() {
   const [accountants, setAccountants] = useState<Accountant[]>([]);
   const [selected, setSelected] = useState<Accountant | null>(null);
   const [filter, setFilter] = useState<'pending' | 'verified' | 'all'>('pending');
+  const [view, setView] = useState<'verify' | 'users' | 'activity'>('verify');
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [allTasks, setAllTasks] = useState<any[]>([]);
+  const [allDocs, setAllDocs] = useState<any[]>([]);
+  const [companiesByUser, setCompaniesByUser] = useState<Record<string, string[]>>({});
+  const [userSearch, setUserSearch] = useState('');
   const [stats, setStats] = useState({ total: 0, accountants: 0, clients: 0, tasks: 0 });
   const [saving, setSaving] = useState(false);
   const [platformKaspi, setPlatformKaspi] = useState({ number: '', name: 'BuhTask', percent: 10 });
@@ -52,6 +58,24 @@ export default function AdminPanel() {
       supabase.from('tasks').select('*', { count: 'exact', head: true }),
     ]);
     setStats({ total: total || 0, accountants: accCount || 0, clients: clientCount || 0, tasks: taskCount || 0 });
+
+    // Все пользователи (регистрации)
+    const { data: users } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    setAllUsers(users || []);
+
+    // Все задачи
+    const { data: tasks } = await supabase.from('tasks').select('id,title,category,status,city,budget,created_at,client_id,company_id').order('created_at', { ascending: false }).limit(500);
+    setAllTasks(tasks || []);
+
+    // Все документы
+    const { data: docs } = await supabase.from('documents').select('id,type,number,total,doc_date,owner_id,created_at').order('created_at', { ascending: false }).limit(500);
+    setAllDocs(docs || []);
+
+    // Компании по пользователям
+    const { data: comps } = await supabase.from('companies').select('owner_id,name');
+    const cmap: Record<string, string[]> = {};
+    (comps || []).forEach((c: any) => { (cmap[c.owner_id] = cmap[c.owner_id] || []).push(c.name); });
+    setCompaniesByUser(cmap);
 
     // Платформенные настройки
     const { data: settings } = await supabase.from('platform_settings').select('*').eq('id', 1).maybeSingle();
@@ -173,6 +197,22 @@ export default function AdminPanel() {
           ))}
         </div>
 
+        {/* View tabs */}
+        <div className="flex gap-2 mb-5 overflow-x-auto">
+          {([
+            { id: 'verify', label: 'Проверка бухгалтеров', icon: ShieldCheck },
+            { id: 'users', label: 'Все регистрации', icon: Users },
+            { id: 'activity', label: 'Активность', icon: TrendingUp },
+          ] as const).map(v => (
+            <button key={v.id} onClick={() => setView(v.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${view === v.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
+              <v.icon className="w-4 h-4" /> {v.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ===== VERIFY TAB ===== */}
+        {view === 'verify' && (<>
         {/* Filters */}
         <div className="flex gap-2 mb-5">
           {([
@@ -227,6 +267,116 @@ export default function AdminPanel() {
             </div>
           )}
         </div>
+        </>)}
+
+        {/* ===== USERS TAB ===== */}
+        {view === 'users' && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
+              <Users className="w-5 h-5 text-blue-600" />
+              <h2 className="font-semibold text-gray-900">Все регистрации</h2>
+              <span className="text-xs text-gray-400">({allUsers.length})</span>
+              <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Поиск по почте, имени, компании..."
+                className="ml-auto px-3 py-1.5 border border-gray-200 rounded-lg text-sm w-full sm:w-64 outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="divide-y divide-gray-50">
+              {allUsers.filter(u => {
+                if (!userSearch.trim()) return true;
+                const q = userSearch.toLowerCase();
+                const comps = (companiesByUser[u.id] || []).join(' ').toLowerCase();
+                return (u.email || '').toLowerCase().includes(q) || (u.full_name || '').toLowerCase().includes(q) || comps.includes(q);
+              }).map(u => {
+                const userTasks = allTasks.filter(t => t.client_id === u.id).length;
+                const userDocs = allDocs.filter(d => d.owner_id === u.id).length;
+                const comps = companiesByUser[u.id] || [];
+                return (
+                  <div key={u.id} className="px-6 py-4 hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${u.role === 'accountant' ? 'bg-blue-100 text-blue-700' : u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {(u.full_name || u.email || '?')[0]?.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-gray-900 text-sm">{u.full_name || 'Без имени'}</p>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${u.role === 'accountant' ? 'bg-blue-50 text-blue-600' : u.role === 'admin' ? 'bg-purple-50 text-purple-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                            {u.role === 'accountant' ? 'Бухгалтер' : u.role === 'admin' ? 'Админ' : 'Заказчик'}
+                          </span>
+                          {u.verification_status === 'verified' && <BadgeCheck className="w-3.5 h-3.5 text-blue-600" />}
+                        </div>
+                        <p className="text-xs text-gray-400 truncate">{u.email}{u.phone ? ` · ${u.phone}` : ''}{u.city ? ` · ${u.city}` : ''}</p>
+                        {comps.length > 0 && <p className="text-xs text-gray-500 mt-0.5">🏢 {comps.join(', ')}</p>}
+                      </div>
+                      <div className="text-right flex-shrink-0 text-xs text-gray-400">
+                        <p>{new Date(u.created_at).toLocaleDateString('ru-RU')}</p>
+                        <p className="mt-0.5">{userTasks} задач · {userDocs} док.</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ===== ACTIVITY TAB ===== */}
+        {view === 'activity' && (
+          <div className="space-y-5">
+            {/* Tasks */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-blue-600" />
+                <h2 className="font-semibold text-gray-900">Созданные задачи</h2>
+                <span className="text-xs text-gray-400">({allTasks.length})</span>
+              </div>
+              <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+                {allTasks.length === 0 ? <p className="py-10 text-center text-gray-400 text-sm">Нет задач</p> :
+                allTasks.map(tk => {
+                  const owner = allUsers.find(u => u.id === tk.client_id);
+                  return (
+                    <div key={tk.id} className="px-6 py-3 hover:bg-gray-50 flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{tk.title}</p>
+                        <p className="text-xs text-gray-400">{owner?.full_name || owner?.email || '—'} · {tk.city} · {tk.category}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${tk.status === 'open' ? 'bg-emerald-50 text-emerald-600' : tk.status === 'in_progress' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>{tk.status}</span>
+                        <p className="text-xs text-gray-400 mt-0.5">{new Date(tk.created_at).toLocaleDateString('ru-RU')}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Documents */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                <h2 className="font-semibold text-gray-900">Созданные документы</h2>
+                <span className="text-xs text-gray-400">({allDocs.length})</span>
+              </div>
+              <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+                {allDocs.length === 0 ? <p className="py-10 text-center text-gray-400 text-sm">Нет документов</p> :
+                allDocs.map(d => {
+                  const owner = allUsers.find(u => u.id === d.owner_id);
+                  const typeLabel = d.type === 'invoice' ? 'Счёт' : d.type === 'avr' ? 'АВР' : 'Счёт-фактура';
+                  return (
+                    <div key={d.id} className="px-6 py-3 hover:bg-gray-50 flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{typeLabel} №{d.number}</p>
+                        <p className="text-xs text-gray-400">{owner?.full_name || owner?.email || '—'}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-semibold text-gray-700">{Number(d.total).toLocaleString()} ₸</p>
+                        <p className="text-xs text-gray-400">{new Date(d.created_at).toLocaleDateString('ru-RU')}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Detail modal */}
