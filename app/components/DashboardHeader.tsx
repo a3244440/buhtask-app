@@ -165,10 +165,10 @@ export default function DashboardHeader({ title, right }: Props) {
                   <Settings className="w-4 h-4 text-gray-400" /> {t('menu.settings')}
                 </button>
               )}
-              <a href="mailto:info@buhtask.kz" onClick={() => setOpen(false)}
+              <button onClick={() => { setOpen(false); router.push('/support'); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                 <Mail className="w-4 h-4 text-gray-400" /> {t('menu.support')}
-              </a>
+              </button>
               <div className="border-t border-gray-100 mt-1 pt-1">
                 <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50">
                   <LogOut className="w-4 h-4" /> {t('menu.logout')}

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 
 interface Accountant {
@@ -20,7 +20,12 @@ export default function AdminPanel() {
   const [accountants, setAccountants] = useState<Accountant[]>([]);
   const [selected, setSelected] = useState<Accountant | null>(null);
   const [filter, setFilter] = useState<'pending' | 'verified' | 'all'>('pending');
-  const [view, setView] = useState<'verify' | 'users' | 'activity'>('verify');
+  const [view, setView] = useState<'verify' | 'users' | 'activity' | 'support'>('verify');
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [activeTicket, setActiveTicket] = useState<any>(null);
+  const [ticketMsgs, setTicketMsgs] = useState<any[]>([]);
+  const [supReply, setSupReply] = useState('');
+  const [adminId, setAdminId] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [allTasks, setAllTasks] = useState<any[]>([]);
   const [allDocs, setAllDocs] = useState<any[]>([]);
@@ -77,6 +82,11 @@ export default function AdminPanel() {
     (comps || []).forEach((c: any) => { (cmap[c.owner_id] = cmap[c.owner_id] || []).push(c.name); });
     setCompaniesByUser(cmap);
 
+    setAdminId(user.id);
+    // Тикеты поддержки
+    const { data: tk } = await supabase.from('support_tickets').select('*').order('updated_at', { ascending: false });
+    setTickets(tk || []);
+
     // Платформенные настройки
     const { data: settings } = await supabase.from('platform_settings').select('*').eq('id', 1).maybeSingle();
     if (settings) {
@@ -88,6 +98,29 @@ export default function AdminPanel() {
     }
 
     setLoading(false);
+  };
+
+  const openTicket = async (ticket: any) => {
+    setActiveTicket(ticket);
+    const { data: msgs } = await supabase.from('support_messages')
+      .select('*').eq('ticket_id', ticket.id).order('created_at', { ascending: true });
+    setTicketMsgs(msgs || []);
+    await supabase.from('support_tickets').update({ unread_admin: 0 }).eq('id', ticket.id);
+    setTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, unread_admin: 0 } : t));
+  };
+
+  const replyTicket = async () => {
+    const content = supReply.trim();
+    if (!content || !activeTicket) return;
+    setSupReply('');
+    const { data } = await supabase.from('support_messages')
+      .insert({ ticket_id: activeTicket.id, sender_id: adminId, is_admin: true, content }).select().maybeSingle();
+    if (data) setTicketMsgs(prev => [...prev, data]);
+    const { data: tk } = await supabase.from('support_tickets').select('unread_user').eq('id', activeTicket.id).maybeSingle();
+    await supabase.from('support_tickets').update({
+      last_message: content, last_from: 'admin', updated_at: new Date().toISOString(),
+      unread_user: (tk?.unread_user || 0) + 1,
+    }).eq('id', activeTicket.id);
   };
 
   const setUserPlan = async (userId: string, plan: 'free' | 'business' | 'pro') => {
@@ -211,6 +244,7 @@ export default function AdminPanel() {
             { id: 'verify', label: 'Проверка бухгалтеров', icon: ShieldCheck },
             { id: 'users', label: 'Все регистрации', icon: Users },
             { id: 'activity', label: 'Активность', icon: TrendingUp },
+            { id: 'support', label: 'Поддержка', icon: Headphones },
           ] as const).map(v => (
             <button key={v.id} onClick={() => setView(v.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${view === v.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
@@ -402,6 +436,72 @@ export default function AdminPanel() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== SUPPORT TAB ===== */}
+        {view === 'support' && (
+          <div className="grid md:grid-cols-3 gap-4" style={{ minHeight: '60vh' }}>
+            {/* Список тикетов */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900 text-sm">{t('sup.adminTitle')}</h3>
+              </div>
+              <div className="divide-y divide-gray-50 max-h-[60vh] overflow-y-auto">
+                {tickets.length === 0 ? (
+                  <p className="py-8 text-center text-gray-400 text-sm">{t('sup.noTickets')}</p>
+                ) : tickets.map(tk => {
+                  const u = allUsers.find(x => x.id === tk.user_id);
+                  return (
+                    <button key={tk.id} onClick={() => openTicket(tk)}
+                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 ${activeTicket?.id === tk.id ? 'bg-blue-50' : ''}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-medium text-gray-900 text-sm truncate">{u?.full_name || u?.email || '—'}</p>
+                        {tk.unread_admin > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0">{tk.unread_admin}</span>}
+                      </div>
+                      <p className="text-xs text-gray-400 truncate mt-0.5">{tk.last_message || '—'}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Чат */}
+            <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
+              {!activeTicket ? (
+                <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">{t('sup.selectTicket')}</div>
+              ) : (
+                <>
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="font-semibold text-gray-900 text-sm">
+                      {(allUsers.find(x => x.id === activeTicket.user_id)?.full_name) || (allUsers.find(x => x.id === activeTicket.user_id)?.email) || '—'}
+                    </p>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[50vh]">
+                    {ticketMsgs.map(m => (
+                      <div key={m.id} className={`flex ${m.is_admin ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-md px-4 py-2.5 rounded-2xl text-sm ${m.is_admin ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-900 rounded-bl-sm'}`}>
+                          <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                          <p className={`text-[10px] mt-1 ${m.is_admin ? 'text-blue-200' : 'text-gray-400'}`}>
+                            {new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-gray-100 p-3 flex items-center gap-2">
+                    <input value={supReply} onChange={e => setSupReply(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); replyTicket(); } }}
+                      placeholder={t('sup.reply')}
+                      className="flex-1 px-4 py-2.5 bg-gray-50 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                    <button onClick={replyTicket} disabled={!supReply.trim()}
+                      className="w-10 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white flex items-center justify-center">
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

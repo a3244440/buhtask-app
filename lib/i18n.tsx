@@ -44,6 +44,21 @@ const translations: Record<string, Record<Lang, string>> = {
   'menu.logout': { ru: 'Выйти', kz: 'Шығу', en: 'Log out' },
   'menu.support': { ru: 'Поддержка', kz: 'Қолдау', en: 'Support' },
   'common.contactUs': { ru: 'Связаться с нами:', kz: 'Бізбен байланысу:', en: 'Contact us:' },
+
+  // === Чат поддержки ===
+  'sup.title': { ru: 'Поддержка', kz: 'Қолдау', en: 'Support' },
+  'sup.subtitle': { ru: 'Напишите нам — ответим как можно скорее', kz: 'Бізге жазыңыз — мүмкіндігінше тез жауап береміз', en: 'Message us — we reply as soon as possible' },
+  'sup.greeting': { ru: 'Здравствуйте! Опишите ваш вопрос, и команда BuhTask поможет вам.', kz: 'Сәлеметсіз бе! Сұрағыңызды жазыңыз, BuhTask командасы көмектеседі.', en: 'Hi! Describe your question and the BuhTask team will help you.' },
+  'sup.placeholder': { ru: 'Ваше сообщение...', kz: 'Хабарламаңыз...', en: 'Your message...' },
+  'sup.send': { ru: 'Отправить', kz: 'Жіберу', en: 'Send' },
+  'sup.you': { ru: 'Вы', kz: 'Сіз', en: 'You' },
+  'sup.support': { ru: 'Поддержка BuhTask', kz: 'BuhTask қолдауы', en: 'BuhTask Support' },
+  'sup.empty': { ru: 'Здесь появятся ваши сообщения с поддержкой', kz: 'Мұнда қолдаумен хабарламаларыңыз пайда болады', en: 'Your support messages will appear here' },
+  // Админ — поддержка
+  'sup.adminTitle': { ru: 'Обращения в поддержку', kz: 'Қолдауға өтініштер', en: 'Support Tickets' },
+  'sup.noTickets': { ru: 'Нет обращений', kz: 'Өтініштер жоқ', en: 'No tickets' },
+  'sup.selectTicket': { ru: 'Выберите обращение слева', kz: 'Сол жақтан өтінішті таңдаңыз', en: 'Select a ticket on the left' },
+  'sup.reply': { ru: 'Ответить...', kz: 'Жауап беру...', en: 'Reply...' },
   'menu.personal': { ru: 'Личный кабинет', kz: 'Жеке кабинет', en: 'Personal Account' },
   'menu.selectOrg': { ru: 'ВЫБЕРИТЕ ОРГАНИЗАЦИЮ', kz: 'ҰЙЫМДЫ ТАҢДАҢЫЗ', en: 'SELECT ORGANIZATION' },
   'menu.manageCompanies': { ru: 'Управление компаниями', kz: 'Компанияларды басқару', en: 'Manage Companies' },
