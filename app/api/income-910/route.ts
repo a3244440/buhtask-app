@@ -127,12 +127,21 @@ function extractFromSheet(rows: any[][]): Tx[] {
     const fullText = `${purpose} ${sender}`;
 
     const { included, reason } = classify(knp, fullText);
-    let description = '';
-    if (sender) description = sender.replace(/\n.*$/s, '').trim();
-    if (purpose) description += (description ? ' · ' : '') + purpose;
-    if (!description) description = 'Поступление';
+
+    // Чистим имя контрагента: убираем ИИН/БИН, БИК-коды, лишние реквизиты
+    let cp = sender
+      .replace(/\n/g, ' ')
+      .replace(/ИИН\/?БИН\s*\d+/gi, '')
+      .replace(/БИК\s*[A-Z0-9]+/gi, '')
+      .replace(/\b[A-Z]{4}KZ[A-Z0-9]{2}\b/g, '')   // SWIFT/БИК вида CASPKZKA
+      .replace(/KZ\d{2}[A-Z0-9]{16}/g, '')          // IBAN
+      .replace(/["«»]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    let description = cp || 'Поступление';
     if (knp) description = `[КНП ${knp}] ` + description;
-    description = description.replace(/\s+/g, ' ').trim().slice(0, 150);
+    description = description.slice(0, 120);
 
     txs.push({ date: dateStr, amount, type: 'income', description, included, reason, knp });
   }
