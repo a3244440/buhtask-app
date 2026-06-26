@@ -14,11 +14,16 @@ export default function Income910Page() {
   const [txs, setTxs] = useState<Tx[] | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const processFile = async (file: File | undefined | null) => {
     if (!file) return;
+    const name = file.name.toLowerCase();
+    if (!name.endsWith('.xlsx') && !name.endsWith('.xls') && !name.endsWith('.csv')) {
+      setError(t('inc910.uploadHint'));
+      return;
+    }
     setLoading(true); setError(''); setTxs(null);
     try {
       const fd = new FormData();
@@ -34,6 +39,13 @@ export default function Income910Page() {
       setLoading(false);
       if (fileRef.current) fileRef.current.value = '';
     }
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => processFile(e.target.files?.[0]);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragOver(false);
+    processFile(e.dataTransfer.files?.[0]);
   };
 
   const toggle = (i: number) => setTxs(prev => prev ? prev.map((t, idx) => idx === i ? { ...t, included: !t.included } : t) : prev);
@@ -71,9 +83,12 @@ export default function Income910Page() {
                 </div>
               ) : (
                 <button onClick={() => fileRef.current?.click()}
-                  className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-10 hover:border-blue-400 hover:bg-blue-50/30 transition-colors">
-                  <Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm font-semibold text-gray-700">{t('inc910.upload')}</p>
+                  onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleDrop}
+                  className={`w-full border-2 border-dashed rounded-2xl py-10 transition-colors ${dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'}`}>
+                  <Upload className={`w-10 h-10 mx-auto mb-3 ${dragOver ? 'text-blue-500' : 'text-gray-300'}`} />
+                  <p className="text-sm font-semibold text-gray-700">{dragOver ? t('inc910.dropHere') : t('inc910.upload')}</p>
                   <p className="text-xs text-gray-400 mt-1 px-6">{t('inc910.uploadHint')}</p>
                 </button>
               )}

@@ -66,6 +66,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'inc910.footerCta': { ru: 'Считаете доход для упрощёнки 910? Загрузите выписку — мы отберём только доход', kz: '910 оңайлатылған кірісін есептеп жатырсыз ба? Үзіндіні жүктеңіз', en: 'Calculating income for simplified 910? Upload your statement' },
   'inc910.open': { ru: 'Открыть инструмент', kz: 'Құралды ашу', en: 'Open Tool' },
   'inc910.upload': { ru: 'Загрузить выписку', kz: 'Үзіндіні жүктеу', en: 'Upload Statement' },
+  'inc910.dropHere': { ru: 'Отпустите файл здесь', kz: 'Файлды осында жіберіңіз', en: 'Drop the file here' },
   'inc910.uploadHint': { ru: 'Excel (.xlsx/.xls) или CSV из приложения любого банка РК (Kaspi, Halyk, БЦК, Forte, Jusan и др.)', kz: 'ҚР кез келген банкінің (Kaspi, Halyk, БЦК, Forte, Jusan) Excel немесе CSV үзіндісі', en: 'Excel/CSV from any Kazakhstan bank app (Kaspi, Halyk, BCC, Forte, Jusan, etc.)' },
   'inc910.processing': { ru: 'Анализируем выписку...', kz: 'Үзінді талдануда...', en: 'Analyzing statement...' },
   'inc910.howTitle': { ru: 'Как это работает', kz: 'Қалай жұмыс істейді', en: 'How it works' },
