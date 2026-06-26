@@ -1,0 +1,153 @@
+'use client';
+import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { Upload, Loader2, Check, X, Calculator, Copy, FileSpreadsheet, ArrowLeft, AlertTriangle, TrendingUp } from 'lucide-react';
+import DashboardHeader from '../components/DashboardHeader';
+import { useI18n } from '@/lib/i18n';
+
+interface Tx { date: string; amount: number; description: string; included: boolean; reason?: string; }
+
+export default function Income910Page() {
+  const { t } = useI18n();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [txs, setTxs] = useState<Tx[] | null>(null);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true); setError(''); setTxs(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/income-910', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.error) { setError(data.error); }
+      else if (!data.transactions || data.transactions.length === 0) { setError(t('inc910.noData')); }
+      else { setTxs(data.transactions); }
+    } catch {
+      setError(t('inc910.noData'));
+    } finally {
+      setLoading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const toggle = (i: number) => setTxs(prev => prev ? prev.map((t, idx) => idx === i ? { ...t, included: !t.included } : t) : prev);
+
+  const incomeTotal = txs ? txs.filter(t => t.included).reduce((s, t) => s + t.amount, 0) : 0;
+  const excludedTotal = txs ? txs.filter(t => !t.included).reduce((s, t) => s + t.amount, 0) : 0;
+  const includedCount = txs ? txs.filter(t => t.included).length : 0;
+
+  const copySum = () => {
+    navigator.clipboard.writeText(String(Math.round(incomeTotal)));
+    setCopied(true); setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <DashboardHeader title={t('inc910.title')} />
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-5">
+          <ArrowLeft className="w-4 h-4" /> {t('btn.back')}
+        </button>
+
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calculator className="w-5 h-5 text-blue-600" /> {t('inc910.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('inc910.subtitle')}</p>
+        </div>
+
+        {!txs && (
+          <>
+            {/* Загрузка */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
+              {loading ? (
+                <div className="py-10 text-center">
+                  <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto mb-3" />
+                  <p className="text-sm text-gray-500">{t('inc910.processing')}</p>
+                </div>
+              ) : (
+                <button onClick={() => fileRef.current?.click()}
+                  className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-10 hover:border-blue-400 hover:bg-blue-50/30 transition-colors">
+                  <Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm font-semibold text-gray-700">{t('inc910.upload')}</p>
+                  <p className="text-xs text-gray-400 mt-1 px-6">{t('inc910.uploadHint')}</p>
+                </button>
+              )}
+              <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="hidden" />
+              {error && <p className="text-sm text-red-500 mt-3 text-center">{error}</p>}
+            </div>
+
+            {/* Как работает */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <h3 className="font-semibold text-gray-900 text-sm mb-3">{t('inc910.howTitle')}</h3>
+              <div className="space-y-2.5">
+                {[t('inc910.how1'), t('inc910.how2'), t('inc910.how3')].map((h, i) => (
+                  <div key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                    <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                    {h}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {txs && (
+          <>
+            {/* Итоги */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-200 rounded-2xl p-4">
+                <p className="text-xs text-gray-500 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-emerald-600" /> {t('inc910.incomeTotal')}</p>
+                <p className="text-2xl font-extrabold text-emerald-600 mt-1">{Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">{includedCount} {t('inc910.counted')}</p>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-4">
+                <p className="text-xs text-gray-500">{t('inc910.excludedTotal')}</p>
+                <p className="text-2xl font-extrabold text-gray-400 mt-1">{Math.round(excludedTotal).toLocaleString('ru-RU')} ₸</p>
+              </div>
+            </div>
+
+            <button onClick={copySum} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 mb-2">
+              {copied ? <><Check className="w-4 h-4" /> {t('inc910.copied')}</> : <><Copy className="w-4 h-4" /> {t('inc910.copySum')}: {Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</>}
+            </button>
+            <p className="text-xs text-gray-400 text-center mb-2">{t('inc910.exportNote')}</p>
+            <p className="text-xs text-gray-400 text-center mb-4">{t('inc910.toggleHint')}</p>
+
+            {/* Список операций */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50 mb-4">
+              {txs.map((tx, i) => (
+                <div key={i} className={`flex items-center gap-3 px-4 py-3 ${!tx.included ? 'opacity-50' : ''}`}>
+                  <button onClick={() => toggle(i)}
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${tx.included ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                    {tx.included ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-900 truncate">{tx.description}</p>
+                      {tx.reason === 'unclear' && tx.included && (
+                        <span title={t('inc910.check')} className="flex-shrink-0"><AlertTriangle className="w-3.5 h-3.5 text-amber-400" /></span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400">{new Date(tx.date).toLocaleDateString('ru-RU')}</p>
+                  </div>
+                  <p className={`text-sm font-semibold flex-shrink-0 ${tx.included ? 'text-emerald-600' : 'text-gray-400 line-through'}`}>
+                    +{Math.round(tx.amount).toLocaleString('ru-RU')} ₸
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <button onClick={() => { setTxs(null); setError(''); }} className="w-full text-blue-600 hover:underline text-sm py-2 flex items-center justify-center gap-2">
+              <Upload className="w-4 h-4" /> {t('inc910.reset')}
+            </button>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+export const dynamic = 'force-dynamic';

@@ -352,6 +352,25 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Инструмент ФНО 910 — отбор дохода из выписки */}
+      <section className={`py-12 px-4 sm:px-6 ${D ? 'bg-gray-900' : 'bg-blue-50'}`}>
+        <div className="max-w-4xl mx-auto">
+          <div className={`rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5 ${D ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-blue-100 shadow-sm'}`}>
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center flex-shrink-0">
+              <Calculator className="w-7 h-7 text-white" />
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <h3 className={`font-bold text-lg ${D ? 'text-white' : 'text-gray-900'}`}>{t('inc910.title')}</h3>
+              <p className={`text-sm mt-1 ${D ? 'text-gray-400' : 'text-gray-500'}`}>{t('inc910.footerCta')}</p>
+            </div>
+            <button onClick={() => router.push('/income-910')}
+              className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm whitespace-nowrap flex-shrink-0">
+              {t('inc910.open')}
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className={`py-10 px-4 sm:px-6 ${D ? 'bg-gray-950 border-t border-gray-800' : 'bg-gray-900'}`}>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
