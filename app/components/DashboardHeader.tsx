@@ -7,6 +7,7 @@ import { getActiveCompany, setActiveCompany } from '@/lib/activeCompany';
 import { shortCompanyName } from '@/lib/companyName';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useI18n } from '@/lib/i18n';
+import { activePlan } from '@/lib/plans';
 
 interface Props { title?: string; right?: React.ReactNode; }
 
@@ -16,6 +17,7 @@ export default function DashboardHeader({ title, right }: Props) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
+  const [subPlan, setSubPlan] = useState<'free' | 'business' | 'pro'>('free');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [role, setRole] = useState('client');
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
@@ -28,9 +30,10 @@ export default function DashboardHeader({ title, right }: Props) {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       setEmail(data.user.email || '');
-      const { data: p } = await supabase.from('profiles').select('full_name,avatar_url,role').eq('id', data.user.id).single();
+      const { data: p } = await supabase.from('profiles').select('full_name,avatar_url,role,subscription_plan,subscription_until').eq('id', data.user.id).single();
       if (p) {
         setFullName(p.full_name || ''); setAvatarUrl(p.avatar_url || ''); setRole(p.role || 'client');
+        setSubPlan(activePlan(p.subscription_plan, p.subscription_until));
         if (p.role !== 'accountant') {
           const { data: comps } = await supabase.from('companies').select('id,name').eq('owner_id', data.user.id);
           setCompanies((comps as { id: string; name: string }[]) || []);
@@ -139,6 +142,11 @@ export default function DashboardHeader({ title, right }: Props) {
                 <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-medium">
                   {role === 'accountant' ? t('role.accountant') : t('role.client')}
                 </span>
+                {role !== 'accountant' && role !== 'admin' && subPlan !== 'free' && (
+                  <span className={`inline-block mt-1 ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${subPlan === 'pro' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {subPlan === 'pro' ? '👑 Pro' : '⚡ Business'}
+                  </span>
+                )}
               </div>
               <button onClick={() => { setOpen(false); router.push('/profile'); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
