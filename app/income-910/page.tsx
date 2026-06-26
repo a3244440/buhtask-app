@@ -5,7 +5,7 @@ import { Upload, Loader2, Check, X, Calculator, Copy, FileSpreadsheet, ArrowLeft
 import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 
-interface Tx { date: string; amount: number; description: string; included: boolean; reason?: string; }
+interface Tx { date: string; amount: number; description: string; counterparty?: string; purpose?: string; included: boolean; reason?: string; knp?: string; }
 
 export default function Income910Page() {
   const { t } = useI18n();
@@ -141,12 +141,14 @@ export default function Income910Page() {
                     {tx.included ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
                   </button>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-900 truncate">{tx.description}</p>
-                      {tx.reason === 'unclear' && tx.included && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {tx.knp && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-medium flex-shrink-0">КНП {tx.knp}</span>}
+                      <p className="text-sm font-medium text-gray-900 truncate">{tx.counterparty || tx.description}</p>
+                      {(tx.reason === 'unclear' || tx.reason === 'unknown_knp') && tx.included && (
                         <span title={t('inc910.check')} className="flex-shrink-0"><AlertTriangle className="w-3.5 h-3.5 text-amber-400" /></span>
                       )}
                     </div>
+                    {tx.purpose && <p className="text-xs text-gray-500 truncate">{tx.purpose}</p>}
                     <p className="text-xs text-gray-400">{new Date(tx.date).toLocaleDateString('ru-RU')}</p>
                   </div>
                   <p className={`text-sm font-semibold flex-shrink-0 ${tx.included ? 'text-emerald-600' : 'text-gray-400 line-through'}`}>

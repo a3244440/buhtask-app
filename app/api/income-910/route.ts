@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-interface Tx { date: string; amount: number; type: 'income'; description: string; included: boolean; reason?: string; knp?: string; }
+interface Tx { date: string; amount: number; type: 'income'; description: string; counterparty: string; purpose: string; included: boolean; reason?: string; knp?: string; }
 
 // Коды назначения платежа (КНП), являющиеся ДОХОДОМ за товары/услуги для ФНО 910.
 // На основе классификатора КНП Нацбанка РК (платежи за ТМЗ и услуги).
@@ -143,7 +143,15 @@ function extractFromSheet(rows: any[][]): Tx[] {
     if (knp) description = `[КНП ${knp}] ` + description;
     description = description.slice(0, 120);
 
-    txs.push({ date: dateStr, amount, type: 'income', description, included, reason, knp });
+    // короткое назначение платежа (без реквизитов)
+    const purposeClean = purpose
+      .replace(/\n/g, ' ')
+      .replace(/ИИН\/?БИН\s*\d+/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 100);
+
+    txs.push({ date: dateStr, amount, type: 'income', description, counterparty: cp || '', purpose: purposeClean, included, reason, knp });
   }
   return txs;
 }
@@ -165,13 +173,9 @@ export async function POST(req: NextRequest) {
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' }) as any[][];
     let txs = extractFromSheet(rows);
 
-    const seen = new Set<string>();
-    txs = txs.filter(t => {
-      const key = `${t.date}_${t.amount}_${t.description.slice(0, 25)}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    }).sort((a, b) => a.date.localeCompare(b.date));
+    // Без дедупликации: каждая строка выписки — отдельная операция.
+    // Одинаковые суммы в один день от одного контрагента — это РАЗНЫЕ платежи.
+    txs.sort((a, b) => a.date.localeCompare(b.date));
 
     const incomeTotal = txs.filter(t => t.included).reduce((s, t) => s + t.amount, 0);
     const excludedTotal = txs.filter(t => !t.included).reduce((s, t) => s + t.amount, 0);
