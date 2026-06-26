@@ -4,34 +4,53 @@ import * as XLSX from 'xlsx';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-interface Tx { date: string; amount: number; type: 'income' | 'expense'; description: string; included: boolean; reason?: string; }
+interface Tx { date: string; amount: number; type: 'income'; description: string; included: boolean; reason?: string; knp?: string; }
 
-// Признаки, что приход — НЕ доход (исключаем из ФНО 910):
-// собственные пополнения, переводы между своими счетами, возвраты, кредиты, ошибочные.
+// Коды назначения платежа (КНП), являющиеся ДОХОДОМ за товары/услуги для ФНО 910.
+// На основе классификатора КНП Нацбанка РК (платежи за ТМЗ и услуги).
+const INCOME_KNP = new Set([
+  '190', // Расчёты за товары (эквайринг Kaspi и др.)
+  '710', '711', // Поступления за реализованные товары
+  '841', // За выполненные работы/услуги
+  '851', // За товары и услуги (часть банков)
+  '855', '856', '857', '858', '859', // Платежи за услуги
+]);
+
+// Коды, которые ТОЧНО не доход
+const EXCLUDE_KNP = new Set([
+  '342', '343',            // перевод собственных средств
+  '880', '881',            // возврат
+  '331', '332', '333',     // переводы физлиц / между счетами
+  '010', '011', '012', '019', // зарплата, пенсионные
+  '911', '912', '913', '914', '915', '916', '917', '918', '919', // налоги/бюджет
+]);
+
 const EXCLUDE_KEYWORDS = [
-  // пополнение / внесение собственных средств
-  'пополнен', 'пополнение счет', 'внесение', 'внесён', 'внесен налич', 'взнос собствен',
-  'собственны', 'свои средств', 'личные средств', 'пополнение карты', 'толықтыру', 'өз қаражат',
-  // переводы между своими счетами
-  'перевод между своими', 'между счетами', 'перевод со своего', 'на свой счет', 'свой счёт',
-  'card2card', 'c2c', 'перевод с карты', 'перевод на карту',
-  // возвраты / отмены
-  'возврат', 'отмена', 'рефанд', 'refund', 'reversal', 'қайтару', 'сторно',
-  // кредиты / займы / гранты
-  'кредит', 'заём', 'займ', 'ссуда', 'овердрафт', 'транш', 'несие', 'кредитн средств',
-  // проценты по вкладу / кэшбэк / бонусы
-  'процент по', 'вознаграждение по вклад', 'кэшбэк', 'cashback', 'бонус', 'сыйақы',
-  // прочее не-доход
-  'депозит возврат', 'гарантийн', 'обеспечен', 'залог',
+  'перевод собствен', 'собственных средств', 'со своего', 'на свой счет', 'свой счёт',
+  'пополнен', 'внесение', 'возврат', 'отмена', 'сторно', 'рефанд', 'refund',
+  'кредит', 'заём', 'займ', 'овердрафт', 'кэшбэк', 'cashback', 'бонус',
+  'процент по', 'вознаграждение по вклад', 'между своими', 'card2card', 'c2c',
+  'налог', 'опв', 'осмс', 'ипн', 'возмещение',
+];
+const INCOME_KEYWORDS = [
+  'продаж', 'оплата за товар', 'за товар', 'оплата за услуг', 'за услуг', 'выручк',
+  'эквайр', 'kaspi.kz', 'kaspi pay', 'kaspi pos', 'за реализ', 'за продукц', 'за работ',
+  'қызмет', 'тауар', 'сату', 'за оказан',
 ];
 
-// Сильные признаки именно дохода (за товар/услугу)
-const INCOME_KEYWORDS = [
-  'оплата за товар', 'оплата за услуг', 'за товар', 'за услуг', 'за продукц', 'за работ',
-  'выручк', 'продаж', 'эквайр', 'kaspi pay', 'kaspi pos', 'kaspi qr', 'qr оплата', 'pos оплата',
-  'оплата по счет', 'оплата счет', 'оплата заказ', 'предоплат', 'аванс', 'за оказан',
-  'қызмет', 'тауар', 'сату', 'төлем', 'выполнен работ', 'услуг', 'товар', 'реализац',
-];
+function classify(knp: string, text: string): { included: boolean; reason?: string } {
+  const code = (knp || '').trim();
+  if (code) {
+    if (INCOME_KNP.has(code)) return { included: true };
+    if (EXCLUDE_KNP.has(code)) return { included: false, reason: 'excluded' };
+    // неизвестный код — по умолчанию НЕ включаем, помечаем на проверку
+    return { included: false, reason: 'unknown_knp' };
+  }
+  const lower = text.toLowerCase();
+  for (const kw of EXCLUDE_KEYWORDS) if (lower.includes(kw)) return { included: false, reason: 'excluded' };
+  for (const kw of INCOME_KEYWORDS) if (lower.includes(kw)) return { included: true };
+  return { included: false, reason: 'unclear' };
+}
 
 function parseAmount(raw: any): number {
   if (typeof raw === 'number') return Math.abs(raw);
@@ -61,37 +80,23 @@ function parseDate(s: string): string | null {
 }
 
 function findColumns(rows: any[][]) {
-  for (let i = 0; i < Math.min(rows.length, 25); i++) {
+  for (let i = 0; i < Math.min(rows.length, 30); i++) {
     const row = rows[i].map(c => String(c || '').toLowerCase());
-    let dateCol = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, counterpartyCol = -1;
+    let dateCol = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, knpCol = -1;
     row.forEach((cell, idx) => {
       if (dateCol < 0 && /дата|күн|date/.test(cell)) dateCol = idx;
       if (debitCol < 0 && /дебет|debit|расход|списан|шығыс/.test(cell)) debitCol = idx;
       if (creditCol < 0 && /кредит|credit|приход|зачислен|поступлен|кіріс/.test(cell)) creditCol = idx;
-      if (descCol < 0 && /назначен|описан|детал|операц|мақсат|purpose|details|основан/.test(cell)) descCol = idx;
+      if (descCol < 0 && /назначен|описан|детал|мақсат|purpose|details|основан/.test(cell)) descCol = idx;
       if (amountCol < 0 && /сумма|сома|amount/.test(cell)) amountCol = idx;
-      if (senderCol < 0 && /отправит|плательщик|жіберуш|sender|от кого/.test(cell)) senderCol = idx;
-      if (counterpartyCol < 0 && /контрагент|корреспондент|наименование|counterparty/.test(cell)) counterpartyCol = idx;
+      if (senderCol < 0 && /бенефициар|отправит|плательщик|жіберуш|sender|наименование/.test(cell)) senderCol = idx;
+      if (knpCol < 0 && /кнп|кно|код назнач|кпн платеж/.test(cell)) knpCol = idx;
     });
     if (dateCol >= 0 && (creditCol >= 0 || amountCol >= 0)) {
-      return { dateCol, debitCol, creditCol, descCol, amountCol, senderCol, counterpartyCol, headerRow: i };
+      return { dateCol, debitCol, creditCol, descCol, amountCol, senderCol, knpCol, headerRow: i };
     }
   }
   return null;
-}
-
-function classify(text: string): { included: boolean; reason?: string } {
-  const lower = text.toLowerCase();
-  // 1. Явные исключения (собственные средства, переводы, возвраты, кредиты)
-  for (const kw of EXCLUDE_KEYWORDS) {
-    if (lower.includes(kw)) return { included: false, reason: 'excluded' };
-  }
-  // 2. Явный доход за товар/услугу
-  for (const kw of INCOME_KEYWORDS) {
-    if (lower.includes(kw)) return { included: true };
-  }
-  // 3. По умолчанию — приход без явных признаков: считаем доходом, но помечаем для проверки
-  return { included: true, reason: 'unclear' };
 }
 
 function extractFromSheet(rows: any[][]): Tx[] {
@@ -104,32 +109,32 @@ function extractFromSheet(rows: any[][]): Tx[] {
     const dateStr = cols.dateCol >= 0 ? parseDate(String(row[cols.dateCol] || '')) : null;
     if (!dateStr) continue;
 
-    // Берём только ПРИХОД (кредит / положительная сумма)
+    // Только ПРИХОД (кредит)
     let amount = 0;
     const credit = cols.creditCol >= 0 ? parseAmount(row[cols.creditCol]) : 0;
     const debit = cols.debitCol >= 0 ? parseAmount(row[cols.debitCol]) : 0;
     if (credit > 0) amount = credit;
-    else if (cols.amountCol >= 0 && debit === 0) {
+    else if (cols.amountCol >= 0 && cols.creditCol < 0 && debit === 0) {
       const raw = row[cols.amountCol];
       const num = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(/[^\d.,-]/g, '').replace(',', '.'));
       if (num > 0) amount = parseAmount(raw);
     }
-    if (amount < 1) continue; // не приход — пропускаем (расходы для 910 не нужны)
+    if (amount < 1) continue;
 
     const purpose = cols.descCol >= 0 ? String(row[cols.descCol] || '').trim() : '';
     const sender = cols.senderCol >= 0 ? String(row[cols.senderCol] || '').trim() : '';
-    const counterparty = cols.counterpartyCol >= 0 ? String(row[cols.counterpartyCol] || '').trim() : '';
-    const fullText = `${purpose} ${sender} ${counterparty} ${row.join(' ')}`;
+    const knp = cols.knpCol >= 0 ? String(row[cols.knpCol] || '').trim() : '';
+    const fullText = `${purpose} ${sender}`;
 
-    const { included, reason } = classify(fullText);
+    const { included, reason } = classify(knp, fullText);
     let description = '';
-    const from = sender || counterparty;
-    if (from) description = `От: ${from}`;
+    if (sender) description = sender.replace(/\n.*$/s, '').trim();
     if (purpose) description += (description ? ' · ' : '') + purpose;
-    if (!description) description = purpose || 'Поступление';
-    description = description.replace(/\s+/g, ' ').trim().slice(0, 140);
+    if (!description) description = 'Поступление';
+    if (knp) description = `[КНП ${knp}] ` + description;
+    description = description.replace(/\s+/g, ' ').trim().slice(0, 150);
 
-    txs.push({ date: dateStr, amount, type: 'income', description, included, reason });
+    txs.push({ date: dateStr, amount, type: 'income', description, included, reason, knp });
   }
   return txs;
 }
@@ -143,7 +148,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const name = file.name.toLowerCase();
     if (!name.endsWith('.xlsx') && !name.endsWith('.xls') && !name.endsWith('.csv')) {
-      return NextResponse.json({ error: 'Поддерживаются только Excel (.xlsx/.xls) и CSV. Скачайте выписку в формате Excel из приложения банка.' }, { status: 400 });
+      return NextResponse.json({ error: 'Поддерживаются только Excel (.xlsx/.xls) и CSV.' }, { status: 400 });
     }
 
     const wb = XLSX.read(buffer, { type: 'buffer', cellDates: false });
@@ -151,10 +156,9 @@ export async function POST(req: NextRequest) {
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' }) as any[][];
     let txs = extractFromSheet(rows);
 
-    // дедуп
     const seen = new Set<string>();
     txs = txs.filter(t => {
-      const key = `${t.date}_${t.amount}_${t.description.slice(0, 20)}`;
+      const key = `${t.date}_${t.amount}_${t.description.slice(0, 25)}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -169,9 +173,7 @@ export async function POST(req: NextRequest) {
       transactions: txs,
       incomeTotal,
       excludedTotal,
-      message: txs.length === 0
-        ? 'Не удалось распознать поступления. Убедитесь что это выписка с колонками Дата/Кредит (приход).'
-        : `Распознано поступлений: ${txs.length}`,
+      message: txs.length === 0 ? 'Не удалось распознать поступления.' : `Распознано поступлений: ${txs.length}`,
     });
   } catch (e: any) {
     return NextResponse.json({ error: 'Ошибка обработки файла: ' + (e?.message || 'неизвестно') }, { status: 500 });
