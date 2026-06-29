@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, Loader2, Check, X, Calculator, Copy, FileSpreadsheet, ArrowLeft, AlertTriangle, TrendingUp, Flag } from 'lucide-react';
+import { Upload, Loader2, Check, X, Calculator, Copy, FileSpreadsheet, ArrowLeft, AlertTriangle, TrendingUp } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 
@@ -196,9 +196,6 @@ export default function Income910Page() {
                     <div className="flex items-center gap-2 flex-wrap">
                       {tx.knp && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-medium flex-shrink-0">КНП {tx.knp}</span>}
                       <p className="text-sm font-medium text-gray-900 truncate">{tx.counterparty || tx.description}</p>
-                      {tx.reason === 'no_purpose' && tx.included && (
-                        <span title={t('inc910.noPurposeFlag')} className="flex-shrink-0"><Flag className="w-3.5 h-3.5 text-red-500 fill-red-500" /></span>
-                      )}
                       {(tx.reason === 'unclear' || tx.reason === 'unknown_knp') && tx.included && (
                         <span title={t('inc910.check')} className="flex-shrink-0"><AlertTriangle className="w-3.5 h-3.5 text-amber-400" /></span>
                       )}
