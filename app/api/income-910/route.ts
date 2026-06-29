@@ -107,9 +107,9 @@ function findColumns(rows: any[][]) {
       if (indicatorCol < 0 && /индикатор/.test(cell) && /дебет|кредит/.test(cell)) indicatorCol = idx;
       // суммы — "сумма по кредиту"/"сумма по дебету" (не путать с индикатором)
       if (creditCol < 0 && /сумма по кредит|приход|зачислен|поступлен|кіріс/.test(cell)) creditCol = idx;
-      if (creditCol < 0 && /\bкредит\b/.test(cell) && !/индикатор/.test(cell)) creditCol = idx;
+      if (creditCol < 0 && /кредит/.test(cell) && !/индикатор/.test(cell)) creditCol = idx;
       if (debitCol < 0 && /сумма по дебет|расход|списан|шығыс/.test(cell)) debitCol = idx;
-      if (debitCol < 0 && /\bдебет\b/.test(cell) && !/индикатор/.test(cell)) debitCol = idx;
+      if (debitCol < 0 && /дебет/.test(cell) && !/индикатор/.test(cell)) debitCol = idx;
       if (amountCol < 0 && /сумма в нац|сумма опер|^сумма$|сома|amount/.test(cell)) amountCol = idx;
       // назначение
       if (descCol < 0 && /назначен|описан|детал|мақсат|purpose|details|основан/.test(cell)) descCol = idx;
@@ -117,7 +117,7 @@ function findColumns(rows: any[][]) {
       if (counterpartyCol < 0 && /наименование контраген|контрагент|корреспондент|counterparty/.test(cell)) counterpartyCol = idx;
       if (senderCol < 0 && /бенефициар|отправит|плательщик|жіберуш|sender|наименование клиент|наименование/.test(cell)) senderCol = idx;
       // КНП
-      if (knpCol < 0 && /\bкнп\b|кно|код назнач|кпн платеж/.test(cell)) knpCol = idx;
+      if (knpCol < 0 && (cell === 'кнп' || /кнп|кно|код назнач|кпн платеж/.test(cell))) knpCol = idx;
     });
     // контрагент важнее «наименования клиента» (это сам владелец счёта)
     const cpCol = counterpartyCol >= 0 ? counterpartyCol : senderCol;
