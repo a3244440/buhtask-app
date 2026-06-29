@@ -629,6 +629,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'land.heroSubtitle': { ru: 'Найдите проверенного бухгалтера или разместите задачу. Быстро, надёжно, по всему Казахстану.', kz: 'Тексерілген бухгалтерді тауып, тапсырма орналастырыңыз. Жылдам, сенімді, бүкіл Қазақстан бойынша.', en: 'Find a verified accountant or post a task. Fast, reliable, across Kazakhstan.' },
   'land.findAccountant': { ru: 'Найти бухгалтера', kz: 'Бухгалтер табу', en: 'Find an Accountant' },
   'land.becomeAccountant': { ru: 'Стать бухгалтером', kz: 'Бухгалтер болу', en: 'Become an Accountant' },
+  'land.income910Nav': { ru: 'Расчёт дохода 910', kz: '910 кірісін есептеу', en: 'Income 910 Calculator' },
   'land.iNeed': { ru: 'Мне нужно:', kz: 'Маған керек:', en: 'I need:' },
   'land.popularServices': { ru: 'Популярные услуги', kz: 'Танымал қызметтер', en: 'Popular Services' },
   'land.servicesSubtitle': { ru: 'Любая бухгалтерская задача — найдём специалиста', kz: 'Кез келген бухгалтерлік тапсырма — маман табамыз', en: 'Any accounting task — we will find a specialist' },

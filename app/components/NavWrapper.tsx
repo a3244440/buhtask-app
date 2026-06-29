@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { key: "land.categories", href: "/#categories" },
   { key: "land.howItWorks", href: "/#how-it-works" },
   { key: "land.becomeAccountant", href: "/#for-accountants" },
+  { key: "land.income910Nav", href: "/income-910", highlight: true },
 ];
 
 interface Props { dark?: boolean; }
@@ -67,7 +68,14 @@ export default function NavWrapper({ dark = false }: Props) {
         {isLanding && (
           <nav className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map(l => (
-              <a key={l.href} href={l.href} className={`text-sm font-medium transition-colors ${textColor}`}>{t(l.key)}</a>
+              (l as any).highlight ? (
+                <a key={l.href} href={l.href}
+                  className={`text-sm font-semibold transition-colors px-3 py-1.5 rounded-lg ${isLanding && !scrolled ? 'bg-yellow-300/90 text-blue-900 hover:bg-yellow-300' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}>
+                  {t(l.key)}
+                </a>
+              ) : (
+                <a key={l.href} href={l.href} className={`text-sm font-medium transition-colors ${textColor}`}>{t(l.key)}</a>
+              )
             ))}
           </nav>
         )}
@@ -101,7 +109,12 @@ export default function NavWrapper({ dark = false }: Props) {
       {mobileOpen && (
         <div className={`md:hidden border-t px-4 py-4 flex flex-col gap-2 ${dark ? 'bg-gray-950 border-gray-800' : 'bg-white border-gray-100'}`}>
           {isLanding && NAV_LINKS.map(l => (
-            <a key={l.href} href={l.href} className={`text-sm py-2 ${dark ? 'text-gray-300' : 'text-gray-700'}`} onClick={() => setMobileOpen(false)}>{t(l.key)}</a>
+            (l as any).highlight ? (
+              <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)}
+                className="text-sm font-semibold py-2 px-3 rounded-lg bg-blue-50 text-blue-700">{t(l.key)}</a>
+            ) : (
+              <a key={l.href} href={l.href} className={`text-sm py-2 ${dark ? 'text-gray-300' : 'text-gray-700'}`} onClick={() => setMobileOpen(false)}>{t(l.key)}</a>
+            )
           ))}
           <button onClick={() => { setMobileOpen(false); router.push("/auth"); }}
             className="w-full text-sm font-semibold text-white py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors mt-2">
