@@ -47,6 +47,13 @@ const REFUND_KEYWORDS = [
   'қайтару', 'қате',
 ];
 
+// Слова в назначении, указывающие на доход (когда нет КНП)
+const INCOME_KEYWORDS = [
+  'продаж', 'оплата за товар', 'за товар', 'оплата за услуг', 'за услуг', 'выручк',
+  'эквайр', 'kaspi.kz', 'kaspi pay', 'kaspi pos', 'за реализ', 'за продукц', 'за работ',
+  'қызмет', 'тауар', 'сату', 'за оказан', 'профессиональн',
+];
+
 function classify(knp: string, purpose: string): { included: boolean; reason?: string } {
   const code = (knp || '').trim();
   const text = (purpose || '').toLowerCase().trim();
