@@ -7,22 +7,36 @@ export const maxDuration = 30;
 interface Tx { date: string; amount: number; type: 'income'; description: string; counterparty: string; purpose: string; included: boolean; reason?: string; knp?: string; }
 
 // Коды назначения платежа (КНП), являющиеся ДОХОДОМ за товары/услуги для ФНО 910.
-// На основе классификатора КНП Нацбанка РК (платежи за ТМЗ и услуги).
+// На основе официального классификатора КНП РК (Правила №203, разделы 7 "Товары" и 8 "Услуги").
 const INCOME_KNP = new Set([
-  '190', // Расчёты за товары (эквайринг Kaspi и др.)
-  '710', '711', // Поступления за реализованные товары
-  '841', // За выполненные работы/услуги
-  '851', // За товары и услуги (часть банков)
-  '855', '856', '857', '858', '859', // Платежи за услуги
+  // Раздел 7 — Товары и нематериальные активы
+  '710', // Платежи за товары
+  '711', // Приобретение/продажа товаров за рубежом
+  '712', '713',
+  '719', // Прочие платежи за товары
+  // Раздел 8 — Услуги
+  '841', // За работы/услуги (часть банков-эквайеров, напр. Kaspi)
+  '851', // За товары и услуги
+  '852', '853', '854',
+  '855', // Лизинг / аренда
+  '856', // Коммунальные услуги
+  '857', // Услуги связи
+  '858', // Услуги (реклама и пр.)
+  '859', // Профессиональные, научные и технические услуги (вкл. бух/юр/консалт)
+  '860', '861', '862', '863', '864', '865', '866', '867', '868', '869',
+  '890', // Прочие платежи по разделу "Услуги"
+  // Эквайринг розничных продаж
+  '190',
 ]);
 
 // Коды, которые ТОЧНО не доход
 const EXCLUDE_KNP = new Set([
-  '342', '343',            // перевод собственных средств
-  '880', '881',            // возврат
-  '331', '332', '333',     // переводы физлиц / между счетами
-  '010', '011', '012', '019', // зарплата, пенсионные
-  '911', '912', '913', '914', '915', '916', '917', '918', '919', // налоги/бюджет
+  '342', '343',            // перевод собственных средств / между своими счетами
+  '780', '880', '881',     // возвраты за товары/услуги
+  '331', '332', '333',     // переводы физлиц
+  '010', '011', '012', '017', '019', // пенсионные, соц, пеня по ним
+  '121', '122', '123', '124', // ОСМС и пеня
+  '911', '912', '913', '914', '915', '916', '917', '918', '919', // налоги/бюджет/пеня/штрафы
 ]);
 
 const EXCLUDE_KEYWORDS = [
@@ -82,18 +96,29 @@ function parseDate(s: string): string | null {
 function findColumns(rows: any[][]) {
   for (let i = 0; i < Math.min(rows.length, 30); i++) {
     const row = rows[i].map(c => String(c || '').toLowerCase());
-    let dateCol = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, knpCol = -1;
+    let dateCol = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, knpCol = -1, indicatorCol = -1, counterpartyCol = -1;
     row.forEach((cell, idx) => {
-      if (dateCol < 0 && /дата|күн|date/.test(cell)) dateCol = idx;
-      if (debitCol < 0 && /дебет|debit|расход|списан|шығыс/.test(cell)) debitCol = idx;
-      if (creditCol < 0 && /кредит|credit|приход|зачислен|поступлен|кіріс/.test(cell)) creditCol = idx;
+      if (dateCol < 0 && /дата выписк|дата документ|дата опер|дата провод|дата|күн|date/.test(cell)) dateCol = idx;
+      // индикатор дебет/кредит (Jusan): "индикатор дебета/кредита"
+      if (indicatorCol < 0 && /индикатор/.test(cell) && /дебет|кредит/.test(cell)) indicatorCol = idx;
+      // суммы — "сумма по кредиту"/"сумма по дебету" (не путать с индикатором)
+      if (creditCol < 0 && /сумма по кредит|приход|зачислен|поступлен|кіріс/.test(cell)) creditCol = idx;
+      if (creditCol < 0 && /\bкредит\b/.test(cell) && !/индикатор/.test(cell)) creditCol = idx;
+      if (debitCol < 0 && /сумма по дебет|расход|списан|шығыс/.test(cell)) debitCol = idx;
+      if (debitCol < 0 && /\bдебет\b/.test(cell) && !/индикатор/.test(cell)) debitCol = idx;
+      if (amountCol < 0 && /сумма в нац|сумма опер|^сумма$|сома|amount/.test(cell)) amountCol = idx;
+      // назначение
       if (descCol < 0 && /назначен|описан|детал|мақсат|purpose|details|основан/.test(cell)) descCol = idx;
-      if (amountCol < 0 && /сумма|сома|amount/.test(cell)) amountCol = idx;
-      if (senderCol < 0 && /бенефициар|отправит|плательщик|жіберуш|sender|наименование/.test(cell)) senderCol = idx;
-      if (knpCol < 0 && /кнп|кно|код назнач|кпн платеж/.test(cell)) knpCol = idx;
+      // контрагент: Jusan "наименование контрагента" приоритетнее "наименование клиента"
+      if (counterpartyCol < 0 && /наименование контраген|контрагент|корреспондент|counterparty/.test(cell)) counterpartyCol = idx;
+      if (senderCol < 0 && /бенефициар|отправит|плательщик|жіберуш|sender|наименование клиент|наименование/.test(cell)) senderCol = idx;
+      // КНП
+      if (knpCol < 0 && /\bкнп\b|кно|код назнач|кпн платеж/.test(cell)) knpCol = idx;
     });
-    if (dateCol >= 0 && (creditCol >= 0 || amountCol >= 0)) {
-      return { dateCol, debitCol, creditCol, descCol, amountCol, senderCol, knpCol, headerRow: i };
+    // контрагент важнее «наименования клиента» (это сам владелец счёта)
+    const cpCol = counterpartyCol >= 0 ? counterpartyCol : senderCol;
+    if (dateCol >= 0 && (creditCol >= 0 || amountCol >= 0 || indicatorCol >= 0)) {
+      return { dateCol, debitCol, creditCol, descCol, amountCol, senderCol: cpCol, knpCol, indicatorCol, headerRow: i };
     }
   }
   return null;
@@ -109,12 +134,22 @@ function extractFromSheet(rows: any[][]): Tx[] {
     const dateStr = cols.dateCol >= 0 ? parseDate(String(row[cols.dateCol] || '')) : null;
     if (!dateStr) continue;
 
-    // Только ПРИХОД (кредит)
+    // Определяем приход. Jusan: индикатор "CREDIT"/"DEBIT" в отдельной колонке.
     let amount = 0;
+    const indicator = cols.indicatorCol >= 0 ? String(row[cols.indicatorCol] || '').trim().toUpperCase() : '';
     const credit = cols.creditCol >= 0 ? parseAmount(row[cols.creditCol]) : 0;
     const debit = cols.debitCol >= 0 ? parseAmount(row[cols.debitCol]) : 0;
-    if (credit > 0) amount = credit;
-    else if (cols.amountCol >= 0 && cols.creditCol < 0 && debit === 0) {
+
+    if (cols.indicatorCol >= 0) {
+      // Формат с индикатором: берём только CREDIT (приход)
+      if (indicator.includes('CREDIT') || indicator.includes('КРЕДИТ') || indicator.includes('КІРІС')) {
+        amount = credit > 0 ? credit : (cols.amountCol >= 0 ? parseAmount(row[cols.amountCol]) : 0);
+      } else {
+        continue; // DEBIT — расход, пропускаем
+      }
+    } else if (credit > 0) {
+      amount = credit;
+    } else if (cols.amountCol >= 0 && cols.creditCol < 0 && debit === 0) {
       const raw = row[cols.amountCol];
       const num = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(/[^\d.,-]/g, '').replace(',', '.'));
       if (num > 0) amount = parseAmount(raw);
