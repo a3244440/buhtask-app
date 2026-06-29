@@ -86,19 +86,23 @@ function parseAmount(raw: any): number {
 function parseDate(s: string): string | null {
   if (!s) return null;
   s = String(s).trim();
-  let m = s.match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);
-  if (m) { let [, d, mo, y] = m; if (y.length === 2) y = '20' + y; return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`; }
-  m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  // ISO: 2026-02-25 или 2026-02-25T15:02:07 — проверяем ПЕРВЫМ
+  let m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  // ДД.ММ.ГГГГ
+  m = s.match(/(\d{1,2})[.\/](\d{1,2})[.\/](\d{2,4})/);
+  if (m) { let [, d, mo, y] = m; if (y.length === 2) y = '20' + y; return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`; }
   return null;
 }
 
 function findColumns(rows: any[][]) {
   for (let i = 0; i < Math.min(rows.length, 30); i++) {
     const row = rows[i].map(c => String(c || '').toLowerCase());
-    let dateCol = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, knpCol = -1, indicatorCol = -1, counterpartyCol = -1;
+    let dateCol = -1, dateColFallback = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, knpCol = -1, indicatorCol = -1, counterpartyCol = -1;
     row.forEach((cell, idx) => {
-      if (dateCol < 0 && /дата выписк|дата документ|дата опер|дата провод|дата|күн|date/.test(cell)) dateCol = idx;
+      // Дата операции/документа важнее "даты выписки" (она у всех одинаковая)
+      if (dateCol < 0 && /дата документ|дата опер|дата провод|дата валют/.test(cell)) dateCol = idx;
+      if (dateColFallback < 0 && /дата выписк|дата|күн|date/.test(cell)) dateColFallback = idx;
       // индикатор дебет/кредит (Jusan): "индикатор дебета/кредита"
       if (indicatorCol < 0 && /индикатор/.test(cell) && /дебет|кредит/.test(cell)) indicatorCol = idx;
       // суммы — "сумма по кредиту"/"сумма по дебету" (не путать с индикатором)
@@ -117,8 +121,9 @@ function findColumns(rows: any[][]) {
     });
     // контрагент важнее «наименования клиента» (это сам владелец счёта)
     const cpCol = counterpartyCol >= 0 ? counterpartyCol : senderCol;
-    if (dateCol >= 0 && (creditCol >= 0 || amountCol >= 0 || indicatorCol >= 0)) {
-      return { dateCol, debitCol, creditCol, descCol, amountCol, senderCol: cpCol, knpCol, indicatorCol, headerRow: i };
+    const finalDateCol = dateCol >= 0 ? dateCol : dateColFallback;
+    if (finalDateCol >= 0 && (creditCol >= 0 || amountCol >= 0 || indicatorCol >= 0)) {
+      return { dateCol: finalDateCol, debitCol, creditCol, descCol, amountCol, senderCol: cpCol, knpCol, indicatorCol, headerRow: i };
     }
   }
   return null;
