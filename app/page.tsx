@@ -6,7 +6,7 @@ import NavWrapper from "./components/NavWrapper";
 import { useI18n } from "@/lib/i18n";
 import {
   Calculator, FileText, Users, Building2, Search, Star,
-  ArrowRight, ChevronRight, Briefcase, TrendingUp, Shield,
+  ArrowRight, ChevronRight, ChevronDown, Briefcase, TrendingUp, Shield,
   Clock, MapPin, Zap, DollarSign, BarChart2, Moon, Sun, Mail,
 } from "lucide-react";
 
@@ -175,6 +175,13 @@ export default function HomePage() {
               <span className={`inline-block w-0.5 h-4 bg-yellow-300 ml-0.5 align-middle transition-opacity ${showCursor ? 'opacity-100' : 'opacity-0'}`} />
             </div>
           </div>
+
+          {/* Анимированная стрелка вниз */}
+          <button onClick={() => document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' })}
+            aria-label="Прокрутить вниз"
+            className="scroll-down-arrow group mx-auto mt-12 flex items-center justify-center w-12 h-12 rounded-full border-2 border-white/30 hover:border-white/60 hover:bg-white/10 transition-colors">
+            <ChevronDown className="w-6 h-6 text-white/80 group-hover:text-white" />
+          </button>
         </div>
       </section>
 
