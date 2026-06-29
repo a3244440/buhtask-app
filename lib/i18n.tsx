@@ -97,6 +97,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'inc910.included': { ru: 'Доход', kz: 'Кіріс', en: 'Income' },
   'inc910.excluded': { ru: 'Не доход', kz: 'Кіріс емес', en: 'Not income' },
   'inc910.check': { ru: 'Проверьте', kz: 'Тексеріңіз', en: 'Check' },
+  'inc910.noPurposeFlag': { ru: 'Нет назначения платежа — проверьте вручную, доход ли это', kz: 'Төлем мақсаты жоқ — қолмен тексеріңіз', en: 'No payment purpose — verify manually if this is income' },
   'inc910.toggleHint': { ru: 'Нажмите на галочку, чтобы включить/исключить операцию из дохода', kz: 'Операцияны қосу/алып тастау үшін белгіні басыңыз', en: 'Tap the checkbox to include/exclude an operation' },
   'inc910.exportNote': { ru: 'Эту сумму дохода укажите в декларации ФНО 910.00. Проверьте спорные операции (выделены).', kz: 'Бұл кіріс сомасын 910.00 декларациясында көрсетіңіз. Күмәнді операцияларды тексеріңіз.', en: 'Enter this income amount in the FNO 910.00 declaration. Review flagged operations.' },
   'inc910.reset': { ru: 'Загрузить другую выписку', kz: 'Басқа үзінді жүктеу', en: 'Upload another statement' },

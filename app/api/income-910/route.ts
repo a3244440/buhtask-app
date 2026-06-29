@@ -39,30 +39,36 @@ const EXCLUDE_KNP = new Set([
   '911', '912', '913', '914', '915', '916', '917', '918', '919', // налоги/бюджет/пеня/штрафы
 ]);
 
-const EXCLUDE_KEYWORDS = [
-  'перевод собствен', 'собственных средств', 'со своего', 'на свой счет', 'свой счёт',
-  'пополнен', 'внесение', 'возврат', 'отмена', 'сторно', 'рефанд', 'refund',
-  'кредит', 'заём', 'займ', 'овердрафт', 'кэшбэк', 'cashback', 'бонус',
-  'процент по', 'вознаграждение по вклад', 'между своими', 'card2card', 'c2c',
-  'налог', 'опв', 'осмс', 'ипн', 'возмещение',
-];
-const INCOME_KEYWORDS = [
-  'продаж', 'оплата за товар', 'за товар', 'оплата за услуг', 'за услуг', 'выручк',
-  'эквайр', 'kaspi.kz', 'kaspi pay', 'kaspi pos', 'за реализ', 'за продукц', 'за работ',
-  'қызмет', 'тауар', 'сату', 'за оказан',
+// Слова в назначении, которые отменяют доход даже при доходном КНП
+const REFUND_KEYWORDS = [
+  'возврат', 'возвращен', 'отмена', 'сторно', 'рефанд', 'refund', 'reversal',
+  'возмещение', 'ошибочн', 'ошибка', 'перевод собствен', 'собственных средств',
+  'со своего счет', 'на свой счет', 'свой счёт', 'между своими', 'пополнение собств',
+  'қайтару', 'қате',
 ];
 
-function classify(knp: string, text: string): { included: boolean; reason?: string } {
+function classify(knp: string, purpose: string): { included: boolean; reason?: string } {
   const code = (knp || '').trim();
+  const text = (purpose || '').toLowerCase().trim();
+
   if (code) {
-    if (INCOME_KNP.has(code)) return { included: true };
+    if (INCOME_KNP.has(code)) {
+      // Доходный КНП, но проверяем назначение на признаки возврата/не-дохода
+      for (const kw of REFUND_KEYWORDS) {
+        if (text.includes(kw)) return { included: false, reason: 'refund_text' };
+      }
+      // Назначение пустое — непонятно, помечаем красным флажком для ручной проверки
+      if (!text) return { included: true, reason: 'no_purpose' };
+      return { included: true };
+    }
     if (EXCLUDE_KNP.has(code)) return { included: false, reason: 'excluded' };
-    // неизвестный код — по умолчанию НЕ включаем, помечаем на проверку
+    // неизвестный код — помечаем на проверку, по умолчанию не включаем
     return { included: false, reason: 'unknown_knp' };
   }
-  const lower = text.toLowerCase();
-  for (const kw of EXCLUDE_KEYWORDS) if (lower.includes(kw)) return { included: false, reason: 'excluded' };
-  for (const kw of INCOME_KEYWORDS) if (lower.includes(kw)) return { included: true };
+
+  // Нет КНП — решаем по тексту
+  for (const kw of REFUND_KEYWORDS) if (text.includes(kw)) return { included: false, reason: 'excluded' };
+  for (const kw of INCOME_KEYWORDS) if (text.includes(kw)) return { included: true };
   return { included: false, reason: 'unclear' };
 }
 
@@ -169,7 +175,8 @@ function extractFromSheet(rows: any[][]): Tx[] {
     const knp = cols.knpCol >= 0 ? String(row[cols.knpCol] || '').trim() : '';
     const fullText = `${purpose} ${sender}`;
 
-    const { included, reason } = classify(knp, fullText);
+    // Классификация: код КНП + проверка назначения платежа на возврат/пустоту
+    const { included, reason } = classify(knp, purpose || (knp ? '' : fullText));
 
     // Чистим имя контрагента: убираем ИИН/БИН, БИК-коды, лишние реквизиты
     let cp = sender
