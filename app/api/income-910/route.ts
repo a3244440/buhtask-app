@@ -52,15 +52,25 @@ const INCOME_KEYWORDS = [
   'қызмет', 'тауар', 'сату', 'за оказан',
 ];
 
+// Слова в назначении, отменяющие доход даже при доходном КНП (возвраты/ошибки/возмещения)
+const REFUND_KEYWORDS = [
+  'возврат', 'возвращен', 'отмена', 'сторно', 'рефанд', 'refund', 'reversal',
+  'возмещение', 'ошибочн', 'ошибка', 'қайтару', 'қате',
+];
+
 function classify(knp: string, text: string): { included: boolean; reason?: string } {
   const code = (knp || '').trim();
+  const lower = (text || '').toLowerCase();
   if (code) {
-    if (INCOME_KNP.has(code)) return { included: true };
+    if (INCOME_KNP.has(code)) {
+      // Доходный КНП, но если в назначении возврат/ошибка/возмещение — это не доход
+      for (const kw of REFUND_KEYWORDS) if (lower.includes(kw)) return { included: false, reason: 'refund_text' };
+      return { included: true };
+    }
     if (EXCLUDE_KNP.has(code)) return { included: false, reason: 'excluded' };
     // неизвестный код — по умолчанию НЕ включаем, помечаем на проверку
     return { included: false, reason: 'unknown_knp' };
   }
-  const lower = text.toLowerCase();
   for (const kw of EXCLUDE_KEYWORDS) if (lower.includes(kw)) return { included: false, reason: 'excluded' };
   for (const kw of INCOME_KEYWORDS) if (lower.includes(kw)) return { included: true };
   return { included: false, reason: 'unclear' };
