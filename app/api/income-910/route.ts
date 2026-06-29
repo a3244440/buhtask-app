@@ -123,7 +123,7 @@ function findColumns(rows: any[][]) {
     const cpCol = counterpartyCol >= 0 ? counterpartyCol : senderCol;
     const finalDateCol = dateCol >= 0 ? dateCol : dateColFallback;
     if (finalDateCol >= 0 && (creditCol >= 0 || amountCol >= 0 || indicatorCol >= 0)) {
-      return { dateCol: finalDateCol, debitCol, creditCol, descCol, amountCol, senderCol: cpCol, knpCol, indicatorCol, headerRow: i };
+      return { dateCol: finalDateCol, dateColFallback, debitCol, creditCol, descCol, amountCol, senderCol: cpCol, knpCol, indicatorCol, headerRow: i };
     }
   }
   return null;
@@ -136,8 +136,11 @@ function extractFromSheet(rows: any[][]): Tx[] {
   for (let i = cols.headerRow + 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || row.every(c => !c && c !== 0)) continue;
-    const dateStr = cols.dateCol >= 0 ? parseDate(String(row[cols.dateCol] || '')) : null;
-    if (!dateStr) continue;
+    let dateStr = cols.dateCol >= 0 ? parseDate(String(row[cols.dateCol] || '')) : null;
+    // запасная дата из любой колонки-даты, если основная не распозналась
+    if (!dateStr && cols.dateColFallback !== undefined && cols.dateColFallback >= 0) {
+      dateStr = parseDate(String(row[cols.dateColFallback] || ''));
+    }
 
     // Определяем приход. Jusan: индикатор "CREDIT"/"DEBIT" в отдельной колонке.
     let amount = 0;
@@ -191,7 +194,7 @@ function extractFromSheet(rows: any[][]): Tx[] {
       .trim()
       .slice(0, 100);
 
-    txs.push({ date: dateStr, amount, type: 'income', description, counterparty: cp || '', purpose: purposeClean, included, reason, knp });
+    txs.push({ date: dateStr || '', amount, type: 'income', description, counterparty: cp || '', purpose: purposeClean, included, reason, knp });
   }
   return txs;
 }
