@@ -54,6 +54,18 @@ export default function Income910Page() {
   const excludedTotal = txs ? txs.filter(t => !t.included).reduce((s, t) => s + t.amount, 0) : 0;
   const includedCount = txs ? txs.filter(t => t.included).length : 0;
 
+  // Разбивка дохода по КНП (только включённые)
+  const byKnp = (() => {
+    if (!txs) return [] as { knp: string; sum: number; count: number }[];
+    const map: Record<string, { sum: number; count: number }> = {};
+    txs.filter(t => t.included).forEach(t => {
+      const k = t.knp || '—';
+      if (!map[k]) map[k] = { sum: 0, count: 0 };
+      map[k].sum += t.amount; map[k].count += 1;
+    });
+    return Object.entries(map).map(([knp, v]) => ({ knp, ...v })).sort((a, b) => b.sum - a.sum);
+  })();
+
   const copySum = () => {
     navigator.clipboard.writeText(String(Math.round(incomeTotal)));
     setCopied(true); setTimeout(() => setCopied(false), 1500);
@@ -132,7 +144,47 @@ export default function Income910Page() {
             <p className="text-xs text-gray-400 text-center mb-2">{t('inc910.exportNote')}</p>
             <p className="text-xs text-gray-400 text-center mb-4">{t('inc910.toggleHint')}</p>
 
+            {/* Разбивка по КНП */}
+            {byKnp.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4 text-blue-600" />
+                  <h3 className="font-semibold text-gray-900 text-sm">{t('inc910.byKnp')}</h3>
+                </div>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-400 border-b border-gray-50">
+                      <th className="px-4 py-2 font-medium">{t('inc910.knpCol')}</th>
+                      <th className="px-2 py-2 font-medium">{t('inc910.knpName')}</th>
+                      <th className="px-2 py-2 font-medium text-center">{t('inc910.opsCol')}</th>
+                      <th className="px-4 py-2 font-medium text-right">{t('inc910.sumCol')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {byKnp.map(g => (
+                      <tr key={g.knp} className="border-b border-gray-50 last:border-0">
+                        <td className="px-4 py-2.5">
+                          <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold text-xs">{g.knp}</span>
+                        </td>
+                        <td className="px-2 py-2.5 text-gray-600 text-xs">{t('knp.' + g.knp) !== 'knp.' + g.knp ? t('knp.' + g.knp) : '—'}</td>
+                        <td className="px-2 py-2.5 text-center text-gray-400 text-xs">{g.count}</td>
+                        <td className="px-4 py-2.5 text-right font-semibold text-emerald-600 whitespace-nowrap">{Math.round(g.sum).toLocaleString('ru-RU')} ₸</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-gray-50 font-bold">
+                      <td className="px-4 py-2.5 text-gray-900" colSpan={2}>{t('inc910.incomeTotal')}</td>
+                      <td className="px-2 py-2.5 text-center text-gray-500 text-xs">{includedCount}</td>
+                      <td className="px-4 py-2.5 text-right text-emerald-600 whitespace-nowrap">{Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+
             {/* Список операций */}
+            <p className="text-xs font-semibold text-gray-500 mb-2 px-1">{t('inc910.allOps')}</p>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50 mb-4">
               {txs.map((tx, i) => (
                 <div key={i} className={`flex items-center gap-3 px-4 py-3 ${!tx.included ? 'opacity-50' : ''}`}>
