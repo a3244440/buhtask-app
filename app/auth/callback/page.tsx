@@ -40,21 +40,8 @@ export default function AuthCallback() {
         .maybeSingle();
 
       if (!profile) {
-        // Новый пользователь через Google — создаём профиль
-        await supabase.from('profiles').insert({
-          id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-          avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
-          phone: '',
-          role: 'client',
-          rating: 0,
-          is_banned: false,
-          completed_tasks: 0,
-          verification_status: 'not_verified',
-          availability: 'free',
-        });
-        router.push('/onboarding/client');
+        // Новый пользователь через Google — пусть выберет роль
+        router.push('/onboarding/role');
       } else {
         // Существующий пользователь — в кабинет по роли
         router.push(profile.role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client');

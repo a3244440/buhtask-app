@@ -67,6 +67,16 @@ const translations: Record<string, Record<Lang, string>> = {
   'inc910.open': { ru: 'Открыть инструмент', kz: 'Құралды ашу', en: 'Open Tool' },
   'inc910.freeBadge': { ru: 'Бесплатный инструмент', kz: 'Тегін құрал', en: 'Free tool' },
   'inc910.bannerDesc': { ru: 'Загрузите выписку любого банка РК — мы автоматически отберём доход за товары и услуги и посчитаем сумму для декларации ФНО 910', kz: 'ҚР кез келген банкінің үзіндісін жүктеңіз — тауар мен қызмет кірісін автоматты түрде есептейміз', en: 'Upload any Kazakhstan bank statement — we auto-calculate income from goods and services for the FNO 910 declaration' },
+
+  // === Выбор роли (после Google-входа) ===
+  'role.title': { ru: 'Кто вы?', kz: 'Сіз кімсіз?', en: 'Who are you?' },
+  'role.subtitle': { ru: 'Выберите, как вы будете пользоваться BuhTask', kz: 'BuhTask-ты қалай қолданатыныңызды таңдаңыз', en: 'Choose how you will use BuhTask' },
+  'role.clientTitle': { ru: 'Я заказчик', kz: 'Мен тапсырыс берушімін', en: "I'm a client" },
+  'role.clientDesc': { ru: 'Ищу бухгалтера, веду свои компании и документы', kz: 'Бухгалтер іздеймін, компанияларымды жүргіземін', en: 'Looking for an accountant, managing my companies' },
+  'role.accountantTitle': { ru: 'Я бухгалтер', kz: 'Мен бухгалтермін', en: "I'm an accountant" },
+  'role.accountantDesc': { ru: 'Предлагаю услуги, беру заказы от клиентов', kz: 'Қызмет ұсынамын, тапсырыстар аламын', en: 'Offering services, taking client orders' },
+  'role.continue': { ru: 'Продолжить', kz: 'Жалғастыру', en: 'Continue' },
+  'role.saving': { ru: 'Сохраняем...', kz: 'Сақталуда...', en: 'Saving...' },
   'inc910.upload': { ru: 'Загрузить выписку', kz: 'Үзіндіні жүктеу', en: 'Upload Statement' },
   'inc910.dropHere': { ru: 'Отпустите файл здесь', kz: 'Файлды осында жіберіңіз', en: 'Drop the file here' },
   'inc910.uploadHint': { ru: 'Excel (.xlsx/.xls) или CSV из приложения любого банка РК (Kaspi, Halyk, БЦК, Forte, Jusan и др.)', kz: 'ҚР кез келген банкінің (Kaspi, Halyk, БЦК, Forte, Jusan) Excel немесе CSV үзіндісі', en: 'Excel/CSV from any Kazakhstan bank app (Kaspi, Halyk, BCC, Forte, Jusan, etc.)' },
