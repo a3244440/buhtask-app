@@ -65,6 +65,8 @@ const translations: Record<string, Record<Lang, string>> = {
   'inc910.subtitle': { ru: 'Загрузите выписку — отберём только доход за товары и услуги для отчёта', kz: 'Үзіндіні жүктеңіз — есеп үшін тек тауар мен қызмет кірісін таңдаймыз', en: 'Upload a statement — we keep only income from goods and services for the report' },
   'inc910.footerCta': { ru: 'Считаете доход для упрощёнки 910? Загрузите выписку — мы отберём только доход', kz: '910 оңайлатылған кірісін есептеп жатырсыз ба? Үзіндіні жүктеңіз', en: 'Calculating income for simplified 910? Upload your statement' },
   'inc910.open': { ru: 'Открыть инструмент', kz: 'Құралды ашу', en: 'Open Tool' },
+  'inc910.freeBadge': { ru: 'Бесплатный инструмент', kz: 'Тегін құрал', en: 'Free tool' },
+  'inc910.bannerDesc': { ru: 'Загрузите выписку любого банка РК — мы автоматически отберём доход за товары и услуги и посчитаем сумму для декларации ФНО 910', kz: 'ҚР кез келген банкінің үзіндісін жүктеңіз — тауар мен қызмет кірісін автоматты түрде есептейміз', en: 'Upload any Kazakhstan bank statement — we auto-calculate income from goods and services for the FNO 910 declaration' },
   'inc910.upload': { ru: 'Загрузить выписку', kz: 'Үзіндіні жүктеу', en: 'Upload Statement' },
   'inc910.dropHere': { ru: 'Отпустите файл здесь', kz: 'Файлды осында жіберіңіз', en: 'Drop the file here' },
   'inc910.uploadHint': { ru: 'Excel (.xlsx/.xls) или CSV из приложения любого банка РК (Kaspi, Halyk, БЦК, Forte, Jusan и др.)', kz: 'ҚР кез келген банкінің (Kaspi, Halyk, БЦК, Forte, Jusan) Excel немесе CSV үзіндісі', en: 'Excel/CSV from any Kazakhstan bank app (Kaspi, Halyk, BCC, Forte, Jusan, etc.)' },

@@ -1,8 +1,9 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, Loader2, Check, X, Calculator, Copy, FileSpreadsheet, ArrowLeft, AlertTriangle, TrendingUp } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
+import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/lib/i18n';
 
 interface Tx { date: string; amount: number; description: string; counterparty?: string; purpose?: string; included: boolean; reason?: string; knp?: string; }
@@ -10,12 +11,24 @@ interface Tx { date: string; amount: number; description: string; counterparty?:
 export default function Income910Page() {
   const { t } = useI18n();
   const router = useRouter();
+  const [authChecking, setAuthChecking] = useState(true);
   const [loading, setLoading] = useState(false);
   const [txs, setTxs] = useState<Tx[] | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) {
+        // не авторизован — отправляем на регистрацию с возвратом сюда
+        router.replace('/auth?redirect=/income-910');
+      } else {
+        setAuthChecking(false);
+      }
+    });
+  }, []);
 
   const processFile = async (file: File | undefined | null) => {
     if (!file) return;
@@ -70,6 +83,10 @@ export default function Income910Page() {
     navigator.clipboard.writeText(String(Math.round(incomeTotal)));
     setCopied(true); setTimeout(() => setCopied(false), 1500);
   };
+
+  if (authChecking) {
+    return <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>

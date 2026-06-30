@@ -53,6 +53,8 @@ export default function AuthPage() {
       if (e) { setError('Неверный email или пароль'); return; }
       if (data.user) {
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+        const redirect = new URLSearchParams(window.location.search).get('redirect');
+        if (redirect) { router.push(redirect); return; }
         router.push(profile?.role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client');
       }
     } catch { setError('Ошибка входа. Попробуйте снова.'); }
