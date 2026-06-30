@@ -77,6 +77,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'role.accountantDesc': { ru: 'Предлагаю услуги, беру заказы от клиентов', kz: 'Қызмет ұсынамын, тапсырыстар аламын', en: 'Offering services, taking client orders' },
   'role.continue': { ru: 'Продолжить', kz: 'Жалғастыру', en: 'Continue' },
   'role.saving': { ru: 'Сохраняем...', kz: 'Сақталуда...', en: 'Saving...' },
+  'inc910.toolsDesc': { ru: 'Доход из выписки для ФНО 910', kz: 'Үзіндіден 910 ФНО кірісі', en: 'Income from statement for FNO 910' },
   'inc910.upload': { ru: 'Загрузить выписку', kz: 'Үзіндіні жүктеу', en: 'Upload Statement' },
   'inc910.dropHere': { ru: 'Отпустите файл здесь', kz: 'Файлды осында жіберіңіз', en: 'Drop the file here' },
   'inc910.uploadHint': { ru: 'Excel (.xlsx/.xls) или CSV из приложения любого банка РК (Kaspi, Halyk, БЦК, Forte, Jusan и др.)', kz: 'ҚР кез келген банкінің (Kaspi, Halyk, БЦК, Forte, Jusan) Excel немесе CSV үзіндісі', en: 'Excel/CSV from any Kazakhstan bank app (Kaspi, Halyk, BCC, Forte, Jusan, etc.)' },

@@ -24,6 +24,7 @@ export default function ToolsPage() {
   const dash = isAccountant ? '/dashboard/accountant' : '/dashboard/client';
 
   const tools = [
+    { href: '/income-910', icon: Calculator, label: t('inc910.title'), desc: t('inc910.toolsDesc'), hide: false, color: 'bg-blue-600 text-white', highlight: true },
     { href: '/companies', icon: Building2, label: t('tools.companies'), desc: t('tools.companiesDesc'), hide: isAccountant, color: 'bg-blue-50 text-blue-600' },
     { href: '/counterparties', icon: Users, label: t('tools.counterparties'), desc: t('tools.counterpartiesDesc'), hide: isAccountant, color: 'bg-indigo-50 text-indigo-600' },
     { href: '/documents', icon: FileText, label: t('tools.documents'), desc: t('tools.documentsDesc'), hide: isAccountant, color: 'bg-sky-50 text-sky-600' },
@@ -43,12 +44,15 @@ export default function ToolsPage() {
         <div className="space-y-3">
           {tools.filter(t => !t.hide).map(t => (
             <button key={t.href} onClick={() => router.push(t.href)}
-              className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4 hover:border-blue-200 transition-colors">
+              className={`w-full bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-4 transition-colors ${(t as any).highlight ? 'border-blue-300 ring-1 ring-blue-100 hover:border-blue-400' : 'border-gray-100 hover:border-blue-200'}`}>
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${t.color}`}>
                 <t.icon className="w-5 h-5" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-semibold text-gray-900">{t.label}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-gray-900">{t.label}</p>
+                  {(t as any).highlight && <span className="text-[9px] px-1.5 py-0.5 bg-yellow-300 text-blue-900 rounded font-bold">NEW</span>}
+                </div>
                 <p className="text-xs text-gray-400">{t.desc}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-300" />
