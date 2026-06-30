@@ -149,7 +149,7 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setSaving(true); setError(''); setSuccess('');
     try {
-      const update: any = { full_name: profile.full_name, phone: profile.phone, city: profile.city, avatar_url: profile.avatar_url };
+      const update: any = { full_name: profile.full_name, phone: profile.phone, city: profile.city, avatar_url: profile.avatar_url, role: profile.role };
       if (profile.role === 'accountant') {
         update.bio = profile.bio;
         update.experience_years = profile.experience_years;
@@ -217,6 +217,20 @@ export default function ProfilePage() {
         {/* Main info */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5 space-y-4">
           <h2 className="font-semibold text-gray-900">Основная информация</h2>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Кто вы на платформе</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setProfile(p => ({ ...p, role: 'client' }))}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium border-2 transition-colors ${profile.role === 'client' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                👤 Заказчик
+              </button>
+              <button type="button" onClick={() => setProfile(p => ({ ...p, role: 'accountant' }))}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium border-2 transition-colors ${profile.role === 'accountant' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                💼 Бухгалтер
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-1.5">Можно переключиться в любой момент. После сохранения откроется нужный кабинет.</p>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Имя / Название компании</label>
             <input type="text" value={profile.full_name} onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))} placeholder="Иванов Иван Иванович" className={inp} />

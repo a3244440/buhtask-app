@@ -18,13 +18,16 @@ export default function Income910Page() {
   const [copied, setCopied] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [dashHref, setDashHref] = useState('/dashboard/client');
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
         // не авторизован — отправляем на регистрацию с возвратом сюда
         router.replace('/auth?redirect=/income-910');
       } else {
+        const { data: p } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle();
+        setDashHref(p?.role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client');
         setAuthChecking(false);
       }
     });
@@ -104,6 +107,10 @@ export default function Income910Page() {
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calculator className="w-5 h-5 text-blue-600" /> {t('inc910.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">{t('inc910.subtitle')}</p>
+          <button onClick={() => router.push(dashHref)} className="mt-3 inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
+            <img src="/images/logo-new.png" alt="BuhTask" className="h-6 w-auto" />
+            <span>← {t('inc910.toCabinet')}</span>
+          </button>
         </div>
 
         {!txs && (

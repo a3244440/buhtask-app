@@ -27,7 +27,7 @@ export default function ToolsSidebar() {
     { href: '/counterparties', icon: Users, label: t('tools.counterparties'), hide: isAccountant },
     { href: '/documents', icon: FileText, label: t('tools.documents'), hide: isAccountant },
     { href: '/tax-calendar', icon: CalendarDays, label: t('tools.taxCalendar'), hide: false },
-    { href: '/income-910', icon: Calculator, label: t('inc910.title'), hide: false },
+    { href: '/income-910', icon: Calculator, label: t('inc910.shortTitle'), hide: false },
     { href: '/salary-calculator', icon: Calculator, label: t('tools.salaryCalc'), hide: false },
     { href: '/finance', icon: BarChart3, label: t('tools.finance'), hide: isAccountant },
   ];
