@@ -178,20 +178,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* STATS */}
-      <section className={`border-b ${sectionBg}`}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className={`grid grid-cols-2 md:grid-cols-4 ${D ? '' : 'divide-x divide-y md:divide-y-0'}`} style={{ borderColor: D ? 'transparent' : '#f1f5f9' }}>
-            {STATS.map(s => (
-              <div key={s.label} className="flex flex-col items-center gap-1 py-8 px-4">
-                <span className="text-4xl md:text-5xl font-extrabold text-blue-500">{s.value}</span>
-                <span className={`text-sm text-center ${mutedText}`}>{t(s.key)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Инструмент ФНО 910 — заметный баннер */}
       <section className="px-4 sm:px-6 py-10">
         <div className="max-w-5xl mx-auto">
@@ -204,9 +190,6 @@ export default function HomePage() {
                 <Calculator className="w-9 h-9 text-white" />
               </div>
               <div className="flex-1 text-center md:text-left">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-300/90 text-blue-900 text-xs font-bold mb-2">
-                  ⚡ {t('inc910.freeBadge')}
-                </div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-white">{t('inc910.title')}</h2>
                 <p className="text-blue-100 mt-2 text-sm sm:text-base">{t('inc910.bannerDesc')}</p>
               </div>

@@ -672,7 +672,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'land.whyUs': { ru: 'Почему BuhTask', kz: 'Неліктен BuhTask', en: 'Why BuhTask' },
   'land.ctaTitle': { ru: 'Готовы начать?', kz: 'Бастауға дайынсыз ба?', en: 'Ready to start?' },
   'land.ctaSubtitle': { ru: 'Присоединяйтесь к тысячам предпринимателей и бухгалтеров', kz: 'Мыңдаған кәсіпкерлер мен бухгалтерлерге қосылыңыз', en: 'Join thousands of entrepreneurs and accountants' },
-  'land.getStarted': { ru: 'Начать бесплатно', kz: 'Тегін бастау', en: 'Get Started Free' },
+  'land.getStarted': { ru: 'Начать', kz: 'Бастау', en: 'Get Started' },
   'land.hot': { ru: 'Популярное', kz: 'Танымал', en: 'Hot' },
   'land.stat.accountants': { ru: 'Проверенных бухгалтеров', kz: 'Тексерілген бухгалтерлер', en: 'Verified Accountants' },
   'land.stat.tasks': { ru: 'Выполненных задач', kz: 'Орындалған тапсырмалар', en: 'Completed Tasks' },

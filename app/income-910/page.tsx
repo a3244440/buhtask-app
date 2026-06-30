@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, Loader2, Check, X, Calculator, Copy, FileSpreadsheet, ArrowLeft, AlertTriangle, TrendingUp, Home } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
+import ToolsSidebar from '../components/ToolsSidebar';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/lib/i18n';
 
@@ -92,25 +93,14 @@ export default function Income910Page() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <DashboardHeader title={t('inc910.title')} />
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-5">
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
-            <ArrowLeft className="w-4 h-4" /> {t('btn.back')}
-          </button>
-          <button onClick={() => router.push('/')} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
-            <Home className="w-4 h-4" /> {t('inc910.toHome')}
-          </button>
-        </div>
-
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <ToolsSidebar />
+      <div className="lg:pl-60">
+        <DashboardHeader title={t('inc910.title')} />
+        <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calculator className="w-5 h-5 text-blue-600" /> {t('inc910.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">{t('inc910.subtitle')}</p>
-          <button onClick={() => router.push(dashHref)} className="mt-3 inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
-            <img src="/images/logo-new.png" alt="BuhTask" className="h-6 w-auto" />
-            <span>← {t('inc910.toCabinet')}</span>
-          </button>
         </div>
 
         {!txs && (
@@ -245,6 +235,7 @@ export default function Income910Page() {
           </>
         )}
       </main>
+      </div>
     </div>
   );
 }
