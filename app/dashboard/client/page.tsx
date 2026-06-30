@@ -276,6 +276,11 @@ function ClientDashboardInner() {
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <FileText className="w-4 h-4 flex-shrink-0" /> {t('tools.documents')}
             </button>
+            <button onClick={() => router.push('/income-910')}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 whitespace-nowrap">
+              <Calculator className="w-4 h-4 flex-shrink-0" /> {t('inc910.title')}
+              <span className="ml-auto text-[9px] px-1.5 py-0.5 bg-yellow-300 text-blue-900 rounded font-bold">NEW</span>
+            </button>
             <button onClick={() => router.push('/tax-calendar')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <CalendarDays className="w-4 h-4 flex-shrink-0" /> {t('tools.taxCalendar')}
