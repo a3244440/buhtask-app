@@ -41,18 +41,24 @@ function parseDate(s: string): string {
 function findColumns(rows: any[][]) {
   for (let i = 0; i < Math.min(rows.length, 30); i++) {
     const row = rows[i].map(c => String(c || '').toLowerCase());
-    let dateCol = -1, numCol = -1, cpCol = -1, amountCol = -1, statusCol = -1;
+    let dateCol = -1, numCol = -1, cpCol = -1, amountCol = -1, statusCol = -1, reasonCol = -1;
     row.forEach((cell, idx) => {
-      if (dateCol < 0 && /дата выписк|дата оборота|дата документ|дата/.test(cell)) dateCol = idx;
-      if (numCol < 0 && /номер|№|рег.*номер/.test(cell)) numCol = idx;
-      // получатель = покупатель (для дохода продавца)
-      if (cpCol < 0 && /получател|покупател|контрагент|наименование пол/.test(cell)) cpCol = idx;
-      // сумма с НДС / итого / всего
-      if (amountCol < 0 && /сумма.*ндс|итого|всего|сумма оборота|стоимость.*ндс/.test(cell)) amountCol = idx;
-      if (statusCol < 0 && /статус|status|состояние/.test(cell)) statusCol = idx;
+      if (statusCol < 0 && /статус сч[её]та|статус счет|^статус$|status/.test(cell)) statusCol = idx;
+      if (dateCol < 0 && /дата выписк/.test(cell)) dateCol = idx;
+      if (numCol < 0 && /номер сч[её]та|номер счет|рег.*номер/.test(cell)) numCol = idx;
+      if (cpCol < 0 && /наименование получател|получател|покупател/.test(cell)) cpCol = idx;
+      // основная сумма — стоимость с учётом косвенных налогов (полная сумма СФ)
+      if (amountCol < 0 && /стоимость.*с уч[её]т.*косвенн|стоимость.*с уч[её]т.*налог/.test(cell)) amountCol = idx;
+      if (reasonCol < 0 && /причина аннул|причина отз/.test(cell)) reasonCol = idx;
     });
+    // запасной поиск суммы — размер оборота по реализации
+    if (amountCol < 0) {
+      row.forEach((cell, idx) => {
+        if (amountCol < 0 && /размер оборота|оборот по реализ/.test(cell)) amountCol = idx;
+      });
+    }
     if (statusCol >= 0 && amountCol >= 0) {
-      return { dateCol, numCol, cpCol, amountCol, statusCol, headerRow: i };
+      return { dateCol, numCol, cpCol, amountCol, statusCol, reasonCol, headerRow: i };
     }
   }
   return null;

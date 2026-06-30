@@ -20,6 +20,11 @@ export default function Income910Page() {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [dashHref, setDashHref] = useState('/dashboard/client');
+  // ЭСФ
+  const [esfRows, setEsfRows] = useState<any[] | null>(null);
+  const [esfLoading, setEsfLoading] = useState(false);
+  const [esfError, setEsfError] = useState('');
+  const esfFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -60,6 +65,23 @@ export default function Income910Page() {
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => processFile(e.target.files?.[0]);
 
+  const processEsf = async (file: File | undefined | null) => {
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    if (!name.endsWith('.xlsx') && !name.endsWith('.xls') && !name.endsWith('.csv')) { setEsfError(t('inc910.uploadHint')); return; }
+    setEsfLoading(true); setEsfError(''); setEsfRows(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/esf-check', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.error) setEsfError(data.error);
+      else if (!data.rows || data.rows.length === 0) setEsfError(t('inc910.esfNoData'));
+      else setEsfRows(data.rows);
+    } catch { setEsfError(t('inc910.esfNoData')); }
+    finally { setEsfLoading(false); if (esfFileRef.current) esfFileRef.current.value = ''; }
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
     processFile(e.dataTransfer.files?.[0]);
@@ -70,6 +92,11 @@ export default function Income910Page() {
   const incomeTotal = txs ? txs.filter(t => t.included).reduce((s, t) => s + t.amount, 0) : 0;
   const excludedTotal = txs ? txs.filter(t => !t.included).reduce((s, t) => s + t.amount, 0) : 0;
   const includedCount = txs ? txs.filter(t => t.included).length : 0;
+
+  // ЭСФ итоги
+  const esfTotal = esfRows ? esfRows.filter(e => e.included).reduce((s, e) => s + e.amount, 0) : 0;
+  const esfExcluded = esfRows ? esfRows.filter(e => !e.included).reduce((s, e) => s + e.amount, 0) : 0;
+  const esfDiff = incomeTotal - esfTotal; // банк минус ЭСФ
 
   // Разбивка дохода по КНП (только включённые)
   const byKnp = (() => {
@@ -227,6 +254,68 @@ export default function Income910Page() {
                   </p>
                 </div>
               ))}
+            </div>
+
+            {/* ЭСФ сверка */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
+                <h3 className="font-semibold text-gray-900 text-sm">{t('inc910.esfTitle')}</h3>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">{t('inc910.esfDesc')}</p>
+
+              {!esfRows ? (
+                <>
+                  {esfLoading ? (
+                    <div className="py-6 text-center"><Loader2 className="w-7 h-7 text-indigo-600 animate-spin mx-auto" /></div>
+                  ) : (
+                    <button onClick={() => esfFileRef.current?.click()}
+                      className="w-full border-2 border-dashed border-gray-200 rounded-xl py-6 hover:border-indigo-400 hover:bg-indigo-50/30 transition-colors">
+                      <Upload className="w-7 h-7 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm font-medium text-gray-700">{t('inc910.esfUpload')}</p>
+                    </button>
+                  )}
+                  <input ref={esfFileRef} type="file" accept=".xlsx,.xls,.csv" onChange={e => processEsf(e.target.files?.[0])} className="hidden" />
+                  {esfError && <p className="text-sm text-red-500 mt-2 text-center">{esfError}</p>}
+                </>
+              ) : (
+                <>
+                  {/* Сравнение */}
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                      <p className="text-[11px] text-gray-500">{t('inc910.byBank')}</p>
+                      <p className="text-lg font-bold text-emerald-600">{Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</p>
+                    </div>
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                      <p className="text-[11px] text-gray-500">{t('inc910.byEsf')}</p>
+                      <p className="text-lg font-bold text-indigo-600">{Math.round(esfTotal).toLocaleString('ru-RU')} ₸</p>
+                    </div>
+                  </div>
+                  <div className={`rounded-xl p-3 mb-3 text-center ${Math.abs(esfDiff) < 1 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                    {Math.abs(esfDiff) < 1 ? (
+                      <p className="text-sm font-semibold flex items-center justify-center gap-1.5"><Check className="w-4 h-4" /> {t('inc910.esfMatch')}</p>
+                    ) : (
+                      <p className="text-sm font-semibold">{t('inc910.esfDiff')}: {Math.abs(Math.round(esfDiff)).toLocaleString('ru-RU')} ₸</p>
+                    )}
+                  </div>
+                  {esfExcluded > 0 && (
+                    <p className="text-xs text-gray-400 mb-3">{t('inc910.esfExcludedNote')}: {Math.round(esfExcluded).toLocaleString('ru-RU')} ₸</p>
+                  )}
+                  {/* Список ЭСФ */}
+                  <div className="divide-y divide-gray-50 max-h-72 overflow-y-auto -mx-1">
+                    {esfRows.map((e, i) => (
+                      <div key={i} className={`flex items-center gap-2 px-1 py-2 ${!e.included ? 'opacity-40' : ''}`}>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900 truncate">{e.counterparty || '—'}</p>
+                          <p className="text-[11px] text-gray-400">{e.date} · {e.status}</p>
+                        </div>
+                        <p className={`text-sm font-medium flex-shrink-0 ${e.included ? 'text-gray-700' : 'text-gray-400 line-through'}`}>{Math.round(e.amount).toLocaleString('ru-RU')} ₸</p>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={() => { setEsfRows(null); setEsfError(''); }} className="w-full text-indigo-600 hover:underline text-xs py-2 mt-2">{t('inc910.esfReset')}</button>
+                </>
+              )}
             </div>
 
             <button onClick={() => { setTxs(null); setError(''); }} className="w-full text-blue-600 hover:underline text-sm py-2 flex items-center justify-center gap-2">
