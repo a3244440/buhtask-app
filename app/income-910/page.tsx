@@ -117,6 +117,18 @@ export default function Income910Page() {
   const esfExcluded = esfRows ? esfRows.filter(e => !e.included).reduce((s, e) => s + e.amount, 0) : 0;
   const esfDiff = incomeTotal - esfTotal; // банк минус ЭСФ
 
+  // Сокращаем длинные организационно-правовые формы до аббревиатур
+  const shortName = (s: string) => (s || '—')
+    .replace(/товарищество с ограниченной ответственностью/gi, 'ТОО')
+    .replace(/индивидуальный предприниматель/gi, 'ИП')
+    .replace(/акционерное общество/gi, 'АО')
+    .replace(/некоммерческое акционерное общество/gi, 'НАО')
+    .replace(/государственное учреждение/gi, 'ГУ')
+    .replace(/общественное объединение/gi, 'ОО')
+    .replace(/производственный кооператив/gi, 'ПК')
+    .replace(/крестьянское( \(фермерское\))? хозяйство/gi, 'КХ')
+    .replace(/\s+/g, ' ').trim();
+
   // Сверка банк ↔ ЭСФ по компаниям (ключ — БИН; если нет БИН, по имени)
   const reconciliation = (() => {
     if (!esfRows) return [] as { key: string; name: string; bin: string; bank: number; esf: number; diff: number }[];
@@ -335,7 +347,7 @@ export default function Income910Page() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           {tx.knp && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-medium flex-shrink-0">КНП {tx.knp}</span>}
-                          <p className="text-sm font-medium text-gray-900 truncate">{tx.counterparty || tx.description}</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">{shortName(tx.counterparty) || tx.description}</p>
                           {(tx.reason === 'unclear' || tx.reason === 'unknown_knp') && tx.included && (
                             <span title={t('inc910.check')} className="flex-shrink-0"><AlertTriangle className="w-3.5 h-3.5 text-amber-400" /></span>
                           )}
@@ -413,7 +425,7 @@ export default function Income910Page() {
                                 return (
                                   <tr key={i} className="border-b border-gray-50 last:border-0">
                                     <td className="px-3 py-2 text-gray-700">
-                                      <span className="block truncate max-w-[130px]">{r.name}</span>
+                                      <span className="block truncate max-w-[130px]">{shortName(r.name)}</span>
                                       {r.bin && <span className="text-[9px] text-gray-400">{r.bin}</span>}
                                     </td>
                                     <td className="px-1 py-2 text-right text-emerald-600 whitespace-nowrap">{r.bank ? Math.round(r.bank).toLocaleString('ru-RU') : '—'}</td>
@@ -436,7 +448,7 @@ export default function Income910Page() {
                         {esfRows.map((e, i) => (
                           <div key={i} className={`flex items-center gap-2 py-2 ${!e.included ? 'opacity-40' : ''}`}>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900 truncate">{e.counterparty || '—'}</p>
+                              <p className="text-sm text-gray-900 truncate">{shortName(e.counterparty)}</p>
                               <p className="text-[11px] text-gray-400">{e.date} · {e.status}</p>
                             </div>
                             <p className={`text-sm font-medium flex-shrink-0 ${e.included ? 'text-gray-700' : 'text-gray-400 line-through'}`}>{Math.round(e.amount).toLocaleString('ru-RU')} ₸</p>
