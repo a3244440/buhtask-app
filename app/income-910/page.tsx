@@ -5,6 +5,7 @@ import { Upload, Loader2, Check, X, Calculator, Copy, FileSpreadsheet, ArrowLeft
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
 import { supabase } from '@/lib/supabase';
+import { activePlan } from '@/lib/plans';
 import { useI18n } from '@/lib/i18n';
 
 interface Tx { date: string; amount: number; description: string; counterparty?: string; bin?: string; purpose?: string; included: boolean; reason?: string; knp?: string; }
@@ -25,22 +26,34 @@ export default function Income910Page() {
   const [esfLoading, setEsfLoading] = useState(false);
   const [esfError, setEsfError] = useState('');
   const esfFileRef = useRef<HTMLInputElement>(null);
+  // Лимиты проверок
+  const [userId, setUserId] = useState<string | null>(null);
+  const [used, setUsed] = useState(0);
+  const [limit, setLimit] = useState(1);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
-        // не авторизован — отправляем на регистрацию с возвратом сюда
         router.replace('/auth?redirect=/income-910');
       } else {
-        const { data: p } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle();
+        setUserId(data.user.id);
+        const { data: p } = await supabase.from('profiles').select('role, subscription_plan, subscription_until, income910_used').eq('id', data.user.id).maybeSingle();
         setDashHref(p?.role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client');
+        const plan = activePlan(p?.subscription_plan, p?.subscription_until);
+        setLimit(plan === 'free' ? 1 : 100);
+        setUsed(p?.income910_used || 0);
         setAuthChecking(false);
       }
     });
   }, []);
 
+  const remaining = Math.max(0, limit - used);
+
   const processFile = async (file: File | undefined | null) => {
     if (!file) return;
+    // Проверка лимита проверок
+    if (remaining <= 0) { setShowPaywall(true); return; }
     const name = file.name.toLowerCase();
     if (!name.endsWith('.xlsx') && !name.endsWith('.xls') && !name.endsWith('.csv')) {
       setError(t('inc910.uploadHint'));
@@ -54,7 +67,13 @@ export default function Income910Page() {
       const data = await res.json();
       if (data.error) { setError(data.error); }
       else if (!data.transactions || data.transactions.length === 0) { setError(t('inc910.noData')); }
-      else { setTxs(data.transactions); }
+      else {
+        setTxs(data.transactions);
+        // Засчитываем проверку
+        const newUsed = used + 1;
+        setUsed(newUsed);
+        if (userId) supabase.from('profiles').update({ income910_used: newUsed }).eq('id', userId).then(() => {});
+      }
     } catch {
       setError(t('inc910.noData'));
     } finally {
@@ -163,9 +182,49 @@ export default function Income910Page() {
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calculator className="w-5 h-5 text-blue-600" /> {t('inc910.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">{t('inc910.subtitle')}</p>
+          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-semibold">
+            {t('inc910.checksLeft')}: {remaining} {limit >= 100 ? '/ 100' : ''}
+          </div>
         </div>
 
-        {!txs && (
+        {/* Paywall — лимит исчерпан */}
+        {showPaywall && (
+          <div className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm p-6 mb-5">
+            <div className="text-center mb-4">
+              <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
+                <Calculator className="w-7 h-7 text-blue-600" />
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">{t('inc910.paywallTitle')}</h2>
+              <p className="text-sm text-gray-500 mt-1">{t('inc910.paywallDesc')}</p>
+              <p className="text-3xl font-extrabold text-blue-600 mt-3">20 000 ₸</p>
+              <p className="text-xs text-gray-400">{t('inc910.paywallPer')}</p>
+            </div>
+
+            {/* Kaspi QR */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-3 text-center">
+              <p className="text-sm font-semibold text-gray-700 mb-2">{t('inc910.payKaspi')}</p>
+              <img src="/images/kaspi-qr.png" alt="Kaspi QR" className="w-full max-w-[220px] rounded-xl mx-auto" />
+            </div>
+
+            {/* Реквизиты */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-3">
+              <p className="text-sm font-semibold text-gray-700 mb-2">{t('inc910.payDetails')}</p>
+              <div className="space-y-1 text-xs text-gray-600">
+                <div className="flex justify-between gap-2"><span className="text-gray-400">Компания</span><span className="font-medium text-right">ТОО "BUHTASK"</span></div>
+                <div className="flex justify-between gap-2"><span className="text-gray-400">БИН</span><span className="font-medium">260540009678</span></div>
+                <div className="flex justify-between gap-2"><span className="text-gray-400">Банк</span><span className="font-medium text-right">АО "Kaspi Bank"</span></div>
+                <div className="flex justify-between gap-2"><span className="text-gray-400">КБе</span><span className="font-medium">17</span></div>
+                <div className="flex justify-between gap-2"><span className="text-gray-400">БИК</span><span className="font-medium">CASPKZKA</span></div>
+                <div className="flex justify-between gap-2"><span className="text-gray-400">Счёт (IBAN)</span><span className="font-medium">KZ45722S000054326792</span></div>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500 text-center mb-3">{t('inc910.payAfter')} <a href="mailto:info@buhtask.kz" className="text-blue-600">info@buhtask.kz</a></p>
+            <button onClick={() => setShowPaywall(false)} className="w-full text-gray-400 hover:text-gray-600 text-sm py-2">{t('btn.back')}</button>
+          </div>
+        )}
+
+        {!txs && !showPaywall && (
           <>
             {/* Загрузка */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
