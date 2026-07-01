@@ -39,8 +39,9 @@ export default function AdminPanel() {
 
   useEffect(() => { init(); }, []);
 
-  // Realtime: новые тикеты и новые сообщения
+  // Realtime: новые тикеты и новые сообщения (только для админа)
   useEffect(() => {
+    if (!isAdmin) return;
     const ch = supabase
       .channel('admin-support')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
@@ -57,20 +58,28 @@ export default function AdminPanel() {
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [isAdmin]);
 
   const init = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push('/auth'); return; }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push('/auth'); return; }
 
-    const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (me?.role !== 'admin') {
-      setIsAdmin(false);
+      const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      if (me?.role !== 'admin') {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+      setIsAdmin(true);
+      await loadAdminData(user);
+    } catch (e) {
+      console.error('admin init error', e);
       setLoading(false);
-      return;
     }
-    setIsAdmin(true);
+  };
 
+  const loadAdminData = async (user: any) => {
     // Load all accountants
     const { data: accs } = await supabase.from('profiles').select('*').eq('role', 'accountant').order('created_at', { ascending: false });
     setAccountants(accs || []);
@@ -103,9 +112,11 @@ export default function AdminPanel() {
     setCompaniesByUser(cmap);
 
     setAdminId(user.id);
-    // Тикеты поддержки
-    const { data: tk } = await supabase.from('support_tickets').select('*').order('updated_at', { ascending: false });
-    setTickets(tk || []);
+    // Тикеты поддержки (не ломаем админку, если таблицы нет)
+    try {
+      const { data: tk } = await supabase.from('support_tickets').select('*').order('updated_at', { ascending: false });
+      setTickets(tk || []);
+    } catch (e) { console.error('support load error', e); setTickets([]); }
 
     // Платформенные настройки
     const { data: settings } = await supabase.from('platform_settings').select('*').eq('id', 1).maybeSingle();
