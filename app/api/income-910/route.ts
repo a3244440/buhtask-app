@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-interface Tx { date: string; amount: number; type: 'income'; description: string; counterparty: string; purpose: string; included: boolean; reason?: string; knp?: string; }
+interface Tx { date: string; amount: number; type: 'income'; description: string; counterparty: string; bin: string; purpose: string; included: boolean; reason?: string; knp?: string; }
 
 // Коды назначения платежа (КНП), являющиеся ДОХОДОМ за товары/услуги для ФНО 910.
 // На основе официального классификатора КНП РК (Правила №203, разделы 7 "Товары" и 8 "Услуги").
@@ -108,7 +108,7 @@ function parseDate(s: string): string | null {
 function findColumns(rows: any[][]) {
   for (let i = 0; i < Math.min(rows.length, 30); i++) {
     const row = rows[i].map(c => String(c || '').toLowerCase());
-    let dateCol = -1, dateColFallback = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, knpCol = -1, indicatorCol = -1, counterpartyCol = -1;
+    let dateCol = -1, dateColFallback = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, knpCol = -1, indicatorCol = -1, counterpartyCol = -1, binCol = -1;
     row.forEach((cell, idx) => {
       // Дата операции/документа важнее "даты выписки" (она у всех одинаковая)
       if (dateCol < 0 && /дата документ|дата опер|дата провод|дата валют/.test(cell)) dateCol = idx;
@@ -126,6 +126,7 @@ function findColumns(rows: any[][]) {
       // контрагент: Jusan "наименование контрагента" приоритетнее "наименование клиента"
       if (counterpartyCol < 0 && /наименование контраген|контрагент|корреспондент|counterparty/.test(cell)) counterpartyCol = idx;
       if (senderCol < 0 && /бенефициар|отправит|плательщик|жіберуш|sender|наименование клиент|наименование/.test(cell)) senderCol = idx;
+      if (binCol < 0 && /бин\/иин контраген|иин\/бин контраген|бин контраген|иин контраген|бин\/иин|иин\/бин/.test(cell)) binCol = idx;
       // КНП
       if (knpCol < 0 && (cell === 'кнп' || /кнп|кно|код назнач|кпн платеж/.test(cell))) knpCol = idx;
     });
@@ -133,7 +134,7 @@ function findColumns(rows: any[][]) {
     const cpCol = counterpartyCol >= 0 ? counterpartyCol : senderCol;
     const finalDateCol = dateCol >= 0 ? dateCol : dateColFallback;
     if (finalDateCol >= 0 && (creditCol >= 0 || amountCol >= 0 || indicatorCol >= 0)) {
-      return { dateCol: finalDateCol, dateColFallback, debitCol, creditCol, descCol, amountCol, senderCol: cpCol, knpCol, indicatorCol, headerRow: i };
+      return { dateCol: finalDateCol, dateColFallback, debitCol, creditCol, descCol, amountCol, senderCol: cpCol, knpCol, indicatorCol, binCol, headerRow: i };
     }
   }
   return null;
@@ -177,6 +178,7 @@ function extractFromSheet(rows: any[][]): Tx[] {
     const purpose = cols.descCol >= 0 ? String(row[cols.descCol] || '').trim() : '';
     const sender = cols.senderCol >= 0 ? String(row[cols.senderCol] || '').trim() : '';
     const knp = cols.knpCol >= 0 ? String(row[cols.knpCol] || '').trim() : '';
+    const bin = cols.binCol >= 0 ? String(row[cols.binCol] || '').trim().replace(/\D/g, '') : '';
     const fullText = `${purpose} ${sender}`;
 
     const { included, reason } = classify(knp, fullText);
@@ -204,7 +206,7 @@ function extractFromSheet(rows: any[][]): Tx[] {
       .trim()
       .slice(0, 100);
 
-    txs.push({ date: dateStr || '', amount, type: 'income', description, counterparty: cp || '', purpose: purposeClean, included, reason, knp });
+    txs.push({ date: dateStr || '', amount, type: 'income', description, counterparty: cp || '', bin, purpose: purposeClean, included, reason, knp });
   }
   return txs;
 }

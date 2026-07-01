@@ -7,7 +7,7 @@ import ToolsSidebar from '../components/ToolsSidebar';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/lib/i18n';
 
-interface Tx { date: string; amount: number; description: string; counterparty?: string; purpose?: string; included: boolean; reason?: string; knp?: string; }
+interface Tx { date: string; amount: number; description: string; counterparty?: string; bin?: string; purpose?: string; included: boolean; reason?: string; knp?: string; }
 
 export default function Income910Page() {
   const { t } = useI18n();
@@ -98,29 +98,39 @@ export default function Income910Page() {
   const esfExcluded = esfRows ? esfRows.filter(e => !e.included).reduce((s, e) => s + e.amount, 0) : 0;
   const esfDiff = incomeTotal - esfTotal; // банк минус ЭСФ
 
-  // ЭСФ по компаниям (только включённые)
-  const esfByCompany = (() => {
-    if (!esfRows) return [] as { name: string; sum: number; count: number }[];
-    const map: Record<string, { sum: number; count: number }> = {};
-    esfRows.filter(e => e.included).forEach(e => {
-      const n = (e.counterparty || '—').trim();
-      if (!map[n]) map[n] = { sum: 0, count: 0 };
-      map[n].sum += e.amount; map[n].count += 1;
-    });
-    return Object.entries(map).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.sum - a.sum);
-  })();
+  // Сверка банк ↔ ЭСФ по компаниям (ключ — БИН; если нет БИН, по имени)
+  const reconciliation = (() => {
+    if (!esfRows) return [] as { key: string; name: string; bin: string; bank: number; esf: number; diff: number }[];
+    const norm = (s: string) => (s || '').toLowerCase()
+      .replace(/тоо|тов|ип|ао|товарищество с ограниченной ответственностью|индивидуальный предприниматель|«|»|"|'/g, '')
+      .replace(/\s+/g, ' ').trim();
 
-  // Компании из ЭСФ, которых нет среди контрагентов банка (по совпадению имени)
-  const esfNotInBank = (() => {
-    if (!esfRows || !txs) return [] as { name: string; sum: number }[];
-    const bankNames = txs.filter(t => t.included).map(t => (t.counterparty || '').toLowerCase());
-    const norm = (s: string) => s.toLowerCase().replace(/[«»"'тоо|ип|ао|тов|товарищество|с ограниченной ответственностью]/g, '').replace(/\s+/g, ' ').trim();
-    return esfByCompany.filter(c => {
-      const cn = norm(c.name);
-      if (!cn) return false;
-      // есть ли в банке контрагент, чьё имя содержит/пересекается
-      return !bankNames.some(bn => { const b = norm(bn); return b && (b.includes(cn) || cn.includes(b)); });
-    }).map(c => ({ name: c.name, sum: c.sum }));
+    const map: Record<string, { name: string; bin: string; bank: number; esf: number }> = {};
+
+    // ЭСФ (только включённые: доставлен/просмотрен/не просмотрен)
+    esfRows.filter(e => e.included).forEach(e => {
+      const key = (e.bin && e.bin.length >= 5) ? e.bin : norm(e.counterparty);
+      if (!key) return;
+      if (!map[key]) map[key] = { name: e.counterparty || '', bin: e.bin || '', bank: 0, esf: 0 };
+      map[key].esf += e.amount;
+      if (!map[key].name && e.counterparty) map[key].name = e.counterparty;
+      if (!map[key].bin && e.bin) map[key].bin = e.bin;
+    });
+
+    // Банк (только включённые доходные)
+    if (txs) txs.filter(t => t.included).forEach(t => {
+      const bin = (t as any).bin || '';
+      const key = (bin && bin.length >= 5) ? bin : norm(t.counterparty || '');
+      if (!key) return;
+      if (!map[key]) map[key] = { name: t.counterparty || '', bin, bank: 0, esf: 0 };
+      map[key].bank += t.amount;
+      if (!map[key].name && t.counterparty) map[key].name = t.counterparty;
+      if (!map[key].bin && bin) map[key].bin = bin;
+    });
+
+    return Object.entries(map)
+      .map(([key, v]) => ({ key, name: v.name || v.bin || '—', bin: v.bin, bank: v.bank, esf: v.esf, diff: v.bank - v.esf }))
+      .sort((a, b) => Math.max(b.bank, b.esf) - Math.max(a.bank, a.esf));
   })();
 
   // Разбивка дохода по КНП (только включённые)
@@ -323,37 +333,41 @@ export default function Income910Page() {
                         <p className="text-xs text-gray-400 mb-3">{t('inc910.esfExcludedNote')}: {Math.round(esfExcluded).toLocaleString('ru-RU')} ₸</p>
                       )}
 
-                      {/* Разбивка ЭСФ по компаниям */}
-                      {esfByCompany.length > 0 && (
+                      {/* Сверка по компаниям (банк ↔ ЭСФ) */}
+                      {reconciliation.length > 0 && (
                         <div className="border border-gray-100 rounded-xl overflow-hidden mb-3">
                           <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                            <h4 className="text-xs font-semibold text-gray-700">{t('inc910.esfByCompany')}</h4>
+                            <h4 className="text-xs font-semibold text-gray-700">{t('inc910.reconcileTitle')}</h4>
                           </div>
-                          <table className="w-full text-sm">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="text-left text-[10px] text-gray-400 border-b border-gray-50">
+                                <th className="px-3 py-1.5 font-medium">{t('inc910.company')}</th>
+                                <th className="px-1 py-1.5 font-medium text-right">{t('inc910.byBank')}</th>
+                                <th className="px-1 py-1.5 font-medium text-right">{t('inc910.byEsf')}</th>
+                                <th className="px-3 py-1.5 font-medium text-right">±</th>
+                              </tr>
+                            </thead>
                             <tbody>
-                              {esfByCompany.map((c, i) => (
-                                <tr key={i} className="border-b border-gray-50 last:border-0">
-                                  <td className="px-3 py-2 text-gray-700 text-xs">{c.name}</td>
-                                  <td className="px-2 py-2 text-center text-gray-400 text-[11px]">{c.count}</td>
-                                  <td className="px-3 py-2 text-right font-semibold text-indigo-600 whitespace-nowrap text-xs">{Math.round(c.sum).toLocaleString('ru-RU')} ₸</td>
-                                </tr>
-                              ))}
+                              {reconciliation.map((r, i) => {
+                                const ok = Math.abs(r.diff) < 1;
+                                return (
+                                  <tr key={i} className="border-b border-gray-50 last:border-0">
+                                    <td className="px-3 py-2 text-gray-700">
+                                      <span className="block truncate max-w-[130px]">{r.name}</span>
+                                      {r.bin && <span className="text-[9px] text-gray-400">{r.bin}</span>}
+                                    </td>
+                                    <td className="px-1 py-2 text-right text-emerald-600 whitespace-nowrap">{r.bank ? Math.round(r.bank).toLocaleString('ru-RU') : '—'}</td>
+                                    <td className="px-1 py-2 text-right text-indigo-600 whitespace-nowrap">{r.esf ? Math.round(r.esf).toLocaleString('ru-RU') : '—'}</td>
+                                    <td className={`px-3 py-2 text-right whitespace-nowrap font-semibold ${ok ? 'text-emerald-500' : 'text-amber-600'}`}>
+                                      {ok ? '✓' : (r.diff > 0 ? '+' : '') + Math.round(r.diff).toLocaleString('ru-RU')}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
-                        </div>
-                      )}
-
-                      {/* Чего нет в банке */}
-                      {esfNotInBank.length > 0 && (
-                        <div className="border border-amber-200 bg-amber-50 rounded-xl p-3 mb-3">
-                          <p className="text-xs font-semibold text-amber-700 mb-1.5 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {t('inc910.esfNotInBank')}</p>
-                          {esfNotInBank.map((c, i) => (
-                            <div key={i} className="flex items-center justify-between text-xs py-1">
-                              <span className="text-gray-700 truncate pr-2">{c.name}</span>
-                              <span className="font-semibold text-amber-700 whitespace-nowrap">{Math.round(c.sum).toLocaleString('ru-RU')} ₸</span>
-                            </div>
-                          ))}
-                          <p className="text-[11px] text-amber-600 mt-1.5">{t('inc910.esfNotInBankHint')}</p>
+                          <p className="text-[10px] text-gray-400 px-3 py-2 border-t border-gray-50">{t('inc910.reconcileHint')}</p>
                         </div>
                       )}
 

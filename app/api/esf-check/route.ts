@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-interface EsfRow { date: string; number: string; counterparty: string; amount: number; status: string; included: boolean; }
+interface EsfRow { date: string; number: string; counterparty: string; bin: string; amount: number; status: string; included: boolean; }
 
 // Статусы ЭСФ, которые НЕ берём в доход
 const EXCLUDE_STATUSES = ['отозван', 'аннулирован', 'отозванный', 'аннулированный', 'отзыв', 'аннулир', 'revoked', 'cancelled', 'canceled'];
@@ -41,13 +41,15 @@ function parseDate(s: string): string {
 function findColumns(rows: any[][]) {
   for (let i = 0; i < Math.min(rows.length, 30); i++) {
     const row = rows[i].map(c => String(c || '').toLowerCase());
-    let dateCol = -1, numCol = -1, cpCol = -1, amountCol = -1, statusCol = -1, reasonCol = -1;
+    let dateCol = -1, numCol = -1, cpCol = -1, amountCol = -1, statusCol = -1, reasonCol = -1, binCol = -1;
     row.forEach((cell, idx) => {
       if (statusCol < 0 && /статус сч[её]та|статус счет|^статус$|status/.test(cell)) statusCol = idx;
       if (dateCol < 0 && /дата выписк/.test(cell)) dateCol = idx;
       if (numCol < 0 && /номер сч[её]та|номер счет|рег.*номер/.test(cell)) numCol = idx;
-      if (cpCol < 0 && /наименование получател|получател|покупател/.test(cell)) cpCol = idx;
-      // основная сумма — стоимость с учётом косвенных налогов (полная сумма СФ)
+      // наименование получателя (строго "наименование ... получател")
+      if (cpCol < 0 && /наименование получател/.test(cell)) cpCol = idx;
+      // БИН получателя (иин/бин ... получател)
+      if (binCol < 0 && /(иин|бин).*получател/.test(cell)) binCol = idx;
       if (amountCol < 0 && /стоимость.*с уч[её]т.*косвенн|стоимость.*с уч[её]т.*налог/.test(cell)) amountCol = idx;
       if (reasonCol < 0 && /причина аннул|причина отз/.test(cell)) reasonCol = idx;
     });
@@ -58,7 +60,7 @@ function findColumns(rows: any[][]) {
       });
     }
     if (statusCol >= 0 && amountCol >= 0) {
-      return { dateCol, numCol, cpCol, amountCol, statusCol, reasonCol, headerRow: i };
+      return { dateCol, numCol, cpCol, amountCol, statusCol, reasonCol, binCol, headerRow: i };
     }
   }
   return null;
@@ -80,6 +82,7 @@ function extractEsf(rows: any[][]): EsfRow[] {
       date: cols.dateCol >= 0 ? parseDate(String(row[cols.dateCol] || '')) : '',
       number: cols.numCol >= 0 ? String(row[cols.numCol] || '').trim() : '',
       counterparty: cols.cpCol >= 0 ? String(row[cols.cpCol] || '').trim().slice(0, 80) : '',
+      bin: cols.binCol >= 0 ? String(row[cols.binCol] || '').trim().replace(/\D/g, '') : '',
       amount,
       status,
       included: !excluded,
