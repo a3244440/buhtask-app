@@ -37,7 +37,7 @@ export default function Income910Page() {
   const [history, setHistory] = useState<any[]>([]);
   const [restored, setRestored] = useState(false);
 
-  // Восстановление текущей сессии + история из localStorage
+  // Восстановление текущей сессии из localStorage (быстрое, при F5)
   useEffect(() => {
     try {
       const cur = localStorage.getItem('inc910_current');
@@ -47,11 +47,21 @@ export default function Income910Page() {
         if (p.esfRows) setEsfRows(p.esfRows);
         if (p.fileName) setFileName(p.fileName); if (p.company) setCompany(p.company);
       }
-      const h = localStorage.getItem('inc910_history');
-      if (h) setHistory(JSON.parse(h));
     } catch {}
     setRestored(true);
   }, []);
+
+  // Загрузка истории из базы (между устройствами)
+  const loadHistory = async (uid: string) => {
+    const { data } = await supabase.from('income910_history').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(50);
+    if (data) {
+      setHistory(data.map((r: any) => ({
+        id: r.id, date: r.created_at, company: r.company, fileName: r.file_name,
+        incomeTotal: r.income_total, excludedTotal: r.excluded_total, count: r.ops_count,
+        esfTotal: r.esf_total, esfDiff: r.esf_diff,
+      })));
+    }
+  };
 
   // Сохранение текущей сессии в localStorage
   useEffect(() => {
@@ -68,6 +78,7 @@ export default function Income910Page() {
         router.replace('/auth?redirect=/income-910');
       } else {
         setUserId(data.user.id);
+        loadHistory(data.user.id);
         const { data: p } = await supabase.from('profiles').select('role, subscription_plan, subscription_until, income910_used').eq('id', data.user.id).maybeSingle();
         setDashHref(p?.role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client');
         const plan = activePlan(p?.subscription_plan, p?.subscription_until);
@@ -150,30 +161,37 @@ export default function Income910Page() {
   const esfDiff = incomeTotal - esfTotal; // банк минус ЭСФ
 
   // Сохранить текущую проверку в историю и начать новую
-  const saveAndNew = () => {
-    if (txs && txs.length > 0) {
-      const entry = {
-        id: Date.now(),
-        date: new Date().toISOString(),
-        fileName: fileName || '—', company: company || '—',
-        incomeTotal: Math.round(incomeTotal),
-        excludedTotal: Math.round(excludedTotal),
-        count: includedCount,
-        esfTotal: esfRows ? Math.round(esfTotal) : null,
-        esfDiff: esfRows ? Math.round(esfDiff) : null,
+  const saveAndNew = async () => {
+    if (txs && txs.length > 0 && userId) {
+      const row = {
+        user_id: userId,
+        company: company || '—',
+        file_name: fileName || '—',
+        income_total: Math.round(incomeTotal),
+        excluded_total: Math.round(excludedTotal),
+        ops_count: includedCount,
+        esf_total: esfRows ? Math.round(esfTotal) : null,
+        esf_diff: esfRows ? Math.round(esfDiff) : null,
       };
-      const newHistory = [entry, ...history].slice(0, 50);
-      setHistory(newHistory);
-      try { localStorage.setItem('inc910_history', JSON.stringify(newHistory)); } catch {}
+      const { data } = await supabase.from('income910_history').insert(row).select().maybeSingle();
+      if (data) {
+        setHistory(prev => [{
+          id: data.id, date: data.created_at, company: data.company, fileName: data.file_name,
+          incomeTotal: data.income_total, excludedTotal: data.excluded_total, count: data.ops_count,
+          esfTotal: data.esf_total, esfDiff: data.esf_diff,
+        }, ...prev].slice(0, 50));
+      } else {
+        // запасной вариант — локально, если БД недоступна
+        setHistory(prev => [{ id: Date.now(), date: new Date().toISOString(), company, fileName, incomeTotal: Math.round(incomeTotal), excludedTotal: Math.round(excludedTotal), count: includedCount, esfTotal: esfRows ? Math.round(esfTotal) : null, esfDiff: esfRows ? Math.round(esfDiff) : null }, ...prev]);
+      }
     }
     setTxs(null); setEsfRows(null); setError(''); setEsfError(''); setFileName(''); setCompany('');
     try { localStorage.removeItem('inc910_current'); } catch {}
   };
 
-  const deleteHistory = (id: number) => {
-    const nh = history.filter(h => h.id !== id);
-    setHistory(nh);
-    try { localStorage.setItem('inc910_history', JSON.stringify(nh)); } catch {}
+  const deleteHistory = async (id: any) => {
+    setHistory(prev => prev.filter(h => h.id !== id));
+    if (typeof id === 'string') { await supabase.from('income910_history').delete().eq('id', id); }
   };
 
   // Сокращаем длинные организационно-правовые формы до аббревиатур
