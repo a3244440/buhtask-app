@@ -39,6 +39,26 @@ export default function AdminPanel() {
 
   useEffect(() => { init(); }, []);
 
+  // Realtime: новые тикеты и новые сообщения
+  useEffect(() => {
+    const ch = supabase
+      .channel('admin-support')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
+        supabase.from('support_tickets').select('*').order('updated_at', { ascending: false }).then(({ data }) => { if (data) setTickets(data); });
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, (payload: any) => {
+        const m = payload.new;
+        setActiveTicket((cur: any) => {
+          if (cur && m.ticket_id === cur.id) {
+            setTicketMsgs(prev => prev.some(x => x.id === m.id) ? prev : [...prev, m]);
+          }
+          return cur;
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
   const init = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/auth'); return; }
