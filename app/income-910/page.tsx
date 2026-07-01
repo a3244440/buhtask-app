@@ -28,6 +28,7 @@ export default function Income910Page() {
   const esfFileRef = useRef<HTMLInputElement>(null);
   const [esfDragOver, setEsfDragOver] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
+  const [taxRate, setTaxRate] = useState(4); // ставка ИПН упрощёнки 2026, регион 2-6%
   // Лимиты проверок
   const [userId, setUserId] = useState<string | null>(null);
   const [used, setUsed] = useState(0);
@@ -169,6 +170,9 @@ export default function Income910Page() {
   const esfTotal = esfRows ? esfRows.filter(e => e.included).reduce((s, e) => s + e.amount, 0) : 0;
   const esfExcluded = esfRows ? esfRows.filter(e => !e.included).reduce((s, e) => s + e.amount, 0) : 0;
   const esfDiff = incomeTotal - esfTotal; // банк минус ЭСФ
+
+  // Расчёт налога 910 (2026): единый налог = доход × ставка (по умолчанию 4%, регион 2-6%)
+  const taxAmount = Math.round(incomeTotal * (taxRate / 100));
 
   // Сохранить текущую проверку в историю и начать новую
   const saveAndNew = async () => {
@@ -435,6 +439,41 @@ export default function Income910Page() {
                   {copied ? <><Check className="w-4 h-4" /> {t('inc910.copied')}</> : <><Copy className="w-4 h-4" /> {t('inc910.copySum')}: {Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</>}
                 </button>
                 <p className="text-xs text-gray-400 text-center mb-4">{t('inc910.exportNote')}</p>
+
+                {/* Расчёт налога 910 */}
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 mb-4 text-white">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calculator className="w-4 h-4" />
+                    <h3 className="font-semibold text-sm">{t('inc910.taxTitle')}</h3>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-blue-100">{t('inc910.taxBase')}</span>
+                    <span className="text-sm font-semibold">{Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-blue-100">{t('inc910.taxRate')}</span>
+                    <div className="flex items-center gap-1">
+                      {[2, 3, 4, 5, 6].map(r => (
+                        <button key={r} onClick={() => setTaxRate(r)}
+                          className={`text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${taxRate === r ? 'bg-white text-blue-700' : 'bg-white/15 text-white hover:bg-white/25'}`}>
+                          {r}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border-t border-white/20 pt-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-blue-100">{t('inc910.taxToPay')}</p>
+                      <p className="text-[11px] text-blue-200">ИПН · КНП 101202</p>
+                    </div>
+                    <p className="text-2xl font-extrabold">{taxAmount.toLocaleString('ru-RU')} ₸</p>
+                  </div>
+                  <button onClick={() => { navigator.clipboard.writeText(String(taxAmount)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+                    className="w-full mt-3 bg-white/15 hover:bg-white/25 py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5">
+                    <Copy className="w-3.5 h-3.5" /> {t('inc910.taxCopy')}
+                  </button>
+                  <p className="text-[11px] text-blue-200 mt-2">{t('inc910.taxNote')}</p>
+                </div>
 
                 {/* Разбивка по КНП */}
                 {byKnp.length > 0 && (
