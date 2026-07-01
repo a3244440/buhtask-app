@@ -31,6 +31,7 @@ export default function Income910Page() {
   const [taxRate, setTaxRate] = useState(4); // ставка ИПН упрощёнки 2026, регион 2-6%
   const [declaredIncome, setDeclaredIncome] = useState(85000); // заявленный доход для соцплатежей (мин 1 МЗП)
   const [payOpvr, setPayOpvr] = useState(true); // платит ли ОПВР (не платят рождённые до 1975)
+  const [mzp, setMzp] = useState(85000); // МЗП 2026 = 85 000, редактируемый
   // Лимиты проверок
   const [userId, setUserId] = useState<string | null>(null);
   const [used, setUsed] = useState(0);
@@ -176,13 +177,12 @@ export default function Income910Page() {
   // Расчёт налога 910 (2026): единый налог = доход × ставка (по умолчанию 4%, регион 2-6%)
   const taxAmount = Math.round(incomeTotal * (taxRate / 100));
 
-  // Соцплатежи ИП "за себя" (2026), от заявленного дохода (по умолчанию 1 МЗП = 85 000)
-  const MZP = 85000;
-  const declaredBase = Math.max(MZP, declaredIncome); // не меньше 1 МЗП
+  // Соцплатежи ИП "за себя" (2026), от заявленного дохода (по умолчанию 1 МЗП)
+  const declaredBase = Math.max(mzp, declaredIncome); // не меньше 1 МЗП
   const opv = Math.round(declaredBase * 0.10);        // ОПВ 10%
   const opvr = payOpvr ? Math.round(declaredBase * 0.035) : 0; // ОПВР 3.5% (не платят рождённые до 1975)
   const so = Math.round(declaredBase * 0.05);          // СО 5%
-  const vosms = Math.round(MZP * 1.4 * 0.05);          // ВОСМС 5% от 1.4 МЗП (фиксированный)
+  const vosms = Math.round(mzp * 1.4 * 0.05);          // ВОСМС 5% от 1.4 МЗП (фиксированный)
   const socMonthly = opv + opvr + so + vosms;          // за месяц
   const socHalfYear = socMonthly * 6;                  // за полугодие (6 мес)
   const totalHalfYear = taxAmount + socHalfYear;       // всё к уплате за полугодие
@@ -496,12 +496,23 @@ export default function Income910Page() {
                   </div>
                   <p className="text-xs text-gray-500 mb-3">{t('inc910.socDesc')}</p>
 
-                  {/* Заявленный доход */}
+                  {/* МЗП (редактируемый) */}
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <span className="text-xs text-gray-500">{t('inc910.mzp')}</span>
+                    <div className="flex items-center gap-1.5">
+                      <input type="number" value={mzp} min={1}
+                        onChange={e => setMzp(Math.max(1, Number(e.target.value) || 85000))}
+                        className="w-32 px-2 py-1 text-sm text-right border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-400" />
+                      <span className="text-xs text-gray-400">₸</span>
+                    </div>
+                  </div>
+
+                  {/* Заявленный доход (зарплата) */}
                   <div className="flex items-center justify-between mb-3 gap-2">
                     <span className="text-xs text-gray-500">{t('inc910.socDeclared')}</span>
                     <div className="flex items-center gap-1.5">
-                      <input type="number" value={declaredIncome} min={85000}
-                        onChange={e => setDeclaredIncome(Math.max(85000, Number(e.target.value) || 85000))}
+                      <input type="number" value={declaredIncome} min={mzp}
+                        onChange={e => setDeclaredIncome(Math.max(0, Number(e.target.value) || 0))}
                         className="w-32 px-2 py-1 text-sm text-right border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-400" />
                       <span className="text-xs text-gray-400">₸</span>
                     </div>
