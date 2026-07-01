@@ -26,6 +26,8 @@ export default function Income910Page() {
   const [esfLoading, setEsfLoading] = useState(false);
   const [esfError, setEsfError] = useState('');
   const esfFileRef = useRef<HTMLInputElement>(null);
+  const [esfDragOver, setEsfDragOver] = useState(false);
+  const [isDuplicate, setIsDuplicate] = useState(false);
   // Лимиты проверок
   const [userId, setUserId] = useState<string | null>(null);
   const [used, setUsed] = useState(0);
@@ -58,7 +60,7 @@ export default function Income910Page() {
       setHistory(data.map((r: any) => ({
         id: r.id, date: r.created_at, company: r.company, fileName: r.file_name,
         incomeTotal: r.income_total, excludedTotal: r.excluded_total, count: r.ops_count,
-        esfTotal: r.esf_total, esfDiff: r.esf_diff,
+        esfTotal: r.esf_total, esfDiff: r.esf_diff, isDuplicate: r.is_duplicate,
       })));
     }
   };
@@ -112,10 +114,18 @@ export default function Income910Page() {
         setTxs(data.transactions);
         setFileName(file.name);
         if (data.owner) setCompany(data.owner);
-        // Засчитываем проверку
-        const newUsed = used + 1;
-        setUsed(newUsed);
-        if (userId) supabase.from('profiles').update({ income910_used: newUsed }).eq('id', userId).then(() => {});
+        // Считаем итог по этой выписке
+        const inc = data.transactions.filter((tx: any) => tx.included).reduce((s: number, tx: any) => s + tx.amount, 0);
+        const cnt = data.transactions.filter((tx: any) => tx.included).length;
+        // Проверка на дубликат: та же компания + доход + число операций уже есть в истории
+        const dup = history.some(h => h.company === (data.owner || '—') && Math.round(h.incomeTotal) === Math.round(inc) && h.count === cnt);
+        setIsDuplicate(dup);
+        if (!dup) {
+          // Засчитываем проверку только если это НЕ дубликат
+          const newUsed = used + 1;
+          setUsed(newUsed);
+          if (userId) supabase.from('profiles').update({ income910_used: newUsed }).eq('id', userId).then(() => {});
+        }
       }
     } catch {
       setError(t('inc910.noData'));
@@ -172,26 +182,21 @@ export default function Income910Page() {
         ops_count: includedCount,
         esf_total: esfRows ? Math.round(esfTotal) : null,
         esf_diff: esfRows ? Math.round(esfDiff) : null,
+        is_duplicate: isDuplicate,
       };
       const { data } = await supabase.from('income910_history').insert(row).select().maybeSingle();
       if (data) {
         setHistory(prev => [{
           id: data.id, date: data.created_at, company: data.company, fileName: data.file_name,
           incomeTotal: data.income_total, excludedTotal: data.excluded_total, count: data.ops_count,
-          esfTotal: data.esf_total, esfDiff: data.esf_diff,
+          esfTotal: data.esf_total, esfDiff: data.esf_diff, isDuplicate: data.is_duplicate,
         }, ...prev].slice(0, 50));
       } else {
-        // запасной вариант — локально, если БД недоступна
-        setHistory(prev => [{ id: Date.now(), date: new Date().toISOString(), company, fileName, incomeTotal: Math.round(incomeTotal), excludedTotal: Math.round(excludedTotal), count: includedCount, esfTotal: esfRows ? Math.round(esfTotal) : null, esfDiff: esfRows ? Math.round(esfDiff) : null }, ...prev]);
+        setHistory(prev => [{ id: Date.now(), date: new Date().toISOString(), company, fileName, incomeTotal: Math.round(incomeTotal), excludedTotal: Math.round(excludedTotal), count: includedCount, esfTotal: esfRows ? Math.round(esfTotal) : null, esfDiff: esfRows ? Math.round(esfDiff) : null, isDuplicate }, ...prev]);
       }
     }
-    setTxs(null); setEsfRows(null); setError(''); setEsfError(''); setFileName(''); setCompany('');
+    setTxs(null); setEsfRows(null); setError(''); setEsfError(''); setFileName(''); setCompany(''); setIsDuplicate(false);
     try { localStorage.removeItem('inc910_current'); } catch {}
-  };
-
-  const deleteHistory = async (id: any) => {
-    setHistory(prev => prev.filter(h => h.id !== id));
-    if (typeof id === 'string') { await supabase.from('income910_history').delete().eq('id', id); }
   };
 
   // Сокращаем длинные организационно-правовые формы до аббревиатур
@@ -276,6 +281,14 @@ export default function Income910Page() {
           </div>
         </div>
 
+        {/* Баннер дубликата */}
+        {txs && isDuplicate && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+            <p className="text-sm text-amber-700">{t('inc910.duplicateNote')}</p>
+          </div>
+        )}
+
         {/* Кнопка "Загрузить новую выписку" — когда есть результат */}
         {txs && (
           <button onClick={saveAndNew} className="w-full mb-4 bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
@@ -301,21 +314,20 @@ export default function Income910Page() {
                     <th className="px-2 py-2 font-medium text-right">{t('inc910.byBank')}</th>
                     <th className="px-2 py-2 font-medium text-right">{t('inc910.byEsf')}</th>
                     <th className="px-2 py-2 font-medium text-center">{t('inc910.opsCol')}</th>
-                    <th className="px-2 py-2"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {history.map(h => (
-                    <tr key={h.id} className="border-b border-gray-50 last:border-0">
-                      <td className="px-4 py-2.5 text-gray-900 text-xs font-medium max-w-[130px] truncate" title={h.company}>{h.company || '—'}</td>
+                    <tr key={h.id} className={`border-b border-gray-50 last:border-0 ${h.isDuplicate ? 'bg-amber-50/40' : ''}`}>
+                      <td className="px-4 py-2.5 text-gray-900 text-xs font-medium max-w-[150px]" title={h.company}>
+                        <span className="block truncate">{h.company || '—'}</span>
+                        {h.isDuplicate && <span className="inline-block mt-0.5 text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold">{t('inc910.duplicate')}</span>}
+                      </td>
                       <td className="px-2 py-2.5 text-gray-600 text-xs whitespace-nowrap">{new Date(h.date).toLocaleDateString('ru-RU')} {new Date(h.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</td>
                       <td className="px-2 py-2.5 text-gray-500 text-xs max-w-[120px] truncate" title={h.fileName}>{h.fileName}</td>
                       <td className="px-2 py-2.5 text-right font-semibold text-emerald-600 whitespace-nowrap">{h.incomeTotal.toLocaleString('ru-RU')} ₸</td>
                       <td className="px-2 py-2.5 text-right text-indigo-600 whitespace-nowrap text-xs">{h.esfTotal != null ? h.esfTotal.toLocaleString('ru-RU') + ' ₸' : '—'}</td>
                       <td className="px-2 py-2.5 text-center text-gray-400 text-xs">{h.count}</td>
-                      <td className="px-2 py-2.5 text-right">
-                        <button onClick={() => deleteHistory(h.id)} className="text-gray-300 hover:text-red-500"><X className="w-4 h-4" /></button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -497,7 +509,11 @@ export default function Income910Page() {
                       {esfLoading ? (
                         <div className="py-6 text-center"><Loader2 className="w-7 h-7 text-indigo-600 animate-spin mx-auto" /></div>
                       ) : (
-                        <button onClick={() => esfFileRef.current?.click()} className="w-full border-2 border-dashed border-gray-200 rounded-xl py-6 hover:border-indigo-400 hover:bg-indigo-50/30 transition-colors">
+                        <button onClick={() => esfFileRef.current?.click()}
+                          onDragOver={e => { e.preventDefault(); setEsfDragOver(true); }}
+                          onDragLeave={() => setEsfDragOver(false)}
+                          onDrop={e => { e.preventDefault(); setEsfDragOver(false); processEsf(e.dataTransfer.files?.[0]); }}
+                          className={`w-full border-2 border-dashed rounded-xl py-6 transition-colors ${esfDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-indigo-400 hover:bg-indigo-50/30'}`}>
                           <Upload className="w-7 h-7 text-gray-300 mx-auto mb-2" />
                           <p className="text-sm font-medium text-gray-700">{t('inc910.esfUpload')}</p>
                         </button>
@@ -574,7 +590,7 @@ export default function Income910Page() {
                           <div key={i} className={`flex items-center gap-2 py-2 ${!e.included ? 'opacity-40' : ''}`}>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm text-gray-900 truncate">{shortName(e.counterparty)}</p>
-                              <p className="text-[11px] text-gray-400">{e.date} · {e.status}</p>
+                              <p className="text-[11px] text-gray-400">{t('inc910.esfIssued')}: {e.date || '—'}{e.turnoverDate ? ` · ${t('inc910.esfTurnover')}: ${e.turnoverDate}` : ''} · {e.status}</p>
                             </div>
                             <p className={`text-sm font-medium flex-shrink-0 ${e.included ? 'text-gray-700' : 'text-gray-400 line-through'}`}>{Math.round(e.amount).toLocaleString('ru-RU')} ₸</p>
                           </div>
