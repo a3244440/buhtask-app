@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
+import { useI18n } from '@/lib/i18n';
 
 interface Accountant {
   id: string; email: string; full_name: string; phone: string; city: string;
@@ -14,6 +15,7 @@ interface Accountant {
 }
 
 export default function AdminPanel() {
+  const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -42,22 +44,25 @@ export default function AdminPanel() {
   // Realtime: новые тикеты и новые сообщения (только для админа)
   useEffect(() => {
     if (!isAdmin) return;
-    const ch = supabase
-      .channel('admin-support')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
-        supabase.from('support_tickets').select('*').order('updated_at', { ascending: false }).then(({ data }) => { if (data) setTickets(data); });
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, (payload: any) => {
-        const m = payload.new;
-        setActiveTicket((cur: any) => {
-          if (cur && m.ticket_id === cur.id) {
-            setTicketMsgs(prev => prev.some(x => x.id === m.id) ? prev : [...prev, m]);
-          }
-          return cur;
-        });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    let ch: any;
+    try {
+      ch = supabase
+        .channel('admin-support')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
+          supabase.from('support_tickets').select('*').order('updated_at', { ascending: false }).then(({ data }) => { if (data) setTickets(data); });
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, (payload: any) => {
+          const m = payload.new;
+          setActiveTicket((cur: any) => {
+            if (cur && m.ticket_id === cur.id) {
+              setTicketMsgs(prev => prev.some(x => x.id === m.id) ? prev : [...prev, m]);
+            }
+            return cur;
+          });
+        })
+        .subscribe();
+    } catch (e) { console.error('realtime error', e); }
+    return () => { if (ch) { try { supabase.removeChannel(ch); } catch {} } };
   }, [isAdmin]);
 
   const init = async () => {
@@ -389,10 +394,10 @@ export default function AdminPanel() {
                         <p className="mt-0.5">{userTasks} задач · {userDocs} док.</p>
                       </div>
                     </div>
-                    {/* Управление тарифом (для заказчиков) */}
-                    {u.role !== 'accountant' && u.role !== 'admin' && (
+                    {/* Управление тарифом (заказчики и бухгалтеры) */}
+                    {u.role !== 'admin' && (
                       <div className="flex items-center gap-1.5 mt-2 ml-13 pl-13 flex-wrap">
-                        <span className="text-[10px] text-gray-400 mr-1">Тариф:</span>
+                        <span className="text-[10px] text-gray-400 mr-1">Тариф{u.role === 'accountant' ? ' (бухгалтер)' : ''}:</span>
                         {(['free', 'business', 'pro'] as const).map(pl => (
                           <button key={pl} onClick={() => setUserPlan(u.id, pl)}
                             className={`text-[10px] px-2.5 py-1 rounded-lg font-medium transition-colors ${(u.subscription_plan || 'free') === pl ? (pl === 'pro' ? 'bg-violet-600 text-white' : pl === 'business' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white') : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
