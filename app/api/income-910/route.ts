@@ -108,7 +108,7 @@ function parseDate(s: string): string | null {
 function findColumns(rows: any[][]) {
   for (let i = 0; i < Math.min(rows.length, 30); i++) {
     const row = rows[i].map(c => String(c || '').toLowerCase());
-    let dateCol = -1, dateColFallback = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, knpCol = -1, indicatorCol = -1, counterpartyCol = -1, binCol = -1;
+    let dateCol = -1, dateColFallback = -1, debitCol = -1, creditCol = -1, descCol = -1, amountCol = -1, senderCol = -1, knpCol = -1, indicatorCol = -1, counterpartyCol = -1, binCol = -1, ownerCol = -1;
     row.forEach((cell, idx) => {
       // Дата операции/документа важнее "даты выписки" (она у всех одинаковая)
       if (dateCol < 0 && /дата документ|дата опер|дата провод|дата валют/.test(cell)) dateCol = idx;
@@ -126,6 +126,7 @@ function findColumns(rows: any[][]) {
       // контрагент: Jusan "наименование контрагента" приоритетнее "наименование клиента"
       if (counterpartyCol < 0 && /наименование контраген|контрагент|корреспондент|counterparty/.test(cell)) counterpartyCol = idx;
       if (senderCol < 0 && /бенефициар|отправит|плательщик|жіберуш|sender|наименование клиент|наименование/.test(cell)) senderCol = idx;
+      if (ownerCol < 0 && /наименование клиент|владелец счет|наименование влад/.test(cell)) ownerCol = idx;
       if (binCol < 0 && /бин\/иин контраген|иин\/бин контраген|бин контраген|иин контраген|бин\/иин|иин\/бин/.test(cell)) binCol = idx;
       // КНП
       if (knpCol < 0 && (cell === 'кнп' || /кнп|кно|код назнач|кпн платеж/.test(cell))) knpCol = idx;
@@ -134,10 +135,21 @@ function findColumns(rows: any[][]) {
     const cpCol = counterpartyCol >= 0 ? counterpartyCol : senderCol;
     const finalDateCol = dateCol >= 0 ? dateCol : dateColFallback;
     if (finalDateCol >= 0 && (creditCol >= 0 || amountCol >= 0 || indicatorCol >= 0)) {
-      return { dateCol: finalDateCol, dateColFallback, debitCol, creditCol, descCol, amountCol, senderCol: cpCol, knpCol, indicatorCol, binCol, headerRow: i };
+      return { dateCol: finalDateCol, dateColFallback, debitCol, creditCol, descCol, amountCol, senderCol: cpCol, knpCol, indicatorCol, binCol, ownerCol, headerRow: i };
     }
   }
   return null;
+}
+
+function extractOwner(rows: any[][]): string {
+  const cols = findColumns(rows);
+  if (!cols || (cols as any).ownerCol === undefined || (cols as any).ownerCol < 0) return '';
+  const oc = (cols as any).ownerCol;
+  for (let i = cols.headerRow + 1; i < rows.length; i++) {
+    const v = rows[i] && rows[i][oc] ? String(rows[i][oc]).trim() : '';
+    if (v) return v.replace(/\n.*$/s, '').replace(/ИИН\/?БИН\s*\d+/gi, '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  }
+  return '';
 }
 
 function extractFromSheet(rows: any[][]): Tx[] {
@@ -227,6 +239,7 @@ export async function POST(req: NextRequest) {
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' }) as any[][];
     let txs = extractFromSheet(rows);
+    const owner = extractOwner(rows);
 
     // Без дедупликации: каждая строка выписки — отдельная операция.
     // Одинаковые суммы в один день от одного контрагента — это РАЗНЫЕ платежи.
@@ -239,6 +252,7 @@ export async function POST(req: NextRequest) {
       success: true,
       count: txs.length,
       transactions: txs,
+      owner,
       incomeTotal,
       excludedTotal,
       message: txs.length === 0 ? 'Не удалось распознать поступления.' : `Распознано поступлений: ${txs.length}`,

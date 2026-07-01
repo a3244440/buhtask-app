@@ -33,6 +33,7 @@ export default function Income910Page() {
   const [showPaywall, setShowPaywall] = useState(false);
   // Имя файла и история проверок
   const [fileName, setFileName] = useState('');
+  const [company, setCompany] = useState('');
   const [history, setHistory] = useState<any[]>([]);
   const [restored, setRestored] = useState(false);
 
@@ -44,7 +45,7 @@ export default function Income910Page() {
         const p = JSON.parse(cur);
         if (p.txs) setTxs(p.txs);
         if (p.esfRows) setEsfRows(p.esfRows);
-        if (p.fileName) setFileName(p.fileName);
+        if (p.fileName) setFileName(p.fileName); if (p.company) setCompany(p.company);
       }
       const h = localStorage.getItem('inc910_history');
       if (h) setHistory(JSON.parse(h));
@@ -56,10 +57,10 @@ export default function Income910Page() {
   useEffect(() => {
     if (!restored) return;
     try {
-      if (txs) localStorage.setItem('inc910_current', JSON.stringify({ txs, esfRows, fileName }));
+      if (txs) localStorage.setItem('inc910_current', JSON.stringify({ txs, esfRows, fileName, company }));
       else localStorage.removeItem('inc910_current');
     } catch {}
-  }, [txs, esfRows, fileName, restored]);
+  }, [txs, esfRows, fileName, company, restored]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -99,6 +100,7 @@ export default function Income910Page() {
       else {
         setTxs(data.transactions);
         setFileName(file.name);
+        if (data.owner) setCompany(data.owner);
         // Засчитываем проверку
         const newUsed = used + 1;
         setUsed(newUsed);
@@ -153,7 +155,7 @@ export default function Income910Page() {
       const entry = {
         id: Date.now(),
         date: new Date().toISOString(),
-        fileName: fileName || '—',
+        fileName: fileName || '—', company: company || '—',
         incomeTotal: Math.round(incomeTotal),
         excludedTotal: Math.round(excludedTotal),
         count: includedCount,
@@ -164,7 +166,7 @@ export default function Income910Page() {
       setHistory(newHistory);
       try { localStorage.setItem('inc910_history', JSON.stringify(newHistory)); } catch {}
     }
-    setTxs(null); setEsfRows(null); setError(''); setEsfError(''); setFileName('');
+    setTxs(null); setEsfRows(null); setError(''); setEsfError(''); setFileName(''); setCompany('');
     try { localStorage.removeItem('inc910_current'); } catch {}
   };
 
@@ -275,7 +277,8 @@ export default function Income910Page() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-gray-400 border-b border-gray-50">
-                    <th className="px-4 py-2 font-medium">{t('inc910.histDate')}</th>
+                    <th className="px-4 py-2 font-medium">{t('inc910.company')}</th>
+                    <th className="px-2 py-2 font-medium">{t('inc910.histDate')}</th>
                     <th className="px-2 py-2 font-medium">{t('inc910.histFile')}</th>
                     <th className="px-2 py-2 font-medium text-right">{t('inc910.byBank')}</th>
                     <th className="px-2 py-2 font-medium text-right">{t('inc910.byEsf')}</th>
@@ -286,7 +289,8 @@ export default function Income910Page() {
                 <tbody>
                   {history.map(h => (
                     <tr key={h.id} className="border-b border-gray-50 last:border-0">
-                      <td className="px-4 py-2.5 text-gray-600 text-xs whitespace-nowrap">{new Date(h.date).toLocaleDateString('ru-RU')} {new Date(h.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</td>
+                      <td className="px-4 py-2.5 text-gray-900 text-xs font-medium max-w-[130px] truncate" title={h.company}>{h.company || '—'}</td>
+                      <td className="px-2 py-2.5 text-gray-600 text-xs whitespace-nowrap">{new Date(h.date).toLocaleDateString('ru-RU')} {new Date(h.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</td>
                       <td className="px-2 py-2.5 text-gray-500 text-xs max-w-[120px] truncate" title={h.fileName}>{h.fileName}</td>
                       <td className="px-2 py-2.5 text-right font-semibold text-emerald-600 whitespace-nowrap">{h.incomeTotal.toLocaleString('ru-RU')} ₸</td>
                       <td className="px-2 py-2.5 text-right text-indigo-600 whitespace-nowrap text-xs">{h.esfTotal != null ? h.esfTotal.toLocaleString('ru-RU') + ' ₸' : '—'}</td>

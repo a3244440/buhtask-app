@@ -99,6 +99,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'inc910.history': { ru: 'История проверок', kz: 'Тексерулер тарихы', en: 'Check history' },
   'inc910.histDate': { ru: 'Дата', kz: 'Күні', en: 'Date' },
   'inc910.histFile': { ru: 'Файл', kz: 'Файл', en: 'File' },
+  'inc910.company': { ru: 'Компания', kz: 'Компания', en: 'Company' },
   'inc910.reconcileTitle': { ru: 'Сверка по компаниям (банк ↔ ЭСФ)', kz: 'Компаниялар бойынша салыстыру', en: 'By company (bank ↔ ESF)' },
   'inc910.company': { ru: 'Компания', kz: 'Компания', en: 'Company' },
   'inc910.checksLeft': { ru: 'Осталось проверок', kz: 'Тексеру қалды', en: 'Checks left' },
