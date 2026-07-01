@@ -31,6 +31,35 @@ export default function Income910Page() {
   const [used, setUsed] = useState(0);
   const [limit, setLimit] = useState(1);
   const [showPaywall, setShowPaywall] = useState(false);
+  // Имя файла и история проверок
+  const [fileName, setFileName] = useState('');
+  const [history, setHistory] = useState<any[]>([]);
+  const [restored, setRestored] = useState(false);
+
+  // Восстановление текущей сессии + история из localStorage
+  useEffect(() => {
+    try {
+      const cur = localStorage.getItem('inc910_current');
+      if (cur) {
+        const p = JSON.parse(cur);
+        if (p.txs) setTxs(p.txs);
+        if (p.esfRows) setEsfRows(p.esfRows);
+        if (p.fileName) setFileName(p.fileName);
+      }
+      const h = localStorage.getItem('inc910_history');
+      if (h) setHistory(JSON.parse(h));
+    } catch {}
+    setRestored(true);
+  }, []);
+
+  // Сохранение текущей сессии в localStorage
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      if (txs) localStorage.setItem('inc910_current', JSON.stringify({ txs, esfRows, fileName }));
+      else localStorage.removeItem('inc910_current');
+    } catch {}
+  }, [txs, esfRows, fileName, restored]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -69,6 +98,7 @@ export default function Income910Page() {
       else if (!data.transactions || data.transactions.length === 0) { setError(t('inc910.noData')); }
       else {
         setTxs(data.transactions);
+        setFileName(file.name);
         // Засчитываем проверку
         const newUsed = used + 1;
         setUsed(newUsed);
@@ -116,6 +146,33 @@ export default function Income910Page() {
   const esfTotal = esfRows ? esfRows.filter(e => e.included).reduce((s, e) => s + e.amount, 0) : 0;
   const esfExcluded = esfRows ? esfRows.filter(e => !e.included).reduce((s, e) => s + e.amount, 0) : 0;
   const esfDiff = incomeTotal - esfTotal; // банк минус ЭСФ
+
+  // Сохранить текущую проверку в историю и начать новую
+  const saveAndNew = () => {
+    if (txs && txs.length > 0) {
+      const entry = {
+        id: Date.now(),
+        date: new Date().toISOString(),
+        fileName: fileName || '—',
+        incomeTotal: Math.round(incomeTotal),
+        excludedTotal: Math.round(excludedTotal),
+        count: includedCount,
+        esfTotal: esfRows ? Math.round(esfTotal) : null,
+        esfDiff: esfRows ? Math.round(esfDiff) : null,
+      };
+      const newHistory = [entry, ...history].slice(0, 50);
+      setHistory(newHistory);
+      try { localStorage.setItem('inc910_history', JSON.stringify(newHistory)); } catch {}
+    }
+    setTxs(null); setEsfRows(null); setError(''); setEsfError(''); setFileName('');
+    try { localStorage.removeItem('inc910_current'); } catch {}
+  };
+
+  const deleteHistory = (id: number) => {
+    const nh = history.filter(h => h.id !== id);
+    setHistory(nh);
+    try { localStorage.setItem('inc910_history', JSON.stringify(nh)); } catch {}
+  };
 
   // Сокращаем длинные организационно-правовые формы до аббревиатур
   const shortName = (s: string) => (s || '—')
@@ -198,6 +255,52 @@ export default function Income910Page() {
             {t('inc910.checksLeft')}: {remaining} {limit >= 100 ? '/ 100' : ''}
           </div>
         </div>
+
+        {/* Кнопка "Загрузить новую выписку" — когда есть результат */}
+        {txs && (
+          <button onClick={saveAndNew} className="w-full mb-4 bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+            <Upload className="w-4 h-4" /> {t('inc910.newCheck')}
+          </button>
+        )}
+
+        {/* История проверок */}
+        {history.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-5">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-gray-500" />
+              <h3 className="font-semibold text-gray-900 text-sm">{t('inc910.history')}</h3>
+              <span className="text-xs text-gray-400">({history.length})</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-400 border-b border-gray-50">
+                    <th className="px-4 py-2 font-medium">{t('inc910.histDate')}</th>
+                    <th className="px-2 py-2 font-medium">{t('inc910.histFile')}</th>
+                    <th className="px-2 py-2 font-medium text-right">{t('inc910.byBank')}</th>
+                    <th className="px-2 py-2 font-medium text-right">{t('inc910.byEsf')}</th>
+                    <th className="px-2 py-2 font-medium text-center">{t('inc910.opsCol')}</th>
+                    <th className="px-2 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map(h => (
+                    <tr key={h.id} className="border-b border-gray-50 last:border-0">
+                      <td className="px-4 py-2.5 text-gray-600 text-xs whitespace-nowrap">{new Date(h.date).toLocaleDateString('ru-RU')} {new Date(h.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</td>
+                      <td className="px-2 py-2.5 text-gray-500 text-xs max-w-[120px] truncate" title={h.fileName}>{h.fileName}</td>
+                      <td className="px-2 py-2.5 text-right font-semibold text-emerald-600 whitespace-nowrap">{h.incomeTotal.toLocaleString('ru-RU')} ₸</td>
+                      <td className="px-2 py-2.5 text-right text-indigo-600 whitespace-nowrap text-xs">{h.esfTotal != null ? h.esfTotal.toLocaleString('ru-RU') + ' ₸' : '—'}</td>
+                      <td className="px-2 py-2.5 text-center text-gray-400 text-xs">{h.count}</td>
+                      <td className="px-2 py-2.5 text-right">
+                        <button onClick={() => deleteHistory(h.id)} className="text-gray-300 hover:text-red-500"><X className="w-4 h-4" /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Paywall — лимит исчерпан */}
         {showPaywall && (
@@ -462,8 +565,8 @@ export default function Income910Page() {
               </div>
             </div>
 
-            <button onClick={() => { setTxs(null); setError(''); }} className="w-full text-blue-600 hover:underline text-sm py-2 flex items-center justify-center gap-2 mt-5">
-              <Upload className="w-4 h-4" /> {t('inc910.reset')}
+            <button onClick={saveAndNew} className="w-full text-blue-600 hover:underline text-sm py-2 flex items-center justify-center gap-2 mt-5">
+              <Upload className="w-4 h-4" /> {t('inc910.newCheck')}
             </button>
           </>
         )}
