@@ -85,7 +85,7 @@ export default function Income910Page() {
         const { data: p } = await supabase.from('profiles').select('role, subscription_plan, subscription_until, income910_used').eq('id', data.user.id).maybeSingle();
         setDashHref(p?.role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client');
         const plan = activePlan(p?.subscription_plan, p?.subscription_until);
-        setLimit(plan === 'free' ? 1 : 100);
+        setLimit(plan === 'free' ? 1 : 99999);
         setUsed(p?.income910_used || 0);
         setAuthChecking(false);
       }

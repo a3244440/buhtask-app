@@ -2,6 +2,11 @@
 
 export type PlanKey = 'free' | 'business' | 'pro';
 
+// === ПРОМО-ПЕРИОД (Astana Hub) ===
+// Пока true — всем пользователям бесплатно выдаётся полный тариф PRO.
+// После подключения оплаты поставить false, чтобы вернуть обычные тарифы.
+export const PROMO_ALL_PRO = true;
+
 export interface PlanLimits {
   companies: number;      // макс компаний (Infinity = без лимита)
   docsPerCompany: number; // макс документов на компанию
@@ -16,6 +21,7 @@ export const PLAN_LIMITS: Record<PlanKey, PlanLimits> = {
 
 // Активен ли тариф (с учётом срока действия)
 export function activePlan(plan?: string | null, until?: string | null): PlanKey {
+  if (PROMO_ALL_PRO) return 'pro'; // промо: всем PRO
   const p = (plan || 'free') as PlanKey;
   if (p === 'free') return 'free';
   if (until && new Date(until) < new Date()) return 'free'; // срок истёк
