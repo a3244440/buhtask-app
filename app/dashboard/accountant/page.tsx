@@ -254,7 +254,7 @@ function AccountantDashboardInner() {
       {/* Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-60 bg-white border-r border-gray-100 flex-col z-40">
         <div className="px-5 py-4 border-b border-gray-50">
-          <img src="/images/logo-new.png" alt="BuhTask" className="h-14 w-auto" />
+          <img src="/images/logo-new.png" alt="BuhTask" className="h-10 w-auto" />
         </div>
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {[
@@ -265,7 +265,7 @@ function AccountantDashboardInner() {
             { id: 'messages', icon: MessageSquare, label: t('nav.messages') },
           ].map(item => (
             <button key={item.id} onClick={() => setTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${tab === item.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === item.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
               <item.icon className="w-4 h-4" />{item.label}
               {item.id === 'messages' && conversations.length > 0 && (
                 <span className="ml-auto bg-blue-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{conversations.length}</span>
@@ -274,37 +274,34 @@ function AccountantDashboardInner() {
           ))}
 
           {/* Инструменты */}
-          <div className="pt-3 mt-2 border-t border-gray-100">
-            <p className="px-4 pb-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t('tools.title')}</p>
-            <button onClick={() => router.push('/income-910')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 whitespace-nowrap">
-              <Calculator className="w-4 h-4 flex-shrink-0" /> {t('inc910.shortTitle')}
-              <span className="ml-auto text-[9px] px-1.5 py-0.5 bg-yellow-300 text-blue-900 rounded font-bold">NEW</span>
-            </button>
+          <div className="pt-2 mt-2 border-t border-gray-100">
+            <p className="px-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t('tools.title')}</p>
             <button onClick={() => router.push('/tax-calendar')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <CalendarDays className="w-4 h-4 flex-shrink-0" /> {t('tools.taxCalendar')}
             </button>
+            <button onClick={() => router.push('/income-910')}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <Calculator className="w-4 h-4 flex-shrink-0" /> {t('inc910.shortTitle')}
+            </button>
             <button onClick={() => router.push('/salary-calculator')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <Calculator className="w-4 h-4 flex-shrink-0" /> {t('tools.salaryCalc')}
             </button>
             <button onClick={() => router.push('/maternity-calculator')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <Baby className="w-4 h-4 flex-shrink-0" /> {t('mat.title')}
-              <span className="ml-auto text-[9px] px-1.5 py-0.5 bg-yellow-300 text-blue-900 rounded font-bold">NEW</span>
             </button>
             <button onClick={() => router.push('/penalty-calculator')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {t('pen.title')}
-              <span className="ml-auto text-[9px] px-1.5 py-0.5 bg-yellow-300 text-blue-900 rounded font-bold">NEW</span>
             </button>
             <button onClick={() => router.push('/reference')}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <BookOpen className="w-4 h-4 flex-shrink-0" /> {t('ref.title')}
-              <span className="ml-auto text-[9px] px-1.5 py-0.5 bg-yellow-300 text-blue-900 rounded font-bold">NEW</span>
             </button>
           </div>
+        
         </nav>
         <div className="p-3 border-t border-gray-100">
           <button onClick={() => setTab('tasks')}
