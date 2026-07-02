@@ -2,7 +2,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Home, Building2, CalendarDays, Calculator, BarChart3, FileText, Users } from 'lucide-react';
+import { Home, Building2, CalendarDays, Calculator, BarChart3, FileText, Users, Baby, AlertTriangle } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 export default function ToolsSidebar() {
@@ -29,6 +29,8 @@ export default function ToolsSidebar() {
     { href: '/tax-calendar', icon: CalendarDays, label: t('tools.taxCalendar'), hide: false },
     { href: '/income-910', icon: Calculator, label: t('inc910.shortTitle'), hide: false },
     { href: '/salary-calculator', icon: Calculator, label: t('tools.salaryCalc'), hide: false },
+    { href: '/maternity-calculator', icon: Baby, label: t('mat.title'), hide: false },
+    { href: '/penalty-calculator', icon: AlertTriangle, label: t('pen.title'), hide: false },
     { href: '/finance', icon: BarChart3, label: t('tools.finance'), hide: isAccountant },
   ];
 

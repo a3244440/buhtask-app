@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Building2, CalendarDays, Calculator, BarChart3, ChevronRight, ArrowLeft, FileText, Users } from 'lucide-react';
+import { Building2, CalendarDays, Calculator, BarChart3, ChevronRight, ArrowLeft, FileText, Users, Baby, AlertTriangle } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import DashboardHeader from '../components/DashboardHeader';
 import MobileToolsNav from '../components/MobileToolsNav';
@@ -30,6 +30,8 @@ export default function ToolsPage() {
     { href: '/documents', icon: FileText, label: t('tools.documents'), desc: t('tools.documentsDesc'), hide: isAccountant, color: 'bg-sky-50 text-sky-600' },
     { href: '/tax-calendar', icon: CalendarDays, label: t('tools.taxCalendar'), desc: t('tools.taxCalendarDesc'), hide: false, color: 'bg-violet-50 text-violet-600' },
     { href: '/salary-calculator', icon: Calculator, label: t('tools.salaryCalc'), desc: t('tools.salaryCalcDesc'), hide: false, color: 'bg-emerald-50 text-emerald-600' },
+    { href: '/maternity-calculator', icon: Baby, label: t('mat.title'), desc: t('mat.toolsDesc'), hide: false, color: 'bg-pink-50 text-pink-600' },
+    { href: '/penalty-calculator', icon: AlertTriangle, label: t('pen.title'), desc: t('pen.toolsDesc'), hide: false, color: 'bg-amber-50 text-amber-600' },
     { href: '/finance', icon: BarChart3, label: t('tools.finance'), desc: t('tools.financeDesc'), hide: isAccountant, color: 'bg-amber-50 text-amber-600' },
   ];
 
