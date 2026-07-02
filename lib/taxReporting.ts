@@ -30,7 +30,7 @@ export interface ReportForm {
 export const REPORT_FORMS: ReportForm[] = [
   { key: 'fno_910', title: 'ФНО 910.00', titleKey: 'tax.rep.910', months: [2, 8], day: 15, startMonthOffset: 1, startDay: 1 },
   { key: 'fno_200', title: 'ФНО 200.00', titleKey: 'tax.rep.200', months: [2, 5, 8, 11], day: 15, startMonthOffset: 1, startDay: 1 },
-  { key: 'fno_300', title: 'ФНО 300.00', titleKey: 'tax.rep.300', months: [2, 5, 8, 11], day: 15, startMonthOffset: 1, startDay: 15 },
+  { key: 'fno_300', title: 'ФНО 300.00', titleKey: 'tax.rep.300', months: [2, 5, 8, 11], day: 15, startMonthOffset: 1, startDay: 1 },
   { key: 'fno_101_04', title: 'ФНО 101.04', titleKey: 'tax.rep.101', months: [2, 5, 8, 11], day: 15, startMonthOffset: 1, startDay: 1 },
   { key: 'fno_100', title: 'ФНО 100.00', titleKey: 'tax.rep.100', months: [3], day: 31, startMonthOffset: 2, startDay: 1 },
   { key: 'fno_220', title: 'ФНО 220.00', titleKey: 'tax.rep.220', months: [3], day: 31, startMonthOffset: 2, startDay: 1 },
