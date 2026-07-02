@@ -2,7 +2,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Home, Building2, CalendarDays, Calculator, BarChart3, FileText, Users, Baby, AlertTriangle, BookOpen } from 'lucide-react';
+import { Home, Building2, CalendarDays, Calculator, BarChart3, FileText, Users, Baby, AlertTriangle, BookOpen, Briefcase, MessageSquare } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 export default function ToolsSidebar() {
@@ -46,6 +46,14 @@ export default function ToolsSidebar() {
         <button onClick={() => router.push(dashHref)}
           className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
           <Home className="w-4 h-4 flex-shrink-0" /> {t('nav.home')}
+        </button>
+        <button onClick={() => router.push(dashHref + '?tab=tasks')}
+          className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+          <Briefcase className="w-4 h-4 flex-shrink-0" /> {t('nav.tasks')}
+        </button>
+        <button onClick={() => router.push(dashHref + '?tab=messages')}
+          className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+          <MessageSquare className="w-4 h-4 flex-shrink-0" /> {t('nav.messages')}
         </button>
         <div className="pt-2 mt-2 border-t border-gray-100">
           <p className="px-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t('tools.title')}</p>

@@ -65,6 +65,11 @@ function AccountantDashboardInner() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { init(); }, []);
+  // Открыть вкладку из URL (?tab=tasks / ?tab=messages)
+  useEffect(() => {
+    const tp = searchParams.get('tab');
+    if (tp && ['home', 'tasks', 'my_orders', 'messages'].includes(tp)) setTab(tp);
+  }, [searchParams]);
   useEffect(() => { messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const init = async () => {
