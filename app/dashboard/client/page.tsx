@@ -6,7 +6,7 @@ import { containsContact as detectContact } from '@/lib/contactFilter';
 import ReportingBanner from '../../components/ReportingBanner';
 import PlanBadge from '../../components/PlanBadge';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3, Wrench, Users, Baby, AlertTriangle, BookOpen } from 'lucide-react';
+import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3, Wrench, Users, Baby, AlertTriangle, BookOpen, Scale } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; }
@@ -275,6 +275,10 @@ function ClientDashboardInner() {
             <button onClick={() => router.push('/documents')}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <FileText className="w-4 h-4 flex-shrink-0" /> {t('tools.documents')}
+            </button>
+            <button onClick={() => router.push('/reconciliation-act')}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <Scale className="w-4 h-4 flex-shrink-0" /> {t('act.title')}
             </button>
             <button onClick={() => router.push('/tax-calendar')}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
