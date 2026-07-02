@@ -26,6 +26,16 @@ const TAX_EVENTS: TaxEvent[] = [
 const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const HOLIDAYS_2026 = new Set(['2026-01-01','2026-01-02','2026-01-07','2026-03-08','2026-03-21','2026-03-22','2026-03-23','2026-03-24','2026-03-25','2026-05-01','2026-05-07','2026-05-09','2026-07-06','2026-08-30','2026-12-01','2026-12-16','2026-12-17']);
 
+// Названия праздников РК 2026
+const HOLIDAY_NAMES: Record<string, string> = {
+  '2026-01-01': 'Новый год', '2026-01-02': 'Новый год', '2026-01-07': 'Рождество',
+  '2026-03-08': 'Международный женский день',
+  '2026-03-21': 'Наурыз', '2026-03-22': 'Наурыз', '2026-03-23': 'Наурыз', '2026-03-24': 'Наурыз', '2026-03-25': 'Наурыз',
+  '2026-05-01': 'Праздник единства народа', '2026-05-07': 'День защитника Отечества', '2026-05-09': 'День Победы',
+  '2026-07-06': 'День столицы', '2026-08-30': 'День Конституции',
+  '2026-12-01': 'День Первого Президента', '2026-12-16': 'День Независимости', '2026-12-17': 'День Независимости',
+};
+
 function toISO(d: Date): string { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function adjustForWeekend(year: number, month: number, day: number): Date {
   let d = new Date(year, month - 1, day);
@@ -41,6 +51,7 @@ export default function TaxCalendarPage() {
   const [reminders, setReminders] = useState<Set<string>>(new Set());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [selectedISO, setSelectedISO] = useState<string | null>(null);
+  const [yearView, setYearView] = useState(true); // показывать весь год
   const year = 2026;
 
   useEffect(() => { init(); }, []);
@@ -96,6 +107,28 @@ export default function TaxCalendarPage() {
   const typeColors: Record<string, string> = { monthly: 'bg-blue-50 text-blue-700 border-blue-200', quarterly: 'bg-violet-50 text-violet-700 border-violet-200', halfyear: 'bg-amber-50 text-amber-700 border-amber-200', yearly: 'bg-rose-50 text-rose-700 border-rose-200' };
   const typeLabels: Record<string, string> = { monthly: t('tax.monthly'), quarterly: t('tax.quarterly'), halfyear: t('tax.halfyear'), yearly: t('tax.yearly') };
 
+  // Даты дедлайнов для любого месяца (для годового вида)
+  const eventsForMonth = (m: number) => {
+    const evs = TAX_EVENTS.filter(e => e.months.includes(m + 1))
+      .map(e => { const date = adjustForWeekend(year, m + 1, e.day); return { ...e, date, iso: toISO(date) }; })
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    const byDate: Record<string, boolean> = {};
+    evs.forEach(e => { byDate[e.iso] = true; });
+    return { evs, byDate };
+  };
+
+  // Мини-сетка месяца для годового вида
+  const buildMiniGrid = (m: number) => {
+    const first = new Date(year, m, 1);
+    const startDow = (first.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, m + 1, 0).getDate();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < startDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  };
+
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
 
   return (
@@ -103,7 +136,7 @@ export default function TaxCalendarPage() {
       <ToolsSidebar />
       <div className="lg:pl-60">
         <DashboardHeader title={t('tax.title')} />
-        <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <main className={`${yearView ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 sm:px-6 py-8`}>
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /> {t('tax.title')} {year}</h1>
           <p className="text-sm text-gray-500">{t('tax.subtitle')}</p>
@@ -111,12 +144,82 @@ export default function TaxCalendarPage() {
 
         <ReportingBanner />
 
-        <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3">
+        {/* Переключатель Год / Месяц */}
+        <div className="flex items-center gap-2 mb-3">
+          <button onClick={() => setYearView(true)} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${yearView ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{t('tax.yearView')}</button>
+          <button onClick={() => setYearView(false)} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${!yearView ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{t('tax.monthView')}</button>
+        </div>
+
+        {/* ГОДОВОЙ ВИД */}
+        {yearView && (
+          <>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+              {MONTHS_RU.map((_, m) => {
+                const { evs, byDate } = eventsForMonth(m);
+                const mini = buildMiniGrid(m);
+                const isCurrentMonth = m === new Date().getMonth();
+                return (
+                  <div key={m} className={`bg-white rounded-2xl border shadow-sm p-3 ${isCurrentMonth ? 'border-blue-300 ring-1 ring-blue-100' : 'border-gray-100'}`}>
+                    <h3 className="font-bold text-sm text-gray-900 mb-2 text-center">{t('month.' + m)}</h3>
+                    <div className="grid grid-cols-7 gap-0.5 mb-1">
+                      {['tax.wd.mon','tax.wd.tue','tax.wd.wed','tax.wd.thu','tax.wd.fri','tax.wd.sat','tax.wd.sun'].map((k, i) => (
+                        <div key={k} className={`text-center text-[8px] font-semibold ${i >= 5 ? 'text-red-400' : 'text-gray-300'}`}>{t(k)}</div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-0.5">
+                      {mini.map((d, i) => {
+                        if (!d) return <div key={i} />;
+                        const iso = toISO(new Date(year, m, d));
+                        const hasEvents = byDate[iso];
+                        const holiday = HOLIDAYS_2026.has(iso);
+                        const dow = new Date(year, m, d).getDay();
+                        const weekend = dow === 0 || dow === 6;
+                        const today = iso === toISO(new Date());
+                        return (
+                          <div key={i} title={HOLIDAY_NAMES[iso] || ''}
+                            className={`relative h-6 rounded flex items-center justify-center text-[10px]
+                              ${hasEvents ? 'bg-blue-600 text-white font-bold' :
+                                today ? 'bg-gray-200 text-gray-900 font-bold' :
+                                (holiday || weekend) ? 'text-red-400' : 'text-gray-600'}`}>
+                            {d}
+                            {holiday && !hasEvents && <span className="absolute bottom-0 right-0.5 w-1 h-1 bg-red-400 rounded-full" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Дедлайны месяца */}
+                    {evs.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-50 space-y-1">
+                        {evs.map((e, i) => (
+                          <div key={i} className="flex items-center gap-1.5 text-[10px]">
+                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0" />
+                            <span className="text-gray-500">{e.date.getDate()} — {e.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {/* Легенда */}
+            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 bg-white rounded-2xl border border-gray-100 p-3 mb-4">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-blue-600 rounded" /> {t('tax.legendDeadline')}</span>
+              <span className="flex items-center gap-1.5"><span className="text-red-400 font-bold">##</span> {t('tax.legendHoliday')}</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-gray-200 rounded" /> {t('tax.legendToday')}</span>
+            </div>
+          </>
+        )}
+
+        {!yearView && (
+        <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3 max-w-sm mx-auto">
           <button onClick={() => { setCurrentMonth(m => (m + 11) % 12); setSelectedISO(null); }} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronLeft className="w-5 h-5 text-gray-500" /></button>
           <h2 className="font-bold text-lg text-gray-900">{t('month.' + currentMonth)} {year}</h2>
           <button onClick={() => { setCurrentMonth(m => (m + 1) % 12); setSelectedISO(null); }} className="p-2 hover:bg-gray-50 rounded-lg"><ChevronRight className="w-5 h-5 text-gray-500" /></button>
         </div>
+        )}
 
+        {!yearView && (<>
         {/* Сетка-календарь */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 mb-3 max-w-sm mx-auto">
           <div className="grid grid-cols-7 gap-1 mb-1">
@@ -254,6 +357,7 @@ export default function TaxCalendarPage() {
             <p>{t('tax.infoReminder')}</p>
           </div>
         </div>
+        </>)}
       </main>
       </div>
       <MobileToolsNav />

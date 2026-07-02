@@ -533,6 +533,11 @@ const translations: Record<string, Record<Lang, string>> = {
   // === Налоговый календарь ===
   'tax.title': { ru: 'Налоговый календарь', kz: 'Салық күнтізбесі', en: 'Tax Calendar' },
   'tax.subtitle': { ru: 'Сроки сдачи отчётности и уплаты налогов в Казахстане', kz: 'Қазақстанда есеп беру және салық төлеу мерзімдері', en: 'Reporting and tax payment deadlines in Kazakhstan' },
+  'tax.yearView': { ru: 'Весь год', kz: 'Бүкіл жыл', en: 'Full year' },
+  'tax.monthView': { ru: 'По месяцам', kz: 'Ай бойынша', en: 'By month' },
+  'tax.legendDeadline': { ru: 'Дедлайн отчёта', kz: 'Есеп мерзімі', en: 'Report deadline' },
+  'tax.legendHoliday': { ru: 'Праздник / выходной', kz: 'Мереке / демалыс', en: 'Holiday / weekend' },
+  'tax.legendToday': { ru: 'Сегодня', kz: 'Бүгін', en: 'Today' },
   'tax.noEvents': { ru: 'В этом месяце нет налоговых событий', kz: 'Бұл айда салық оқиғалары жоқ', en: 'No tax events this month' },
   'tax.todayDeadline': { ru: '⚠️ Сегодня крайний срок!', kz: '⚠️ Бүгін соңғы мерзім!', en: '⚠️ Deadline today!' },
   'tax.tomorrow': { ru: 'Завтра', kz: 'Ертең', en: 'Tomorrow' },
