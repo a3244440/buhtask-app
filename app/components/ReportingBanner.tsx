@@ -34,10 +34,12 @@ export default function ReportingBanner({ compact = false }: Props) {
             {status.active.map(w => {
               const d = daysTo(w.deadline);
               return (
-                <div key={w.key} className="flex items-center gap-2 text-sm flex-wrap">
-                  <span className="font-semibold text-gray-900">{w.title}</span>
-                  <span className="text-gray-500 text-xs">{t(w.titleKey)}</span>
-                  <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${d <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-white text-gray-500 border border-gray-200'}`}>
+                <div key={w.key} className="flex items-center gap-2 text-sm">
+                  <div className="flex items-baseline gap-1.5 flex-wrap min-w-0 flex-1">
+                    <span className="font-semibold text-gray-900">{w.title}</span>
+                    <span className="text-gray-500 text-xs">{t(w.titleKey)}</span>
+                  </div>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 ${d <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-white text-gray-500 border border-gray-200'}`}>
                     {t('tax.acceptUntil')} {fmtDate(w.deadline)} · {d} {t('tax.daysShort2')}
                   </span>
                 </div>
