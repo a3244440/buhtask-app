@@ -29,9 +29,6 @@ export default function Income910Page() {
   const [esfDragOver, setEsfDragOver] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [taxRate, setTaxRate] = useState(4); // ставка ИПН упрощёнки 2026, регион 2-6%
-  const [declaredIncome, setDeclaredIncome] = useState(85000); // заявленный доход для соцплатежей (мин 1 МЗП)
-  const [payOpvr, setPayOpvr] = useState(true); // платит ли ОПВР (не платят рождённые до 1975)
-  const [mzp, setMzp] = useState(85000); // МЗП 2026 = 85 000, редактируемый
   // Лимиты проверок
   const [userId, setUserId] = useState<string | null>(null);
   const [used, setUsed] = useState(0);
@@ -174,18 +171,9 @@ export default function Income910Page() {
   const esfExcluded = esfRows ? esfRows.filter(e => !e.included).reduce((s, e) => s + e.amount, 0) : 0;
   const esfDiff = incomeTotal - esfTotal; // банк минус ЭСФ
 
-  // Расчёт налога 910 (2026): единый налог = доход × ставка (по умолчанию 4%, регион 2-6%)
-  const taxAmount = Math.round(incomeTotal * (taxRate / 100));
-
-  // Соцплатежи ИП "за себя" (2026), от заявленного дохода (по умолчанию 1 МЗП)
-  const declaredBase = Math.max(mzp, declaredIncome); // не меньше 1 МЗП
-  const opv = Math.round(declaredBase * 0.10);        // ОПВ 10%
-  const opvr = payOpvr ? Math.round(declaredBase * 0.035) : 0; // ОПВР 3.5% (не платят рождённые до 1975)
-  const so = Math.round(declaredBase * 0.05);          // СО 5%
-  const vosms = Math.round(mzp * 1.4 * 0.05);          // ВОСМС 5% от 1.4 МЗП (фиксированный)
-  const socMonthly = opv + opvr + so + vosms;          // за месяц
-  const socHalfYear = socMonthly * 6;                  // за полугодие (6 мес)
-  const totalHalfYear = taxAmount + socHalfYear;       // всё к уплате за полугодие
+  // База налога: если загружен ЭСФ — считаем по ЭСФ, иначе по банку
+  const taxBase = esfRows ? esfTotal : incomeTotal;
+  const taxAmount = Math.round(taxBase * (taxRate / 100));
 
   // Сохранить текущую проверку в историю и начать новую
   const saveAndNew = async () => {
@@ -460,8 +448,8 @@ export default function Income910Page() {
                     <h3 className="font-semibold text-sm">{t('inc910.taxTitle')}</h3>
                   </div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-blue-100">{t('inc910.taxBase')}</span>
-                    <span className="text-sm font-semibold">{Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</span>
+                    <span className="text-sm text-blue-100">{t('inc910.taxBase')} {esfRows ? '(ЭСФ)' : '(банк)'}</span>
+                    <span className="text-sm font-semibold">{Math.round(taxBase).toLocaleString('ru-RU')} ₸</span>
                   </div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm text-blue-100">{t('inc910.taxRate')}</span>
@@ -486,68 +474,6 @@ export default function Income910Page() {
                     <Copy className="w-3.5 h-3.5" /> {t('inc910.taxCopy')}
                   </button>
                   <p className="text-[11px] text-blue-200 mt-2">{t('inc910.taxNote')}</p>
-                </div>
-
-                {/* Соцплатежи ИП "за себя" */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <User className="w-4 h-4 text-emerald-600" />
-                    <h3 className="font-semibold text-gray-900 text-sm">{t('inc910.socTitle')}</h3>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3">{t('inc910.socDesc')}</p>
-
-                  {/* МЗП (редактируемый) */}
-                  <div className="flex items-center justify-between mb-2 gap-2">
-                    <span className="text-xs text-gray-500">{t('inc910.mzp')}</span>
-                    <div className="flex items-center gap-1.5">
-                      <input type="number" value={mzp} min={1}
-                        onChange={e => setMzp(Math.max(1, Number(e.target.value) || 85000))}
-                        className="w-32 px-2 py-1 text-sm text-right border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-400" />
-                      <span className="text-xs text-gray-400">₸</span>
-                    </div>
-                  </div>
-
-                  {/* Заявленный доход (зарплата) */}
-                  <div className="flex items-center justify-between mb-3 gap-2">
-                    <span className="text-xs text-gray-500">{t('inc910.socDeclared')}</span>
-                    <div className="flex items-center gap-1.5">
-                      <input type="number" value={declaredIncome} min={mzp}
-                        onChange={e => setDeclaredIncome(Math.max(0, Number(e.target.value) || 0))}
-                        className="w-32 px-2 py-1 text-sm text-right border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-400" />
-                      <span className="text-xs text-gray-400">₸</span>
-                    </div>
-                  </div>
-
-                  {/* Строки соцплатежей */}
-                  <div className="space-y-1.5 text-sm border-t border-gray-50 pt-3">
-                    <div className="flex justify-between"><span className="text-gray-600">ОПВ (10%)</span><span className="font-medium text-gray-900">{opv.toLocaleString('ru-RU')} ₸</span></div>
-                    <div className="flex justify-between items-center">
-                      <label className="text-gray-600 flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={payOpvr} onChange={e => setPayOpvr(e.target.checked)} className="w-3.5 h-3.5 accent-emerald-600" />
-                        ОПВР (3,5%)
-                      </label>
-                      <span className="font-medium text-gray-900">{opvr.toLocaleString('ru-RU')} ₸</span>
-                    </div>
-                    <div className="flex justify-between"><span className="text-gray-600">СО (5%)</span><span className="font-medium text-gray-900">{so.toLocaleString('ru-RU')} ₸</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600">ВОСМС (5% от 1,4 МЗП)</span><span className="font-medium text-gray-900">{vosms.toLocaleString('ru-RU')} ₸</span></div>
-                  </div>
-
-                  <div className="border-t border-gray-100 mt-3 pt-3 space-y-1.5">
-                    <div className="flex justify-between text-sm"><span className="text-gray-500">{t('inc910.socPerMonth')}</span><span className="font-bold text-emerald-600">{socMonthly.toLocaleString('ru-RU')} ₸</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-gray-500">{t('inc910.socPerHalf')}</span><span className="font-bold text-emerald-600">{socHalfYear.toLocaleString('ru-RU')} ₸</span></div>
-                  </div>
-                  <p className="text-[11px] text-gray-400 mt-2">{t('inc910.socNote')}</p>
-                </div>
-
-                {/* ИТОГО за полугодие */}
-                <div className="bg-gray-900 rounded-2xl p-5 mb-4 text-white">
-                  <p className="text-sm text-gray-300 mb-2">{t('inc910.grandTotal')}</p>
-                  <div className="flex justify-between text-sm mb-1"><span className="text-gray-400">{t('inc910.taxToPay')}</span><span>{taxAmount.toLocaleString('ru-RU')} ₸</span></div>
-                  <div className="flex justify-between text-sm mb-2"><span className="text-gray-400">{t('inc910.socPerHalf')}</span><span>{socHalfYear.toLocaleString('ru-RU')} ₸</span></div>
-                  <div className="flex justify-between items-center border-t border-white/15 pt-2">
-                    <span className="font-semibold">{t('inc910.grandTotalSum')}</span>
-                    <span className="text-2xl font-extrabold">{totalHalfYear.toLocaleString('ru-RU')} ₸</span>
-                  </div>
                 </div>
 
                 {/* Разбивка по КНП */}
