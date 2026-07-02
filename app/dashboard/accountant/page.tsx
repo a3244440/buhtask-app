@@ -8,6 +8,7 @@ import { shortCompanyName } from '@/lib/companyName';
 import { useI18n } from '@/lib/i18n';
 import { containsContact as detectContact } from '@/lib/contactFilter';
 import ReportingBanner from '../../components/ReportingBanner';
+import PlanBadge from '../../components/PlanBadge';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; final_price?: number; commission_amount?: number; commission_paid?: boolean; paid_by_client?: boolean; company_id?: string; company_name?: string; }
 interface Conversation { id: string; other_name: string; other_id: string; last_message: string; updated_at: string; task_title?: string; task_id?: string; }
@@ -311,6 +312,7 @@ function AccountantDashboardInner() {
 
         <main className="p-4 sm:p-8 pb-24 lg:pb-8">
 
+          {tab === 'home' && <PlanBadge />}
           {tab === 'home' && <ReportingBanner />}
 
           {/* HOME */}

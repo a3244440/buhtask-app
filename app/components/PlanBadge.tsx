@@ -40,6 +40,35 @@ export default function PlanBadge() {
   const Icon = styles.icon;
   const planName = rawPlan === 'pro' ? 'Pro' : rawPlan === 'business' ? 'Business' : 'Free';
 
+  // VIP-плашка для PRO (золотой премиум-стиль)
+  if (plan === 'pro') {
+    return (
+      <>
+        <div className="relative overflow-hidden rounded-2xl p-4 mb-5 shadow-lg"
+          style={{ background: 'linear-gradient(120deg, #b8860b 0%, #f5c542 25%, #fff3b0 45%, #f5c542 60%, #d4a017 100%)' }}>
+          {/* блеск */}
+          <div className="absolute inset-0 opacity-40 pointer-events-none"
+            style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.7) 48%, transparent 56%)' }} />
+          <div className="relative flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-white/40 backdrop-blur flex items-center justify-center flex-shrink-0 shadow-inner">
+              <Crown className="w-6 h-6 text-amber-800" fill="currentColor" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold text-amber-900/70 uppercase tracking-wide">{t('plan.yourPlan')}</p>
+              <p className="font-extrabold text-lg text-amber-950 flex items-center gap-1.5">
+                BuhTask Pro
+                <span className="text-[9px] px-1.5 py-0.5 bg-amber-950/80 text-amber-100 rounded font-bold tracking-wider">VIP</span>
+              </p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <span className="text-[10px] px-2 py-1 bg-white/50 text-amber-900 rounded-full font-bold">✨ {t('plan.fullAccess')}</span>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       {/* Уведомление об истечении подписки */}

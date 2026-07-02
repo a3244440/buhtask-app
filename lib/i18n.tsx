@@ -447,6 +447,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'plan.free': { ru: 'Бесплатный', kz: 'Тегін', en: 'Free' },
   'plan.current': { ru: 'Текущий тариф', kz: 'Ағымдағы тариф', en: 'Current plan' },
   'plan.yourPlan': { ru: 'Ваш тариф', kz: 'Сіздің тарифіңіз', en: 'Your plan' },
+  'plan.fullAccess': { ru: 'Полный доступ', kz: 'Толық қолжетімділік', en: 'Full access' },
   'plan.activeUntil': { ru: 'активен до', kz: 'дейін белсенді', en: 'active until' },
   'plan.upgrade': { ru: 'Улучшить', kz: 'Жақсарту', en: 'Upgrade' },
   'plan.freeActive': { ru: 'Бесплатный тариф', kz: 'Тегін тариф', en: 'Free plan' },
