@@ -6,7 +6,7 @@ import { containsContact as detectContact } from '@/lib/contactFilter';
 import ReportingBanner from '../../components/ReportingBanner';
 import PlanBadge from '../../components/PlanBadge';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3, Wrench, Users } from 'lucide-react';
+import { Plus, FileText, ChevronRight, Home, Briefcase, MessageSquare, User, Settings, Send, ArrowLeft, Paperclip, Building2, CalendarDays, Calculator, BarChart3, Wrench, Users, Baby, AlertTriangle, BookOpen } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 
 interface Task { id: string; title: string; description: string; status: string; category: string; city: string; budget?: number; deadline?: string; created_at: string; }
@@ -288,6 +288,21 @@ function ClientDashboardInner() {
             <button onClick={() => router.push('/salary-calculator')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <Calculator className="w-4 h-4 flex-shrink-0" /> {t('tools.salaryCalc')}
+            </button>
+            <button onClick={() => router.push('/maternity-calculator')}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <Baby className="w-4 h-4 flex-shrink-0" /> {t('mat.title')}
+              <span className="ml-auto text-[9px] px-1.5 py-0.5 bg-yellow-300 text-blue-900 rounded font-bold">NEW</span>
+            </button>
+            <button onClick={() => router.push('/penalty-calculator')}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {t('pen.title')}
+              <span className="ml-auto text-[9px] px-1.5 py-0.5 bg-yellow-300 text-blue-900 rounded font-bold">NEW</span>
+            </button>
+            <button onClick={() => router.push('/reference')}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <BookOpen className="w-4 h-4 flex-shrink-0" /> {t('ref.title')}
+              <span className="ml-auto text-[9px] px-1.5 py-0.5 bg-yellow-300 text-blue-900 rounded font-bold">NEW</span>
             </button>
             <button onClick={() => router.push('/finance')}
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
