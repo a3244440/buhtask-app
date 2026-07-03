@@ -142,13 +142,13 @@ export default function ReconciliationActPage() {
     // ДЕБЕТ: ЭСФ приоритетнее АВР (чтобы не задвоить)
     const esfMatched = (esfRows || []).filter(e => e.included && matchCp(e.counterparty, e.bin) && inPeriod(e.date || e.turnoverDate || ''));
     if (esfMatched.length > 0) {
-      esfMatched.forEach(e => r.push({ date: e.date || e.turnoverDate, doc: `${t('act.sf')} №${e.number || '—'}`, debit: e.amount, credit: 0 }));
+      esfMatched.forEach(e => r.push({ date: e.date || e.turnoverDate, doc: `${t('act.sale')} №${e.number || '—'}`, debit: e.amount, credit: 0 }));
     } else {
-      docs.forEach(d => r.push({ date: d.doc_date, doc: `${t('act.avr')} №${d.number || '—'}`, debit: Number(d.total) || 0, credit: 0 }));
+      docs.forEach(d => r.push({ date: d.doc_date, doc: `${t('act.sale')} (${t('act.avr')}) №${d.number || '—'}`, debit: Number(d.total) || 0, credit: 0 }));
     }
     // КРЕДИТ: оплаты из банка + ручные
     (bankTxs || []).filter(tx => tx.included && matchCp(tx.counterparty, tx.bin) && inPeriod(tx.date?.slice(0, 10) || '')).forEach(tx => {
-      r.push({ date: tx.date?.slice(0, 10), doc: t('act.payment') + (tx.knp ? ` (КНП ${tx.knp})` : ''), debit: 0, credit: tx.amount });
+      r.push({ date: tx.date?.slice(0, 10), doc: t('act.paymentIn') + (tx.knp ? ` (КНП ${tx.knp})` : ''), debit: 0, credit: tx.amount });
     });
     payments.filter(p => p.amount > 0).forEach(p => r.push({ date: p.date, doc: p.note || t('act.payment'), debit: 0, credit: p.amount }));
     return r.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
@@ -272,63 +272,88 @@ export default function ReconciliationActPage() {
                 ))}
               </div>
 
-              {/* Сам акт */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-4 print:border-0 print:shadow-none print:rounded-none" id="act-print">
+              {/* Сам акт — двусторонний шаблон 1С */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-4 print:border-0 print:shadow-none print:rounded-none overflow-x-auto" id="act-print">
                 <h2 className="text-center font-bold text-gray-900 mb-1">{t('act.docTitle')}</h2>
-                <p className="text-center text-sm text-gray-600 mb-4">{t('act.between')} {myName} {t('act.and')} {cpName}<br />
-                  {t('act.forPeriod')} {fmtDate(dateFrom)} — {fmtDate(dateTo)}</p>
+                <p className="text-center text-sm text-gray-600 mb-3">
+                  {t('act.mutualPeriod')} {fmtDate(dateFrom)} {t('act.po')} {fmtDate(dateTo)}<br />
+                  {t('act.between')} {myName} {t('act.and')} {cpName}
+                </p>
+                <p className="text-xs text-gray-700 mb-4 leading-relaxed">
+                  {t('act.weSigned1')} <b>{myName}</b>, {t('act.oneSide')}, {t('act.and')} <b>{cpName}</b>, {t('act.otherSide')}, {t('act.weSigned2')}
+                </p>
 
-                <table className="w-full text-sm border border-gray-300 mb-4">
+                <table className="w-full text-xs border border-gray-400 mb-4 min-w-[640px]">
                   <thead>
-                    <tr className="bg-gray-50 text-xs text-gray-600">
-                      <th className="border border-gray-300 px-2 py-1.5 text-left">{t('act.colDate')}</th>
-                      <th className="border border-gray-300 px-2 py-1.5 text-left">{t('act.colDoc')}</th>
-                      <th className="border border-gray-300 px-2 py-1.5 text-right">{t('act.colDebit')}</th>
-                      <th className="border border-gray-300 px-2 py-1.5 text-right">{t('act.colCredit')}</th>
+                    <tr className="bg-gray-50 text-gray-700">
+                      <th className="border border-gray-400 px-2 py-1.5 text-left" colSpan={2}>{t('act.recText')}</th>
+                      <th className="border border-gray-400 px-2 py-1.5 text-center" colSpan={2}>{t('act.byData')} {myName}, KZT</th>
+                      <th className="border border-gray-400 px-2 py-1.5 text-center" colSpan={2}>{t('act.byData')} {cpName}, KZT</th>
+                    </tr>
+                    <tr className="bg-gray-50 text-gray-600">
+                      <th className="border border-gray-400 px-2 py-1 text-left w-20">{t('act.colDate')}</th>
+                      <th className="border border-gray-400 px-2 py-1 text-left">{t('act.colDoc')}</th>
+                      <th className="border border-gray-400 px-2 py-1 text-right">{t('act.debit')}</th>
+                      <th className="border border-gray-400 px-2 py-1 text-right">{t('act.credit')}</th>
+                      <th className="border border-gray-400 px-2 py-1 text-right">{t('act.debit')}</th>
+                      <th className="border border-gray-400 px-2 py-1 text-right">{t('act.credit')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="font-medium">
-                      <td className="border border-gray-300 px-2 py-1.5" colSpan={2}>{t('act.openingRow')} {fmtDate(dateFrom)}</td>
-                      <td className="border border-gray-300 px-2 py-1.5 text-right">{opening > 0 ? fmt(opening) : ''}</td>
-                      <td className="border border-gray-300 px-2 py-1.5 text-right">{opening < 0 ? fmt(-opening) : ''}</td>
+                      <td className="border border-gray-400 px-2 py-1.5" colSpan={2}>{t('act.openingRow')} {fmtDate(dateFrom)}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{opening > 0 ? fmt(opening) : ''}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{opening < 0 ? fmt(-opening) : ''}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{opening < 0 ? fmt(-opening) : ''}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{opening > 0 ? fmt(opening) : ''}</td>
                     </tr>
                     {rows.map((r, i) => (
                       <tr key={i}>
-                        <td className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">{fmtDate(r.date)}</td>
-                        <td className="border border-gray-300 px-2 py-1.5">{r.doc}</td>
-                        <td className="border border-gray-300 px-2 py-1.5 text-right">{r.debit ? fmt(r.debit) : ''}</td>
-                        <td className="border border-gray-300 px-2 py-1.5 text-right">{r.credit ? fmt(r.credit) : ''}</td>
+                        <td className="border border-gray-400 px-2 py-1.5 whitespace-nowrap align-top">{fmtDate(r.date)}</td>
+                        <td className="border border-gray-400 px-2 py-1.5">{r.doc}</td>
+                        <td className="border border-gray-400 px-2 py-1.5 text-right">{r.debit ? fmt(r.debit) : ''}</td>
+                        <td className="border border-gray-400 px-2 py-1.5 text-right">{r.credit ? fmt(r.credit) : ''}</td>
+                        <td className="border border-gray-400 px-2 py-1.5 text-right">{r.credit ? fmt(r.credit) : ''}</td>
+                        <td className="border border-gray-400 px-2 py-1.5 text-right">{r.debit ? fmt(r.debit) : ''}</td>
                       </tr>
                     ))}
                     <tr className="bg-gray-50 font-semibold">
-                      <td className="border border-gray-300 px-2 py-1.5" colSpan={2}>{t('act.turnover')}</td>
-                      <td className="border border-gray-300 px-2 py-1.5 text-right">{fmt(totals.debit)}</td>
-                      <td className="border border-gray-300 px-2 py-1.5 text-right">{fmt(totals.credit)}</td>
+                      <td className="border border-gray-400 px-2 py-1.5" colSpan={2}>{t('act.turnover')}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{fmt(totals.debit)}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{fmt(totals.credit)}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{fmt(totals.credit)}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{fmt(totals.debit)}</td>
                     </tr>
                     <tr className="bg-gray-100 font-bold">
-                      <td className="border border-gray-300 px-2 py-1.5" colSpan={2}>{t('act.closingRow')} {fmtDate(dateTo)}</td>
-                      <td className="border border-gray-300 px-2 py-1.5 text-right">{totals.closing > 0 ? fmt(totals.closing) : ''}</td>
-                      <td className="border border-gray-300 px-2 py-1.5 text-right">{totals.closing < 0 ? fmt(-totals.closing) : ''}</td>
+                      <td className="border border-gray-400 px-2 py-1.5" colSpan={2}>{t('act.closingRow')} {fmtDate(dateTo)}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{totals.closing > 0 ? fmt(totals.closing) : ''}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{totals.closing < 0 ? fmt(-totals.closing) : ''}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{totals.closing < 0 ? fmt(-totals.closing) : ''}</td>
+                      <td className="border border-gray-400 px-2 py-1.5 text-right">{totals.closing > 0 ? fmt(totals.closing) : ''}</td>
                     </tr>
                   </tbody>
                 </table>
 
                 <p className="text-sm text-gray-700 mb-6">
+                  {t('act.byData')} {myName} {t('act.onDate')} {fmtDate(dateTo)}{' '}
                   {totals.closing === 0 ? t('act.balanced')
                     : totals.closing > 0
-                      ? `${t('act.debtOf')} ${cpName} ${t('act.inFavor')} ${myName}: ${fmt(totals.closing)} ₸`
-                      : `${t('act.debtOf')} ${myName} ${t('act.inFavor')} ${cpName}: ${fmt(-totals.closing)} ₸`}
+                      ? `${t('act.debtInFavor')} ${myName}: ${fmt(totals.closing)} KZT`
+                      : `${t('act.debtInFavor')} ${cpName}: ${fmt(-totals.closing)} KZT`}
                 </p>
 
                 <div className="grid grid-cols-2 gap-8 text-sm text-gray-700">
                   <div>
-                    <p className="font-semibold mb-8">{myName}</p>
-                    <p className="border-t border-gray-400 pt-1 text-xs text-gray-500">{t('act.sign')}</p>
+                    <p className="font-semibold">{t('act.fromSide')} {myName}</p>
+                    <p className="text-xs text-gray-500 mt-1">{t('act.binIin')}: {company?.bin || '____________'}</p>
+                    <p className="mt-6 text-xs text-gray-600">{t('act.director')} (___________________)</p>
+                    <p className="mt-4 text-xs text-gray-500">{t('act.mp')} ______________ {t('act.signWord')}</p>
                   </div>
                   <div>
-                    <p className="font-semibold mb-8">{cpName}</p>
-                    <p className="border-t border-gray-400 pt-1 text-xs text-gray-500">{t('act.sign')}</p>
+                    <p className="font-semibold">{t('act.fromSide')} {cpName}</p>
+                    <p className="text-xs text-gray-500 mt-1">{t('act.binIin')}: {selCp?.bin || '____________'}</p>
+                    <p className="mt-6 text-xs text-gray-600">{t('act.director')} (___________________)</p>
+                    <p className="mt-4 text-xs text-gray-500">{t('act.mp')} ______________ {t('act.signWord')}</p>
                   </div>
                 </div>
               </div>
