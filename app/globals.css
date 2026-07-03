@@ -29,3 +29,13 @@ html { scroll-behavior: smooth; }
 }
 .animate-fade-in { animation: fadeIn 0.5s ease forwards; }
 
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(24px, -18px) scale(1.06); }
+}
+.animate-blob { animation: blob 16s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob, .animate-fade-in { animation: none !important; }
+  * { transition-duration: 0.01ms !important; }
+}

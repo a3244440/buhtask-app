@@ -8,7 +8,9 @@ import {
   Calculator, FileText, Users, Building2, Search, Star,
   ArrowRight, ChevronRight, Briefcase, TrendingUp, Shield,
   Clock, MapPin, Zap, DollarSign, BarChart2, Moon, Sun, Mail,
+  CalendarDays, Baby, AlertTriangle, BookOpen, Scale, BarChart3,
 } from "lucide-react";
+import Reveal from "./components/Reveal";
 
 const TYPING_WORDS: Record<string, string[]> = {
   ru: ["Открыть ТОО", "Закрыть ТОО", "Сдать отчёт 910 ФНО", "Расчёт зарплаты сотрудника", "Ведение бухгалтерии", "Консультация по НДС", "Регистрация ИП", "Налоговый аудит"],
@@ -21,6 +23,20 @@ const STATS = [
   { value: "20+", key: "land.statServices" },
   { value: "17", key: "land.statRegions" },
 ];
+const TOOLS = [
+  { href: '/income-910', icon: Calculator, title: 'inc910.shortTitle', desc: 'inc910.toolsDesc', color: 'bg-blue-100 text-blue-600', badge: true },
+  { href: '/tax-calendar', icon: CalendarDays, title: 'tools.taxCalendar', desc: 'tax.subtitle', color: 'bg-indigo-100 text-indigo-600', badge: false },
+  { href: '/salary-calculator', icon: Calculator, title: 'tools.salaryCalc', desc: 'tools.salaryCalcDesc', color: 'bg-emerald-100 text-emerald-600', badge: false },
+  { href: '/maternity-calculator', icon: Baby, title: 'mat.title', desc: 'mat.toolsDesc', color: 'bg-pink-100 text-pink-600', badge: true },
+  { href: '/penalty-calculator', icon: AlertTriangle, title: 'pen.title', desc: 'pen.toolsDesc', color: 'bg-amber-100 text-amber-600', badge: true },
+  { href: '/reference', icon: BookOpen, title: 'ref.title', desc: 'ref.toolsDesc', color: 'bg-sky-100 text-sky-600', badge: true },
+  { href: '/reconciliation-act', icon: Scale, title: 'act.title', desc: 'act.toolsDesc', color: 'bg-violet-100 text-violet-600', badge: true },
+  { href: '/documents', icon: FileText, title: 'tools.documents', desc: 'tools.documentsDesc', color: 'bg-blue-100 text-blue-600', badge: false },
+  { href: '/counterparties', icon: Users, title: 'tools.counterparties', desc: 'tools.counterpartiesDesc', color: 'bg-teal-100 text-teal-600', badge: false },
+  { href: '/companies', icon: Building2, title: 'tools.companies', desc: 'tools.companiesDesc', color: 'bg-cyan-100 text-cyan-600', badge: false },
+  { href: '/finance', icon: BarChart3, title: 'tools.finance', desc: 'tools.financeDesc', color: 'bg-emerald-100 text-emerald-600', badge: false },
+];
+
 const CATEGORIES = [
   { icon: FileText, key: "cat.taxReport", color: "text-blue-600", bg: "bg-blue-50", darkBg: "dark:bg-blue-900/30", hot: false },
   { icon: Building2, key: "cat.construction", color: "text-orange-600", bg: "bg-orange-50", darkBg: "dark:bg-orange-900/30", hot: true },
@@ -143,6 +159,10 @@ export default function HomePage() {
           backgroundImage: "linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px)",
           backgroundSize: "48px 48px",
         }} />
+        <div aria-hidden className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-20 -left-20 w-96 h-96 rounded-full bg-blue-400/20 blur-3xl animate-blob" />
+          <div className="absolute -bottom-24 -right-16 w-[28rem] h-[28rem] rounded-full bg-emerald-400/15 blur-3xl animate-blob" style={{ animationDelay: '5s' }} />
+        </div>
         <div className="relative max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/20 bg-white/10 text-xs text-white/90 mb-6">
             <MapPin className="w-3.5 h-3.5" /> {t('land.badge')}
@@ -198,6 +218,39 @@ export default function HomePage() {
                 {t('inc910.open')} →
               </button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ВСЕ ИНСТРУМЕНТЫ */}
+      <section className={`py-16 px-4 sm:px-6 ${bg}`}>
+        <div className="max-w-6xl mx-auto">
+          <Reveal className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-extrabold mb-3">{t('land.toolsTitle')}</h2>
+            <p className={mutedText}>{t('land.toolsSub')}</p>
+          </Reveal>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {TOOLS.map((tool, i) => {
+              const Icon = tool.icon;
+              return (
+                <Reveal key={tool.href} delay={(i % 3) * 70}>
+                  <button onClick={() => router.push(tool.href)}
+                    className={`group w-full h-full text-left rounded-2xl border shadow-sm p-5 flex items-start gap-4 transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg ${D ? 'bg-gray-800 border-gray-700 hover:border-blue-500' : 'bg-white border-gray-100 hover:border-blue-200'}`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110 ${tool.color}`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className={`font-bold ${D ? 'text-white' : 'text-gray-900'}`}>{t(tool.title)}</p>
+                        {tool.badge && <span className="text-[9px] px-1.5 py-0.5 bg-yellow-300 text-blue-900 rounded font-bold">NEW</span>}
+                      </div>
+                      <p className={`text-sm mt-0.5 ${mutedText}`}>{t(tool.desc)}</p>
+                    </div>
+                    <ArrowRight className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1 ${D ? 'text-gray-500' : 'text-gray-300'}`} />
+                  </button>
+                </Reveal>
+              );
+            })}
           </div>
         </div>
       </section>

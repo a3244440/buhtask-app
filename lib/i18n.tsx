@@ -669,6 +669,8 @@ const translations: Record<string, Record<Lang, string>> = {
   'act.director': { ru: 'Руководитель', kz: 'Басшы', en: 'Director' },
   'act.mp': { ru: 'М.П.', kz: 'М.О.', en: 'Seal' },
   'act.signWord': { ru: 'подпись', kz: 'қолы', en: 'signature' },
+  'land.toolsTitle': { ru: 'Бесплатные инструменты', kz: 'Тегін құралдар', en: 'Free tools' },
+  'land.toolsSub': { ru: '11 инструментов для бухгалтера и бизнеса — всё в одном месте', kz: 'Бухгалтер мен бизнеске арналған 11 құрал — бәрі бір жерде', en: '11 tools for accountants and business — all in one place' },
   'act.uploadBank': { ru: 'Загрузить выписку банка', kz: 'Банк үзіндісін жүктеу', en: 'Upload bank statement' },
   'act.uploadEsf': { ru: 'Загрузить ЭСФ', kz: 'ЭШФ жүктеу', en: 'Upload ESF' },
   'act.bankOps': { ru: 'платежей', kz: 'төлем', en: 'payments' },
