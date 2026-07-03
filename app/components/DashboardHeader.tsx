@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { LogOut, User, Settings, ChevronDown, Building2, Check, Plus, Mail } from 'lucide-react';
+import { LogOut, User, Settings, ChevronDown, Building2, Check, Plus, Mail, Bell } from 'lucide-react';
 import { getActiveCompany, setActiveCompany } from '@/lib/activeCompany';
 import { shortCompanyName } from '@/lib/companyName';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -15,6 +15,8 @@ export default function DashboardHeader({ title, right }: Props) {
   const router = useRouter();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [unreadSupport, setUnreadSupport] = useState(0);
+  const [uid, setUid] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [subPlan, setSubPlan] = useState<'free' | 'business' | 'pro'>('free');
@@ -29,6 +31,7 @@ export default function DashboardHeader({ title, right }: Props) {
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
+      setUid(data.user.id);
       setEmail(data.user.email || '');
       const { data: p } = await supabase.from('profiles').select('full_name,avatar_url,role,subscription_plan,subscription_until').eq('id', data.user.id).single();
       if (p) {
@@ -39,6 +42,9 @@ export default function DashboardHeader({ title, right }: Props) {
           setCompanies((comps as { id: string; name: string }[]) || []);
         }
       }
+      // Непрочитанные сообщения поддержки
+      const { data: tk } = await supabase.from('support_tickets').select('unread_user').eq('user_id', data.user.id).maybeSingle();
+      setUnreadSupport(tk?.unread_user || 0);
     });
     setActiveCompanyState(getActiveCompany());
     const handler = (e: MouseEvent) => {
@@ -48,6 +54,17 @@ export default function DashboardHeader({ title, right }: Props) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Realtime: обновление счётчика непрочитанных поддержки
+  useEffect(() => {
+    if (!uid) return;
+    const ch = supabase.channel('hdr-support-' + uid)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets', filter: `user_id=eq.${uid}` }, (payload: any) => {
+        if (payload.new) setUnreadSupport(payload.new.unread_user || 0);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [uid]);
 
   const chooseCompany = (id: string) => {
     setActiveCompany(id);
@@ -71,9 +88,19 @@ export default function DashboardHeader({ title, right }: Props) {
         {title && <h1 className="hidden lg:block text-sm font-semibold text-gray-700 flex-shrink-0">{title}</h1>}
         {right && <div className="flex-1 max-w-md">{right}</div>}
 
+        {/* Уведомление поддержки — не исчезает пока не прочитано */}
+        <button onClick={() => router.push('/support')} className="relative flex-shrink-0 ml-auto p-2 rounded-xl hover:bg-gray-50 transition-colors" title={t('menu.support')}>
+          <Bell className={`w-5 h-5 ${unreadSupport > 0 ? 'text-blue-600' : 'text-gray-400'}`} />
+          {unreadSupport > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+              {unreadSupport > 9 ? '9+' : unreadSupport}
+            </span>
+          )}
+        </button>
+
         {/* Company switcher (1С-style) — only for clients */}
         {role !== 'accountant' && (
-          <div className="relative flex-shrink-0 ml-auto mr-2" ref={companyRef}>
+          <div className="relative flex-shrink-0 mr-2" ref={companyRef}>
             <button onClick={() => setCompanyMenuOpen(v => !v)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors max-w-[200px]">
               <Building2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
@@ -168,6 +195,7 @@ export default function DashboardHeader({ title, right }: Props) {
               <button onClick={() => { setOpen(false); router.push('/support'); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                 <Mail className="w-4 h-4 text-gray-400" /> {t('menu.support')}
+                {unreadSupport > 0 && <span className="ml-auto min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadSupport > 9 ? '9+' : unreadSupport}</span>}
               </button>
               <div className="border-t border-gray-100 mt-1 pt-1">
                 <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50">

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 
@@ -143,6 +143,23 @@ export default function AdminPanel() {
     setTicketMsgs(msgs || []);
     await supabase.from('support_tickets').update({ unread_admin: 0 }).eq('id', ticket.id);
     setTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, unread_admin: 0 } : t));
+  };
+
+  // Админ начинает чат с пользователем (создаёт тикет, если его нет)
+  const writeToUser = async (userId: string) => {
+    let ticket = tickets.find(tk => tk.user_id === userId);
+    if (!ticket) {
+      const { data } = await supabase.from('support_tickets')
+        .insert({ user_id: userId, status: 'open', last_message: '', last_from: 'admin' })
+        .select().maybeSingle();
+      if (data) { ticket = data; setTickets(prev => [data, ...prev]); }
+      else {
+        // возможно тикет уже есть, но не в списке — перечитаем
+        const { data: existing } = await supabase.from('support_tickets').select('*').eq('user_id', userId).maybeSingle();
+        if (existing) { ticket = existing; setTickets(prev => prev.some(x => x.id === existing.id) ? prev : [existing, ...prev]); }
+      }
+    }
+    if (ticket) { setView('support'); openTicket(ticket); }
   };
 
   const replyTicket = async () => {
@@ -392,6 +409,12 @@ export default function AdminPanel() {
                       <div className="text-right flex-shrink-0 text-xs text-gray-400">
                         <p>{new Date(u.created_at).toLocaleDateString('ru-RU')}</p>
                         <p className="mt-0.5">{userTasks} задач · {userDocs} док.</p>
+                        {u.role !== 'admin' && (
+                          <button onClick={() => writeToUser(u.id)}
+                            className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[11px] font-semibold hover:bg-blue-100">
+                            <MessageSquare className="w-3 h-3" /> Написать
+                          </button>
+                        )}
                       </div>
                     </div>
                     {/* Управление тарифом (заказчики и бухгалтеры) */}
