@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Send, Headphones } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
+import ToolsSidebar from '../components/ToolsSidebar';
+import MobileToolsNav from '../components/MobileToolsNav';
 import { useI18n } from '@/lib/i18n';
 
 interface Msg { id: string; sender_id: string; is_admin: boolean; content: string; created_at: string; }
@@ -80,7 +82,9 @@ export default function SupportPage() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <ToolsSidebar />
+      <div className="lg:pl-60 min-h-screen flex flex-col">
       <DashboardHeader title={t('sup.title')} />
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col flex-1 overflow-hidden" style={{ minHeight: '70vh' }}>
@@ -130,6 +134,8 @@ export default function SupportPage() {
           </div>
         </div>
       </main>
+      </div>
+      <MobileToolsNav />
     </div>
   );
 }
