@@ -1,6 +1,6 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
-import { Scale, Printer, Plus, X, Info } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Scale, Printer, Plus, X, Info, Upload, Loader2, FileSpreadsheet } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
 import MobileToolsNav from '../components/MobileToolsNav';
@@ -9,18 +9,42 @@ import { useI18n } from '@/lib/i18n';
 
 interface Row { date: string; doc: string; debit: number; credit: number; }
 
+// Сокращение длинных организационно-правовых форм
+const shortName = (s: string) => (s || '—')
+  .replace(/товарищество с ограниченной ответственностью/gi, 'ТОО')
+  .replace(/индивидуальный предприниматель/gi, 'ИП')
+  .replace(/некоммерческое акционерное общество/gi, 'НАО')
+  .replace(/акционерное общество/gi, 'АО')
+  .replace(/государственное учреждение/gi, 'ГУ')
+  .replace(/общественное объединение/gi, 'ОО')
+  .replace(/производственный кооператив/gi, 'ПК')
+  .replace(/крестьянское( \(фермерское\))? хозяйство/gi, 'КХ')
+  .replace(/\s+/g, ' ').trim();
+
+const norm = (s: string) => (s || '').toLowerCase()
+  .replace(/товарищество с ограниченной ответственностью|индивидуальный предприниматель|акционерное общество|тоо|ип|ао|нао|"|«|»|'/g, '')
+  .replace(/\s+/g, ' ').trim();
+
 export default function ReconciliationActPage() {
   const { t } = useI18n();
   const [companies, setCompanies] = useState<any[]>([]);
   const [counterparties, setCounterparties] = useState<any[]>([]);
   const [companyId, setCompanyId] = useState('');
-  const [cpId, setCpId] = useState('');
+  const [cpKey, setCpKey] = useState(''); // dir:<id> | file:<key>
   const [dateFrom, setDateFrom] = useState(`${new Date().getFullYear()}-01-01`);
   const [dateTo, setDateTo] = useState(new Date().toISOString().slice(0, 10));
-  const [opening, setOpening] = useState(0); // сальдо на начало (+ долг контрагента нам)
+  const [opening, setOpening] = useState(0);
   const [docs, setDocs] = useState<any[]>([]);
   const [payments, setPayments] = useState<{ date: string; amount: number; note: string }[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // Файлы
+  const [bankTxs, setBankTxs] = useState<any[] | null>(null);
+  const [esfRows, setEsfRows] = useState<any[] | null>(null);
+  const [bankLoading, setBankLoading] = useState(false);
+  const [esfLoading, setEsfLoading] = useState(false);
+  const [fileErr, setFileErr] = useState('');
+  const bankRef = useRef<HTMLInputElement>(null);
+  const esfRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -34,35 +58,111 @@ export default function ReconciliationActPage() {
     });
   }, []);
 
+  const processBank = async (file?: File | null) => {
+    if (!file) return;
+    setBankLoading(true); setFileErr('');
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      const res = await fetch('/api/income-910', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.error) setFileErr(data.error);
+      else setBankTxs(data.transactions || []);
+    } catch { setFileErr('Ошибка обработки выписки'); }
+    finally { setBankLoading(false); if (bankRef.current) bankRef.current.value = ''; }
+  };
+
+  const processEsf = async (file?: File | null) => {
+    if (!file) return;
+    setEsfLoading(true); setFileErr('');
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      const res = await fetch('/api/esf-check', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.error) setFileErr(data.error);
+      else setEsfRows(data.rows || []);
+    } catch { setFileErr('Ошибка обработки ЭСФ'); }
+    finally { setEsfLoading(false); if (esfRef.current) esfRef.current.value = ''; }
+  };
+
+  // Контрагенты, найденные в файлах (по БИН, иначе по имени)
+  const fileCps = useMemo(() => {
+    const map: Record<string, { key: string; name: string; bin: string }> = {};
+    (esfRows || []).filter(e => e.included).forEach(e => {
+      const key = e.bin && e.bin.length >= 5 ? e.bin : norm(e.counterparty);
+      if (!key) return;
+      if (!map[key]) map[key] = { key, name: e.counterparty || '', bin: e.bin || '' };
+    });
+    (bankTxs || []).filter(tx => tx.included).forEach(tx => {
+      const key = tx.bin && tx.bin.length >= 5 ? tx.bin : norm(tx.counterparty);
+      if (!key) return;
+      if (!map[key]) map[key] = { key, name: tx.counterparty || '', bin: tx.bin || '' };
+    });
+    return Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
+  }, [esfRows, bankTxs]);
+
+  // Выбранный контрагент (имя + бин + сопоставитель)
+  const selCp = useMemo(() => {
+    if (cpKey.startsWith('dir:')) {
+      const c = counterparties.find(x => x.id === cpKey.slice(4));
+      return c ? { name: c.name, bin: (c.bin || '').replace(/\D/g, ''), id: c.id } : null;
+    }
+    if (cpKey.startsWith('file:')) {
+      const c = fileCps.find(x => x.key === cpKey.slice(5));
+      return c ? { name: c.name, bin: (c.bin || '').replace(/\D/g, ''), id: null } : null;
+    }
+    return null;
+  }, [cpKey, counterparties, fileCps]);
+
+  const matchCp = (name: string, bin: string) => {
+    if (!selCp) return false;
+    const b = (bin || '').replace(/\D/g, '');
+    if (selCp.bin && b) return selCp.bin === b;
+    const n1 = norm(selCp.name), n2 = norm(name);
+    return !!n1 && !!n2 && (n1.includes(n2) || n2.includes(n1));
+  };
+
+  const inPeriod = (d: string) => d >= dateFrom && d <= dateTo;
+
   const buildAct = async () => {
-    if (!companyId || !cpId) return;
-    const { data } = await supabase.from('documents')
-      .select('id, type, number, doc_date, total')
-      .eq('company_id', companyId).eq('counterparty_id', cpId)
-      .eq('type', 'avr')
-      .gte('doc_date', dateFrom).lte('doc_date', dateTo)
-      .order('doc_date');
-    setDocs(data || []);
+    setDocs([]);
+    if (selCp?.id && companyId) {
+      const { data } = await supabase.from('documents')
+        .select('id, type, number, doc_date, total')
+        .eq('company_id', companyId).eq('counterparty_id', selCp.id)
+        .eq('type', 'avr')
+        .gte('doc_date', dateFrom).lte('doc_date', dateTo)
+        .order('doc_date');
+      setDocs(data || []);
+    }
     setLoaded(true);
   };
 
   const rows: Row[] = useMemo(() => {
-    const r: Row[] = [
-      ...docs.map(d => ({ date: d.doc_date, doc: `${t('act.avr')} №${d.number || '—'}`, debit: Number(d.total) || 0, credit: 0 })),
-      ...payments.filter(p => p.amount > 0).map(p => ({ date: p.date, doc: p.note || t('act.payment'), debit: 0, credit: p.amount })),
-    ];
+    const r: Row[] = [];
+    // ДЕБЕТ: ЭСФ приоритетнее АВР (чтобы не задвоить)
+    const esfMatched = (esfRows || []).filter(e => e.included && matchCp(e.counterparty, e.bin) && inPeriod(e.date || e.turnoverDate || ''));
+    if (esfMatched.length > 0) {
+      esfMatched.forEach(e => r.push({ date: e.date || e.turnoverDate, doc: `${t('act.sf')} №${e.number || '—'}`, debit: e.amount, credit: 0 }));
+    } else {
+      docs.forEach(d => r.push({ date: d.doc_date, doc: `${t('act.avr')} №${d.number || '—'}`, debit: Number(d.total) || 0, credit: 0 }));
+    }
+    // КРЕДИТ: оплаты из банка + ручные
+    (bankTxs || []).filter(tx => tx.included && matchCp(tx.counterparty, tx.bin) && inPeriod(tx.date?.slice(0, 10) || '')).forEach(tx => {
+      r.push({ date: tx.date?.slice(0, 10), doc: t('act.payment') + (tx.knp ? ` (КНП ${tx.knp})` : ''), debit: 0, credit: tx.amount });
+    });
+    payments.filter(p => p.amount > 0).forEach(p => r.push({ date: p.date, doc: p.note || t('act.payment'), debit: 0, credit: p.amount }));
     return r.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  }, [docs, payments, t]);
+  }, [docs, payments, esfRows, bankTxs, selCp, dateFrom, dateTo, t]);
 
   const totals = useMemo(() => {
     const debit = rows.reduce((s, r) => s + r.debit, 0);
     const credit = rows.reduce((s, r) => s + r.credit, 0);
-    const closing = opening + debit - credit;
-    return { debit, credit, closing };
+    return { debit, credit, closing: opening + debit - credit };
   }, [rows, opening]);
 
   const company = companies.find(c => c.id === companyId);
-  const cp = counterparties.find(c => c.id === cpId);
+  const myName = shortName(company?.name || '—');
+  const cpName = shortName(selCp?.name || '—');
   const fmt = (n: number) => n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fmtDate = (s: string) => s ? new Date(s).toLocaleDateString('ru-RU') : '';
   const inp = 'w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400 bg-white';
@@ -78,6 +178,33 @@ export default function ReconciliationActPage() {
             <p className="text-sm text-gray-500 mt-1">{t('act.subtitle')}</p>
           </div>
 
+          {/* Загрузка файлов */}
+          <div className="grid sm:grid-cols-2 gap-3 mb-4 print:hidden">
+            <button onClick={() => bankRef.current?.click()} disabled={bankLoading}
+              className={`border-2 border-dashed rounded-2xl p-4 text-center transition-colors ${bankTxs ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200 bg-white hover:border-emerald-400'}`}>
+              {bankLoading ? <Loader2 className="w-6 h-6 text-emerald-600 animate-spin mx-auto" /> : (
+                <>
+                  <Upload className="w-6 h-6 text-emerald-500 mx-auto mb-1" />
+                  <p className="text-sm font-semibold text-gray-800">{t('act.uploadBank')}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{bankTxs ? `✓ ${bankTxs.filter((x: any) => x.included).length} ${t('act.bankOps')}` : 'Excel / CSV'}</p>
+                </>
+              )}
+            </button>
+            <button onClick={() => esfRef.current?.click()} disabled={esfLoading}
+              className={`border-2 border-dashed rounded-2xl p-4 text-center transition-colors ${esfRows ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 bg-white hover:border-indigo-400'}`}>
+              {esfLoading ? <Loader2 className="w-6 h-6 text-indigo-600 animate-spin mx-auto" /> : (
+                <>
+                  <FileSpreadsheet className="w-6 h-6 text-indigo-500 mx-auto mb-1" />
+                  <p className="text-sm font-semibold text-gray-800">{t('act.uploadEsf')}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{esfRows ? `✓ ${esfRows.filter((x: any) => x.included).length} ${t('act.esfDocs')}` : 'Excel'}</p>
+                </>
+              )}
+            </button>
+            <input ref={bankRef} type="file" accept=".xlsx,.xls,.csv" onChange={e => processBank(e.target.files?.[0])} className="hidden" />
+            <input ref={esfRef} type="file" accept=".xlsx,.xls,.csv" onChange={e => processEsf(e.target.files?.[0])} className="hidden" />
+          </div>
+          {fileErr && <p className="text-sm text-red-500 mb-3 print:hidden">{fileErr}</p>}
+
           {/* Параметры */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4 space-y-4 print:hidden">
             <div className="grid sm:grid-cols-2 gap-3">
@@ -85,14 +212,23 @@ export default function ReconciliationActPage() {
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('act.myCompany')}</label>
                 <select value={companyId} onChange={e => setCompanyId(e.target.value)} className={inp}>
                   <option value="">—</option>
-                  {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {companies.map(c => <option key={c.id} value={c.id}>{shortName(c.name)}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('act.counterparty')}</label>
-                <select value={cpId} onChange={e => setCpId(e.target.value)} className={inp}>
+                <select value={cpKey} onChange={e => setCpKey(e.target.value)} className={inp}>
                   <option value="">—</option>
-                  {counterparties.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {fileCps.length > 0 && (
+                    <optgroup label={t('act.fromFiles')}>
+                      {fileCps.map(c => <option key={c.key} value={'file:' + c.key}>{shortName(c.name)}{c.bin ? ` (${c.bin})` : ''}</option>)}
+                    </optgroup>
+                  )}
+                  {counterparties.length > 0 && (
+                    <optgroup label={t('act.fromDir')}>
+                      {counterparties.map(c => <option key={c.id} value={'dir:' + c.id}>{shortName(c.name)}</option>)}
+                    </optgroup>
+                  )}
                 </select>
               </div>
             </div>
@@ -110,7 +246,7 @@ export default function ReconciliationActPage() {
                 <input type="number" value={opening} onChange={e => setOpening(Number(e.target.value) || 0)} className={inp} />
               </div>
             </div>
-            <button onClick={buildAct} disabled={!companyId || !cpId}
+            <button onClick={buildAct} disabled={!cpKey}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl text-sm font-semibold">
               {t('act.build')}
             </button>
@@ -136,10 +272,10 @@ export default function ReconciliationActPage() {
                 ))}
               </div>
 
-              {/* Сам акт (печатаемый) */}
+              {/* Сам акт */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-4 print:border-0 print:shadow-none print:rounded-none" id="act-print">
                 <h2 className="text-center font-bold text-gray-900 mb-1">{t('act.docTitle')}</h2>
-                <p className="text-center text-sm text-gray-600 mb-4">{t('act.between')} {company?.name || '—'} {t('act.and')} {cp?.name || '—'}<br />
+                <p className="text-center text-sm text-gray-600 mb-4">{t('act.between')} {myName} {t('act.and')} {cpName}<br />
                   {t('act.forPeriod')} {fmtDate(dateFrom)} — {fmtDate(dateTo)}</p>
 
                 <table className="w-full text-sm border border-gray-300 mb-4">
@@ -181,17 +317,17 @@ export default function ReconciliationActPage() {
                 <p className="text-sm text-gray-700 mb-6">
                   {totals.closing === 0 ? t('act.balanced')
                     : totals.closing > 0
-                      ? `${t('act.debtOf')} ${cp?.name || '—'} ${t('act.inFavor')} ${company?.name || '—'}: ${fmt(totals.closing)} ₸`
-                      : `${t('act.debtOf')} ${company?.name || '—'} ${t('act.inFavor')} ${cp?.name || '—'}: ${fmt(-totals.closing)} ₸`}
+                      ? `${t('act.debtOf')} ${cpName} ${t('act.inFavor')} ${myName}: ${fmt(totals.closing)} ₸`
+                      : `${t('act.debtOf')} ${myName} ${t('act.inFavor')} ${cpName}: ${fmt(-totals.closing)} ₸`}
                 </p>
 
                 <div className="grid grid-cols-2 gap-8 text-sm text-gray-700">
                   <div>
-                    <p className="font-semibold mb-8">{company?.name || '—'}</p>
+                    <p className="font-semibold mb-8">{myName}</p>
                     <p className="border-t border-gray-400 pt-1 text-xs text-gray-500">{t('act.sign')}</p>
                   </div>
                   <div>
-                    <p className="font-semibold mb-8">{cp?.name || '—'}</p>
+                    <p className="font-semibold mb-8">{cpName}</p>
                     <p className="border-t border-gray-400 pt-1 text-xs text-gray-500">{t('act.sign')}</p>
                   </div>
                 </div>
