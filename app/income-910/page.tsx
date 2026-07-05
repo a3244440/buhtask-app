@@ -20,6 +20,7 @@ export default function Income910Page() {
   const [copied, setCopied] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const addFileRef = useRef<HTMLInputElement>(null);
   const [dashHref, setDashHref] = useState('/dashboard/client');
   // ЭСФ
   const [esfRows, setEsfRows] = useState<any[] | null>(null);
@@ -37,6 +38,7 @@ export default function Income910Page() {
   // Имя файла и история проверок
   const [fileName, setFileName] = useState('');
   const [company, setCompany] = useState('');
+  const [bankFiles, setBankFiles] = useState<{ name: string; count: number; sum: number }[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [restored, setRestored] = useState(false);
 
@@ -48,7 +50,7 @@ export default function Income910Page() {
         const p = JSON.parse(cur);
         if (p.txs) setTxs(p.txs);
         if (p.esfRows) setEsfRows(p.esfRows);
-        if (p.fileName) setFileName(p.fileName); if (p.company) setCompany(p.company);
+        if (p.fileName) setFileName(p.fileName); if (p.company) setCompany(p.company); if (p.bankFiles) setBankFiles(p.bankFiles);
       }
     } catch {}
     setRestored(true);
@@ -70,10 +72,10 @@ export default function Income910Page() {
   useEffect(() => {
     if (!restored) return;
     try {
-      if (txs) localStorage.setItem('inc910_current', JSON.stringify({ txs, esfRows, fileName, company }));
+      if (txs) localStorage.setItem('inc910_current', JSON.stringify({ txs, esfRows, fileName, company, bankFiles }));
       else localStorage.removeItem('inc910_current');
     } catch {}
-  }, [txs, esfRows, fileName, company, restored]);
+  }, [txs, esfRows, fileName, company, bankFiles, restored]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -96,14 +98,14 @@ export default function Income910Page() {
 
   const processFile = async (file: File | undefined | null) => {
     if (!file) return;
-    // Проверка лимита проверок
-    if (remaining <= 0) { setShowPaywall(true); return; }
+    // Лимит проверок — только для первой выписки в сессии
+    if (!txs && remaining <= 0) { setShowPaywall(true); return; }
     const name = file.name.toLowerCase();
     if (!name.endsWith('.xlsx') && !name.endsWith('.xls') && !name.endsWith('.csv')) {
       setError(t('inc910.uploadHint'));
       return;
     }
-    setLoading(true); setError(''); setTxs(null);
+    setLoading(true); setError('');
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -112,20 +114,24 @@ export default function Income910Page() {
       if (data.error) { setError(data.error); }
       else if (!data.transactions || data.transactions.length === 0) { setError(t('inc910.noData')); }
       else {
-        setTxs(data.transactions);
-        setFileName(file.name);
-        if (data.owner) setCompany(data.owner);
-        // Считаем итог по этой выписке
-        const inc = data.transactions.filter((tx: any) => tx.included).reduce((s: number, tx: any) => s + tx.amount, 0);
-        const cnt = data.transactions.filter((tx: any) => tx.included).length;
-        // Проверка на дубликат: та же компания + доход + число операций уже есть в истории
-        const dup = history.some(h => h.company === (data.owner || '—') && Math.round(h.incomeTotal) === Math.round(inc) && h.count === cnt);
-        setIsDuplicate(dup);
-        if (!dup) {
-          // Засчитываем проверку только если это НЕ дубликат
-          const newUsed = used + 1;
-          setUsed(newUsed);
-          if (userId) supabase.from('profiles').update({ income910_used: newUsed }).eq('id', userId).then(() => {});
+        const newTxs = (data.transactions as Tx[]).map(tx => ({ ...tx, _src: file.name } as any));
+        const inc = newTxs.filter(tx => tx.included).reduce((s, tx) => s + tx.amount, 0);
+        const cnt = newTxs.filter(tx => tx.included).length;
+        const isFirst = !txs;
+        // Добавляем операции к уже загруженным (несколько выписок разных банков)
+        setTxs(prev => [...(prev || []), ...newTxs]);
+        setBankFiles(prev => [...prev, { name: file.name, count: cnt, sum: inc }]);
+        if (isFirst) {
+          setFileName(file.name);
+          if (data.owner) setCompany(data.owner);
+          // Дубликат и лимит проверяем по ПЕРВОЙ выписке
+          const dup = history.some(h => h.company === (data.owner || '—') && Math.round(h.incomeTotal) === Math.round(inc) && h.count === cnt);
+          setIsDuplicate(dup);
+          if (!dup) {
+            const newUsed = used + 1;
+            setUsed(newUsed);
+            if (userId) supabase.from('profiles').update({ income910_used: newUsed }).eq('id', userId).then(() => {});
+          }
         }
       }
     } catch {
@@ -134,6 +140,17 @@ export default function Income910Page() {
       setLoading(false);
       if (fileRef.current) fileRef.current.value = '';
     }
+  };
+
+  // Удалить одну выписку из набора
+  const removeBankFile = (idx: number) => {
+    const target = bankFiles[idx];
+    if (!target) return;
+    setBankFiles(prev => prev.filter((_, i) => i !== idx));
+    setTxs(prev => {
+      const rest = (prev || []).filter((tx: any) => tx._src !== target.name);
+      return rest.length ? rest : null;
+    });
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => processFile(e.target.files?.[0]);
@@ -200,7 +217,7 @@ export default function Income910Page() {
         setHistory(prev => [{ id: Date.now(), date: new Date().toISOString(), company, fileName, incomeTotal: Math.round(incomeTotal), excludedTotal: Math.round(excludedTotal), count: includedCount, esfTotal: esfRows ? Math.round(esfTotal) : null, esfDiff: esfRows ? Math.round(esfDiff) : null, isDuplicate }, ...prev]);
       }
     }
-    setTxs(null); setEsfRows(null); setError(''); setEsfError(''); setFileName(''); setCompany(''); setIsDuplicate(false);
+    setTxs(null); setEsfRows(null); setError(''); setEsfError(''); setFileName(''); setCompany(''); setIsDuplicate(false); setBankFiles([]);
     try { localStorage.removeItem('inc910_current'); } catch {}
   };
 
@@ -423,6 +440,29 @@ export default function Income910Page() {
               {/* ===== ЛЕВАЯ КОЛОНКА: БАНК ===== */}
               <div>
                 <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-emerald-600" /> {t('inc910.byBank')}</p>
+
+                {/* Список загруженных выписок (несколько банков) */}
+                {bankFiles.length > 0 && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 mb-3">
+                    <p className="text-xs font-semibold text-gray-500 mb-2">{t('inc910.statements')} ({bankFiles.length})</p>
+                    <div className="space-y-1.5">
+                      {bankFiles.map((bf, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <FileSpreadsheet className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                          <span className="flex-1 min-w-0 truncate text-gray-700" title={bf.name}>{bf.name}</span>
+                          <span className="text-xs text-gray-400 flex-shrink-0">{bf.count} · {Math.round(bf.sum).toLocaleString('ru-RU')} ₸</span>
+                          <button onClick={() => removeBankFile(i)} className="text-gray-300 hover:text-red-500 flex-shrink-0"><X className="w-4 h-4" /></button>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={() => addFileRef.current?.click()} disabled={loading}
+                      className="w-full mt-2 border border-dashed border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-xl py-2 text-xs font-semibold flex items-center justify-center gap-1.5">
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Upload className="w-4 h-4" /> {t('inc910.addStatement')}</>}
+                    </button>
+                    <input ref={addFileRef} type="file" accept=".xlsx,.xls,.csv" onChange={e => { processFile(e.target.files?.[0]); if (addFileRef.current) addFileRef.current.value = ''; }} className="hidden" />
+                  </div>
+                )}
+
                 {/* Итоги */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-200 rounded-2xl p-4">

@@ -105,6 +105,8 @@ const translations: Record<string, Record<Lang, string>> = {
   'inc910.duplicateNote': { ru: 'Эта выписка уже проверялась — не засчитана как новая проверка', kz: 'Бұл үзінді бұрын тексерілген — жаңа тексеру ретінде есептелмеді', en: 'This statement was already checked — not counted as a new check' },
   'inc910.esfIssued': { ru: 'Выписан', kz: 'Жазылған', en: 'Issued' },
   'inc910.esfTurnover': { ru: 'Оборот', kz: 'Айналым', en: 'Turnover' },
+  'inc910.statements': { ru: 'Загруженные выписки', kz: 'Жүктелген үзінділер', en: 'Uploaded statements' },
+  'inc910.addStatement': { ru: 'Добавить ещё выписку', kz: 'Тағы үзінді қосу', en: 'Add another statement' },
   'inc910.taxTitle': { ru: 'Налог к уплате (упрощёнка 910)', kz: 'Төленетін салық (910)', en: 'Tax to pay (simplified 910)' },
   'inc910.taxBase': { ru: 'Доход (база)', kz: 'Кіріс (база)', en: 'Income (base)' },
   'inc910.taxRate': { ru: 'Ставка', kz: 'Мөлшерлеме', en: 'Rate' },
