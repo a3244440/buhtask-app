@@ -38,7 +38,7 @@ export default function Income910Page() {
   // Имя файла и история проверок
   const [fileName, setFileName] = useState('');
   const [company, setCompany] = useState('');
-  const [bankFiles, setBankFiles] = useState<{ name: string; count: number; sum: number }[]>([]);
+  const [bankFiles, setBankFiles] = useState<{ id: string; name: string; count: number; sum: number }[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [restored, setRestored] = useState(false);
 
@@ -114,13 +114,14 @@ export default function Income910Page() {
       if (data.error) { setError(data.error); }
       else if (!data.transactions || data.transactions.length === 0) { setError(t('inc910.noData')); }
       else {
-        const newTxs = (data.transactions as Tx[]).map(tx => ({ ...tx, _src: file.name } as any));
+        const srcId = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        const newTxs = (data.transactions as Tx[]).map(tx => ({ ...tx, _src: srcId } as any));
         const inc = newTxs.filter(tx => tx.included).reduce((s, tx) => s + tx.amount, 0);
         const cnt = newTxs.filter(tx => tx.included).length;
         const isFirst = !txs;
         // Добавляем операции к уже загруженным (несколько выписок разных банков)
         setTxs(prev => [...(prev || []), ...newTxs]);
-        setBankFiles(prev => [...prev, { name: file.name, count: cnt, sum: inc }]);
+        setBankFiles(prev => [...prev, { id: srcId, name: file.name, count: cnt, sum: inc }]);
         if (isFirst) {
           setFileName(file.name);
           if (data.owner) setCompany(data.owner);
@@ -146,9 +147,10 @@ export default function Income910Page() {
   const removeBankFile = (idx: number) => {
     const target = bankFiles[idx];
     if (!target) return;
+    const key = (target as any).id || target.name; // старые сессии без id — по имени
     setBankFiles(prev => prev.filter((_, i) => i !== idx));
     setTxs(prev => {
-      const rest = (prev || []).filter((tx: any) => tx._src !== target.name);
+      const rest = (prev || []).filter((tx: any) => tx._src !== key);
       return rest.length ? rest : null;
     });
   };
