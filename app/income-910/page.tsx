@@ -190,8 +190,43 @@ export default function Income910Page() {
   const esfExcluded = esfRows ? esfRows.filter(e => !e.included).reduce((s, e) => s + e.amount, 0) : 0;
   const esfDiff = incomeTotal - esfTotal; // банк минус ЭСФ
 
-  // База налога: если загружен ЭСФ — считаем по ЭСФ, иначе по банку
-  const taxBase = esfRows ? esfTotal : incomeTotal;
+  // ТОЧНЫЙ ДОХОД = вся сумма ЭСФ (начислено по отгрузке) + банковские поступления
+  // от контрагентов, по которым ЭСФ НЕ выписывался (эквайринг, розница, физлица и т.п.)
+  const precise = (() => {
+    if (!esfRows || !txs) return null;
+    const normP = (s: string) => (s || '').toLowerCase()
+      .replace(/тоо|тов|ип|ао|нао|товарищество с ограниченной ответственностью|индивидуальный предприниматель|«|»|"|'/g, '')
+      .replace(/\s+/g, ' ').trim();
+    // Ключи всех контрагентов из ЭСФ (БИН + нормализованное имя)
+    const esfBins = new Set<string>();
+    const esfNames: string[] = [];
+    esfRows.filter(e => e.included).forEach(e => {
+      const b = (e.bin || '').replace(/\D/g, '');
+      if (b.length >= 5) esfBins.add(b);
+      const n = normP(e.counterparty);
+      if (n) esfNames.push(n);
+    });
+    const hasEsf = (tx: any) => {
+      const b = (tx.bin || '').replace(/\D/g, '');
+      if (b.length >= 5 && esfBins.has(b)) return true;
+      const n = normP(tx.counterparty);
+      if (!n) return false;
+      return esfNames.some(en => en.includes(n) || n.includes(en));
+    };
+    // Поступления без ЭСФ, сгруппированные по контрагенту
+    const map: Record<string, { name: string; sum: number; count: number }> = {};
+    txs.filter(tx => tx.included && !hasEsf(tx)).forEach((tx: any) => {
+      const key = ((tx.bin || '').replace(/\D/g, '')) || normP(tx.counterparty) || '—';
+      if (!map[key]) map[key] = { name: tx.counterparty || '—', sum: 0, count: 0 };
+      map[key].sum += tx.amount; map[key].count += 1;
+    });
+    const noEsfList = Object.values(map).sort((a, b) => b.sum - a.sum);
+    const noEsfSum = noEsfList.reduce((s, x) => s + x.sum, 0);
+    return { noEsfList, noEsfSum, total: esfTotal + noEsfSum };
+  })();
+
+  // База налога: ЭСФ + поступления без ЭСФ (точный доход); без ЭСФ — по банку
+  const taxBase = precise ? precise.total : (esfRows ? esfTotal : incomeTotal);
   const taxAmount = Math.round(taxBase * (taxRate / 100));
 
   // Сохранить текущую проверку в историю и начать новую
@@ -490,7 +525,7 @@ export default function Income910Page() {
                     <h3 className="font-semibold text-sm">{t('inc910.taxTitle')}</h3>
                   </div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-blue-100">{t('inc910.taxBase')} {esfRows ? '(ЭСФ)' : '(банк)'}</span>
+                    <span className="text-sm text-blue-100">{t('inc910.taxBase')} {precise ? '(ЭСФ + без ЭСФ)' : esfRows ? '(ЭСФ)' : '(банк)'}</span>
                     <span className="text-sm font-semibold">{Math.round(taxBase).toLocaleString('ru-RU')} ₸</span>
                   </div>
                   <div className="flex items-center justify-between mb-3">
@@ -625,6 +660,39 @@ export default function Income910Page() {
                       </div>
                       {esfExcluded > 0 && (
                         <p className="text-xs text-gray-400 mb-3">{t('inc910.esfExcludedNote')}: {Math.round(esfExcluded).toLocaleString('ru-RU')} ₸</p>
+                      )}
+
+                      {/* ТОЧНЫЙ ДОХОД: ЭСФ + поступления без ЭСФ */}
+                      {precise && (
+                        <div className="border-2 border-emerald-300 bg-emerald-50/50 rounded-xl p-4 mb-3">
+                          <p className="text-sm font-bold text-gray-900 mb-2">🎯 {t('inc910.preciseTitle')}</p>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="text-gray-600">{t('inc910.preciseEsf')}</span>
+                            <span className="font-semibold text-indigo-600">{Math.round(esfTotal).toLocaleString('ru-RU')} ₸</span>
+                          </div>
+                          <div className="flex justify-between text-sm mb-2">
+                            <span className="text-gray-600">{t('inc910.preciseNoEsf')}</span>
+                            <span className="font-semibold text-emerald-600">+{Math.round(precise.noEsfSum).toLocaleString('ru-RU')} ₸</span>
+                          </div>
+                          <div className="flex justify-between items-center border-t border-emerald-200 pt-2">
+                            <span className="text-sm font-bold text-gray-900">{t('inc910.preciseTotal')}</span>
+                            <span className="text-xl font-extrabold text-emerald-700">{Math.round(precise.total).toLocaleString('ru-RU')} ₸</span>
+                          </div>
+
+                          {/* Расшифровка: по каким контрагентам нет ЭСФ */}
+                          {precise.noEsfList.length > 0 && (
+                            <div className="mt-3 pt-2 border-t border-emerald-200">
+                              <p className="text-xs font-semibold text-gray-600 mb-1.5">{t('inc910.noEsfListTitle')}:</p>
+                              {precise.noEsfList.map((c, i) => (
+                                <div key={i} className="flex items-center justify-between text-xs py-0.5">
+                                  <span className="text-gray-600 truncate pr-2">{shortName(c.name)} <span className="text-gray-400">({c.count})</span></span>
+                                  <span className="font-semibold text-emerald-700 whitespace-nowrap">+{Math.round(c.sum).toLocaleString('ru-RU')} ₸</span>
+                                </div>
+                              ))}
+                              <p className="text-[11px] text-gray-400 mt-1.5">{t('inc910.noEsfHint')}</p>
+                            </div>
+                          )}
+                        </div>
                       )}
 
                       {/* Сверка по компаниям (банк ↔ ЭСФ) */}
