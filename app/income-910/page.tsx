@@ -1,4 +1,5 @@
 'use client';
+import { logToolUsage } from '@/lib/logTool';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, Loader2, Check, X, Calculator, Copy, FileSpreadsheet, ArrowLeft, AlertTriangle, TrendingUp, Home, User } from 'lucide-react';
@@ -11,6 +12,7 @@ import { useI18n } from '@/lib/i18n';
 interface Tx { date: string; amount: number; description: string; counterparty?: string; bin?: string; purpose?: string; included: boolean; reason?: string; knp?: string; }
 
 export default function Income910Page() {
+  useEffect(() => { logToolUsage('Доход 910'); }, []);
   const { t } = useI18n();
   const router = useRouter();
   const [authChecking, setAuthChecking] = useState(true);

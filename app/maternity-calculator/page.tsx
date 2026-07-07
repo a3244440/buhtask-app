@@ -1,5 +1,6 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { logToolUsage } from '@/lib/logTool';
+import { useState, useMemo, useEffect } from 'react';
 import { Baby, Info } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
@@ -22,6 +23,7 @@ const LEAVE_OPTIONS = [
 const CARE_FIXED_MRP = [5.76, 6.81, 7.85, 8.90];
 
 export default function MaternityCalculatorPage() {
+  useEffect(() => { logToolUsage('Декретный калькулятор'); }, []);
   const { t } = useI18n();
   const [working, setWorking] = useState(true);
   const [income12, setIncome12] = useState(300000);  // среднемесячный доход за 12 мес

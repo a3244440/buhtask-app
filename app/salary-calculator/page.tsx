@@ -1,5 +1,6 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { logToolUsage } from '@/lib/logTool';
+import { useState, useMemo, useEffect } from 'react';
 import { Calculator, Info, ArrowRightLeft } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
@@ -63,6 +64,7 @@ function calcFromNet(net: number, opts: any) {
 }
 
 export default function SalaryCalculatorPage() {
+  useEffect(() => { logToolUsage('Калькулятор зарплаты'); }, []);
   const { t } = useI18n();
   const [mode, setMode] = useState<'gross' | 'net'>('gross');
   const [showHint, setShowHint] = useState(false);

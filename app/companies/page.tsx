@@ -1,4 +1,5 @@
 'use client';
+import { logToolUsage } from '@/lib/logTool';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -29,6 +30,7 @@ const TAX_REGIMES = [
 const BANKS = KZ_BANKS.map(b => b.name).concat('Другой');
 
 export default function CompaniesPage() {
+  useEffect(() => { logToolUsage('Мои компании'); }, []);
   const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(true);

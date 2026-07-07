@@ -1,4 +1,5 @@
 'use client';
+import { logToolUsage } from '@/lib/logTool';
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -20,6 +21,7 @@ const EXPENSE_CATS = ['Зарплата', 'Налоги', 'Аренда', 'За�
 const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
 export default function FinancePage() {
+  useEffect(() => { logToolUsage('Финансовая аналитика'); }, []);
   const { t } = useI18n();
   const router = useRouter();
   const CAT_KEY: Record<string, string> = {

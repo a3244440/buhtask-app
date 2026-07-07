@@ -29,6 +29,7 @@ export default function AdminPanel() {
   const [supReply, setSupReply] = useState('');
   const [adminId, setAdminId] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [toolUsage, setToolUsage] = useState<any[]>([]);
   const [allTasks, setAllTasks] = useState<any[]>([]);
   const [allDocs, setAllDocs] = useState<any[]>([]);
   const [companiesByUser, setCompaniesByUser] = useState<Record<string, string[]>>({});
@@ -105,6 +106,11 @@ export default function AdminPanel() {
     // Все задачи
     const { data: tasks } = await supabase.from('tasks').select('id,title,category,status,city,budget,created_at,client_id,company_id').order('created_at', { ascending: false }).limit(500);
     setAllTasks(tasks || []);
+    // Активность инструментов (последние 200 использований)
+    try {
+      const { data: tu } = await supabase.from('tool_usage').select('*').order('created_at', { ascending: false }).limit(200);
+      setToolUsage(tu || []);
+    } catch { setToolUsage([]); }
 
     // Все документы
     const { data: docs } = await supabase.from('documents').select('id,type,number,total,doc_date,owner_id,created_at').order('created_at', { ascending: false }).limit(500);
@@ -442,7 +448,67 @@ export default function AdminPanel() {
         {/* ===== ACTIVITY TAB ===== */}
         {view === 'activity' && (
           <div className="space-y-5">
-            {/* Tasks */}
+            {/* Активность инструментов — по пользователям */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-violet-600" />
+                <h2 className="font-semibold text-gray-900">Инструменты — последняя активность</h2>
+              </div>
+              <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+                {toolUsage.length === 0 ? <p className="py-10 text-center text-gray-400 text-sm">Пока нет активности</p> : (() => {
+                  // группируем по пользователю: последний инструмент + список последних
+                  const byUser: Record<string, any[]> = {};
+                  toolUsage.forEach(r => { (byUser[r.user_id] = byUser[r.user_id] || []).push(r); });
+                  const rows = Object.entries(byUser).map(([uid, list]) => ({ uid, last: list[0], tools: list }));
+                  rows.sort((a, b) => new Date(b.last.created_at).getTime() - new Date(a.last.created_at).getTime());
+                  return rows.map(({ uid, last, tools }) => {
+                    const u = allUsers.find(x => x.id === uid);
+                    const uniqueTools = Array.from(new Set(tools.map(t => t.tool)));
+                    return (
+                      <div key={uid} className="px-6 py-3 hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            {(u?.full_name || u?.email || '?')[0]?.toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{u?.full_name || u?.email || '—'}</p>
+                            <p className="text-xs text-gray-400">последний: <span className="text-violet-600 font-medium">{last.tool}</span></p>
+                          </div>
+                          <p className="text-xs text-gray-400 flex-shrink-0">{new Date(last.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-2 ml-11">
+                          {uniqueTools.slice(0, 8).map((tn, i) => (
+                            <span key={i} className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">{tn}</span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+
+            {/* Лента использования (все подряд) */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-blue-600" />
+                <h2 className="font-semibold text-gray-900">Лента открытий инструментов</h2>
+                <span className="text-xs text-gray-400">({toolUsage.length})</span>
+              </div>
+              <div className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
+                {toolUsage.slice(0, 60).map((r, i) => {
+                  const u = allUsers.find(x => x.id === r.user_id);
+                  return (
+                    <div key={i} className="px-6 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-sm">
+                      <span className="text-[10px] px-2 py-0.5 bg-violet-50 text-violet-600 rounded-full font-medium flex-shrink-0">{r.tool}</span>
+                      <span className="flex-1 min-w-0 truncate text-gray-600">{u?.full_name || u?.email || '—'}</span>
+                      <span className="text-xs text-gray-400 flex-shrink-0">{new Date(r.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-blue-600" />

@@ -1,5 +1,6 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { logToolUsage } from '@/lib/logTool';
+import { useState, useMemo, useEffect } from 'react';
 import { AlertTriangle, Info } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
@@ -10,6 +11,7 @@ import { useI18n } from '@/lib/i18n';
 // Базовая ставка НБ РК: 18.0% (редактируемая — может меняться)
 
 export default function PenaltyCalculatorPage() {
+  useEffect(() => { logToolUsage('Пеня по налогам'); }, []);
   const { t } = useI18n();
   const [amount, setAmount] = useState(1000000);
   const [baseRate, setBaseRate] = useState(18);

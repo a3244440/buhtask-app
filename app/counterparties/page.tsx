@@ -1,4 +1,5 @@
 'use client';
+import { logToolUsage } from '@/lib/logTool';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -14,6 +15,7 @@ interface Counterparty {
 }
 
 export default function CounterpartiesPage() {
+  useEffect(() => { logToolUsage('Контрагенты'); }, []);
   const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(true);

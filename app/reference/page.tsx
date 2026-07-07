@@ -1,5 +1,6 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { logToolUsage } from '@/lib/logTool';
+import { useMemo, useState, useEffect } from 'react';
 import { BookOpen, Info } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
@@ -31,6 +32,7 @@ const OFF_2026: Record<string, string> = {
 const toISO = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export default function ReferencePage() {
+  useEffect(() => { logToolUsage('Справочник'); }, []);
   const { t } = useI18n();
   const [tab, setTab] = useState<'indicators' | 'calendar' | 'holidays'>('indicators');
 

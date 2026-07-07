@@ -1,4 +1,5 @@
 'use client';
+import { logToolUsage } from '@/lib/logTool';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Scale, Printer, Plus, X, Info, Upload, Loader2, FileSpreadsheet } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
@@ -26,6 +27,7 @@ const norm = (s: string) => (s || '').toLowerCase()
   .replace(/\s+/g, ' ').trim();
 
 export default function ReconciliationActPage() {
+  useEffect(() => { logToolUsage('Акт сверки'); }, []);
   const { t } = useI18n();
   const [companies, setCompanies] = useState<any[]>([]);
   const [counterparties, setCounterparties] = useState<any[]>([]);
