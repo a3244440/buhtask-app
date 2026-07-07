@@ -31,16 +31,29 @@ export default function AccountantProfilePage() {
   const id = routeParams?.id as string;
   const [loading, setLoading] = useState(true);
   const [acc, setAcc] = useState<AccProfile | null>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
 
   useEffect(() => { load(); }, [id]);
 
   const load = async () => {
     if (!id) return;
-    const { data } = await supabase.from('profiles')
-      .select('*')
-      .eq('id', id).maybeSingle();
-    setAcc(data);
-    setLoading(false);
+    try {
+      const { data } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
+      // specialization может прийти строкой — приведём к массиву
+      if (data && data.specialization && !Array.isArray(data.specialization)) {
+        data.specialization = String(data.specialization).split(',').map((s: string) => s.trim()).filter(Boolean);
+      }
+      setAcc(data);
+      // Отзывы (не ломаем страницу, если таблицы нет)
+      try {
+        const { data: rv } = await supabase.from('reviews').select('*').eq('accountant_id', id).order('created_at', { ascending: false });
+        setReviews(rv || []);
+      } catch { setReviews([]); }
+    } catch (e) {
+      console.error('load accountant error', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;

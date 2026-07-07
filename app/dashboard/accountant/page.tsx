@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench, Baby, AlertTriangle, BookOpen } from 'lucide-react';
+import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench, Baby, AlertTriangle, BookOpen, Shield } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 import { shortCompanyName } from '@/lib/companyName';
 import { useI18n } from '@/lib/i18n';
@@ -59,6 +59,8 @@ function AccountantDashboardInner() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [userId, setUserId] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+  const [profileFilled, setProfileFilled] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const messagesEnd = useRef<HTMLDivElement>(null);
@@ -76,6 +78,10 @@ function AccountantDashboardInner() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
+    // Статус верификации бухгалтера
+    const { data: myProf } = await supabase.from('profiles').select('verification_status, full_name, iin, experience_years').eq('id', user.id).maybeSingle();
+    setIsVerified(myProf?.verification_status === 'verified');
+    setProfileFilled(!!(myProf?.full_name && myProf?.iin));
     const [{ data: openTasks }, { data: convData }, { data: myProposals }] = await Promise.all([
       supabase.from('tasks').select('*').eq('status', 'open').order('created_at', { ascending: false }),
       supabase.from('conversations').select('*').or(`participant1_id.eq.${user.id},participant2_id.eq.${user.id}`).order('updated_at', { ascending: false }),
@@ -331,6 +337,18 @@ function AccountantDashboardInner() {
 
           {tab === 'home' && <PlanBadge />}
           {tab === 'home' && <ReportingBanner />}
+          {tab === 'home' && !isVerified && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 flex items-start gap-3">
+              <Shield className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-800">{t('acc.verifyBannerTitle')}</p>
+                <p className="text-xs text-amber-700 mt-0.5">{profileFilled ? t('acc.verifyBannerPending') : t('acc.verifyBannerFill')}</p>
+                {!profileFilled && (
+                  <button onClick={() => router.push('/profile')} className="mt-2 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg">{t('acc.fillProfile')}</button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* HOME */}
           {(tab === 'home' || tab === 'my_orders') && (
@@ -540,10 +558,17 @@ function AccountantDashboardInner() {
                         {task.deadline && <span className="flex items-center gap-1 text-gray-400"><Clock className="w-3 h-3" />{new Date(task.deadline).toLocaleDateString('ru-RU')}</span>}
                       </div>
                     </div>
-                    <button onClick={e => { e.stopPropagation(); router.push(`/dashboard/accountant/tasks/${task.id}`); }}
-                      className="flex-shrink-0 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors whitespace-nowrap">
-                      {t('acc.respond')}
-                    </button>
+                    {isVerified ? (
+                      <button onClick={e => { e.stopPropagation(); router.push(`/dashboard/accountant/tasks/${task.id}`); }}
+                        className="flex-shrink-0 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors whitespace-nowrap">
+                        {t('acc.respond')}
+                      </button>
+                    ) : (
+                      <button onClick={e => { e.stopPropagation(); router.push('/profile'); }}
+                        className="flex-shrink-0 px-4 py-2 bg-amber-100 text-amber-700 text-xs font-semibold rounded-xl whitespace-nowrap flex items-center gap-1">
+                        <Shield className="w-3.5 h-3.5" /> {profileFilled ? t('acc.pendingVerify') : t('acc.needVerify')}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
