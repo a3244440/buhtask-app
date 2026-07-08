@@ -451,7 +451,7 @@ export default function HomePage() {
           </div>
           <div className="flex gap-5">
             <a href="/#categories" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{t('land.footerTerms')}</a>
-            <a href="/#how-it-works" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{t('land.footerPrivacy')}</a>
+            <a href="/privacy" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{t('land.footerPrivacy')}</a>
             <a href="mailto:info@buhtask.kz" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{t('land.footerContacts')}</a>
           </div>
           </div>

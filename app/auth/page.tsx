@@ -287,6 +287,11 @@ export default function AuthPage() {
                   <button onClick={handleRegister} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
                     {loading ? '...' : t('auth.signupBtn')}
                   </button>
+                  <p className="text-[11px] text-gray-400 text-center leading-relaxed">
+                    {t('auth.consent1')}{' '}
+                    <a href="/privacy" target="_blank" className="text-blue-500 hover:underline">{t('auth.consent2')}</a>
+                    {' '}{t('auth.consent3')}
+                  </p>
 
                   <div className="flex items-center gap-3 my-1">
                     <div className="flex-1 h-px bg-gray-200" />
