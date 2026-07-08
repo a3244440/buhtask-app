@@ -149,7 +149,9 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setSaving(true); setError(''); setSuccess('');
     try {
-      const update: any = { full_name: profile.full_name, phone: profile.phone, city: profile.city, avatar_url: profile.avatar_url, role: profile.role };
+      const update: any = { full_name: profile.full_name, phone: profile.phone, city: profile.city, avatar_url: profile.avatar_url };
+      // Роль админа никогда не перезаписываем через профиль
+      if (profile.role !== 'admin') update.role = profile.role;
       if (profile.role === 'accountant') {
         update.bio = profile.bio;
         update.experience_years = profile.experience_years;
@@ -217,7 +219,7 @@ export default function ProfilePage() {
         {/* Main info */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5 space-y-4">
           <h2 className="font-semibold text-gray-900">Основная информация</h2>
-          <div>
+          <div className={profile.role === 'admin' ? 'hidden' : ''}>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Кто вы на платформе</label>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setProfile(p => ({ ...p, role: 'client' }))}
