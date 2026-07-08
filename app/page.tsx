@@ -419,7 +419,20 @@ export default function HomePage() {
 
       {/* FOOTER */}
       <footer className={`py-10 px-4 sm:px-6 ${D ? 'bg-gray-950 border-t border-gray-800' : 'bg-gray-900'}`}>
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto">
+          {/* SEO-ссылки на услуги */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-8 mb-8 border-b border-gray-800">
+            <a href="/uslugi/najti-buhgaltera" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Найти бухгалтера в Казахстане</a>
+            <a href="/uslugi/sdacha-otchetov" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Сдача налоговой отчётности</a>
+            <a href="/uslugi/otkrytie-ip" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Открыть ИП в Казахстане</a>
+            <a href="/uslugi/zakrytie-ip" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Закрыть ИП</a>
+            <a href="/uslugi/otkrytie-too" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Открыть ТОО</a>
+            <a href="/uslugi/zakrytie-too" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Ликвидация ТОО</a>
+            <a href="/income-910" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Расчёт дохода для формы 910</a>
+            <a href="/tax-calendar" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Налоговый календарь 2026</a>
+            <a href="/salary-calculator" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Калькулятор зарплаты РК</a>
+          </div>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <img src="/images/logo-new.png" alt="BuhTask" className="h-9 w-auto brightness-0 invert" />
           <div className="text-center">
             <p className="text-xs text-gray-400">{t('land.footerRights')}</p>
@@ -431,6 +444,7 @@ export default function HomePage() {
             <a href="/#categories" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{t('land.footerTerms')}</a>
             <a href="/#how-it-works" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{t('land.footerPrivacy')}</a>
             <a href="mailto:info@buhtask.kz" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">{t('land.footerContacts')}</a>
+          </div>
           </div>
         </div>
       </footer>
