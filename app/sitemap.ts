@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { SEO_PAGES } from '@/lib/seoPages';
+import { ALL_SEO_PAGES as SEO_PAGES } from '@/lib/seoPages';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = 'https://buhtask.kz';

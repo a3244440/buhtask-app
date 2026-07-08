@@ -431,6 +431,15 @@ export default function HomePage() {
             <a href="/income-910" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Расчёт дохода для формы 910</a>
             <a href="/tax-calendar" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Налоговый календарь 2026</a>
             <a href="/salary-calculator" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Калькулятор зарплаты РК</a>
+            <a href="/uslugi/buhgalterskie-uslugi" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтерские услуги — цены</a>
+            <a href="/uslugi/vosstanovlenie-ucheta" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Восстановление учёта</a>
+            <a href="/uslugi/nds" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">НДС: постановка и форма 300</a>
+            <a href="/uslugi/zarplata-i-kadry" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Зарплата и кадровый учёт</a>
+            <a href="/uslugi/konsultaciya-buhgaltera" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Консультация бухгалтера</a>
+            <a href="/uslugi/buhgalter-astana" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Астана</a>
+            <a href="/uslugi/buhgalter-almaty" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Алматы</a>
+            <a href="/uslugi/buhgalter-shymkent" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Шымкент</a>
+            <a href="/uslugi" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Все услуги →</a>
           </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <img src="/images/logo-new.png" alt="BuhTask" className="h-9 w-auto brightness-0 invert" />

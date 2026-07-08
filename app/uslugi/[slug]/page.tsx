@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { SEO_PAGES } from '@/lib/seoPages';
+import { ALL_SEO_PAGES as SEO_PAGES } from '@/lib/seoPages';
 
 export function generateStaticParams() {
   return SEO_PAGES.map(p => ({ slug: p.slug }));

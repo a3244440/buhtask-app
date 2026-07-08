@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { SEO_PAGES } from '@/lib/seoPages';
+import { ALL_SEO_PAGES as SEO_PAGES } from '@/lib/seoPages';
 
 export const metadata: Metadata = {
   title: 'Бухгалтерские услуги в Казахстане — сдача отчётов, открытие и закрытие ИП/ТОО',
