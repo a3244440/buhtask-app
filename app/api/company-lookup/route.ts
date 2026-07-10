@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ...cached.data, cached: true });
   }
 
-  const sources = [tryStatGov, tryEgovData, tryGoszakup];
+  const sources = [tryEgovData, tryGoszakup, tryStatGov]; // statgov закрыт БНС за авторизацией (403), оставлен на случай открытия
   for (const src of sources) {
     try {
       const result = await src(bin);
@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
     message: !configured
       ? 'Автозаполнение настраивается. Пока заполните вручную.'
       : isLikelyIndividual
-        ? 'ИП с таким ИИН не найден в бизнес-регистре (возможно, не зарегистрирован как ИП или реестр временно недоступен). Заполните вручную.'
+        ? 'Поиск ИП по ИИН временно недоступен: БНС перенесла публичный реестр в закрытый кабинет пользователя. Заполните данные вручную — мы работаем над собственной базой реестра.'
         : 'Компания не найдена в реестре. Проверьте БИН или заполните вручную.',
   });
 }

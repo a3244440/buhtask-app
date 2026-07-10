@@ -21,39 +21,6 @@ export default function BinCheckPage() {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState('');
-  const [debug, setDebug] = useState('');
-
-  // Прямой запрос из браузера к бизнес-регистру (фолбэк, как делают SPA-сервисы)
-  const directStatGov = async (bin: string): Promise<Result | null> => {
-    const dbg: string[] = [];
-    for (const host of ['https://old.stat.gov.kz', 'https://stat.gov.kz']) {
-      try {
-        const res = await fetch(`${host}/api/juridical/counter/api/?bin=${bin}&lang=ru`, { signal: AbortSignal.timeout(9000) });
-        if (!res.ok) { dbg.push(`${host}: HTTP ${res.status}`); continue; }
-        const data = await res.json();
-        const obj = Array.isArray(data?.obj) ? data.obj[0] : data?.obj;
-        if (!obj) continue;
-        const name = obj.name || obj.fullName || '';
-        const fio = obj.fio || '';
-        if (!name && !fio) continue;
-        const isIp = !!fio && (!name || /индивидуальный предприниматель|^ип\b/i.test(name));
-        return {
-          found: true, bin,
-          source: 'stat.gov.kz (бизнес-регистр)',
-          name: name || `ИП ${fio}`,
-          director: fio || '',
-          address: obj.katoAddress || '',
-          oked: obj.okedName ? `${obj.okedCode ? obj.okedCode + ' — ' : ''}${obj.okedName}` : '',
-          registration_date: (obj.registerDate || obj.dateReg || '').toString().split('T')[0],
-          status: obj.statusName || (isIp ? 'Действующий ИП' : 'Действующее'),
-          krp: obj.krpName || '',
-          type: isIp || /^[0-3]/.test(bin[4]) ? 'ИП' : 'Юридическое лицо',
-        };
-      } catch (e: any) { dbg.push(`${host}: ${e?.message || e?.name || 'fetch failed (возможно CORS)'}`); }
-    }
-    setDebug(dbg.join(' · '));
-    return null;
-  };
 
   const search = async (bin: string) => {
     setLoading(true); setError(''); setResult(null);
@@ -61,15 +28,8 @@ export default function BinCheckPage() {
       const res = await fetch(`/api/company-lookup?bin=${bin}`);
       const data = await res.json();
       if (data.found) { setResult(data); return; }
-      // Фолбэк: браузер напрямую спрашивает реестр (гос-API иногда блокирует сервера)
-      const direct = await directStatGov(bin);
-      if (direct) { setResult(direct); return; }
-      setError(data.error || t('bin.notFound'));
-    } catch {
-      const direct = await directStatGov(bin).catch(() => null);
-      if (direct) setResult(direct);
-      else setError(t('bin.notFound'));
-    }
+      setError(data.message || data.error || t('bin.notFound'));
+    } catch { setError(t('bin.notFound')); }
     finally { setLoading(false); }
   };
 
@@ -119,7 +79,6 @@ export default function BinCheckPage() {
           {error && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
               <p className="text-sm text-amber-700">{error}</p>
-              {debug && <p className="text-[10px] text-gray-400 mt-2 break-all">tech: {debug}</p>}
             </div>
           )}
 
