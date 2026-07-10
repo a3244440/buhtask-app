@@ -304,8 +304,9 @@ export default function AdminPanel() {
             { id: 'users', label: 'Все регистрации', icon: Users },
             { id: 'activity', label: 'Активность', icon: TrendingUp },
             { id: 'support', label: 'Поддержка', icon: Headphones },
+            { id: 'registry', label: 'Реестр БИН', icon: ShieldCheck, external: '/admin/registry' } as any,
           ] as const).map(v => (
-            <button key={v.id} onClick={() => setView(v.id)}
+            <button key={v.id} onClick={() => (v as any).external ? router.push((v as any).external) : setView(v.id as any)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${view === v.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
               <v.icon className="w-4 h-4" /> {v.label}
             </button>

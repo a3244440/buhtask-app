@@ -16,6 +16,36 @@ const browserHeaders = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
 };
 
+// ===== Собственная база бизнес-регистра (импорт официальных выгрузок БНС) =====
+async function tryOwnRegistry(bin: string): Promise<CompanyData | null> {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) return null;
+    const res = await fetch(`${url}/rest/v1/business_register?bin=eq.${bin}&select=*&limit=1`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return null;
+    const arr = await res.json();
+    const o = Array.isArray(arr) ? arr[0] : null;
+    if (!o?.name) return null;
+    const isIp = o.type === 'ИП';
+    return {
+      found: true, bin,
+      source: 'BuhTask · бизнес-регистр БНС',
+      name: isIp && !/^ип\b/i.test(o.name) ? `ИП ${o.name}` : o.name,
+      director: isIp ? o.name.replace(/^ип\s*/i, '') : '',
+      address: o.address || '',
+      oked: o.oked || '',
+      registration_date: o.reg_date || '',
+      status: isIp ? 'Действующий ИП' : 'Действующее',
+      krp: o.krp || '',
+      type: isIp ? 'ИП' : 'Юридическое лицо',
+    } as any;
+  } catch { return null; }
+}
+
 // ===== stat.gov.kz — бизнес-регистр БНС (работает и для БИН юрлиц, и для ИИН ИП) =====
 async function tryStatGov(bin: string): Promise<CompanyData | null> {
   const hosts = ['https://old.stat.gov.kz', 'https://stat.gov.kz'];
@@ -131,7 +161,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ...cached.data, cached: true });
   }
 
-  const sources = [tryEgovData, tryGoszakup, tryStatGov]; // statgov закрыт БНС за авторизацией (403), оставлен на случай открытия
+  const sources = [tryOwnRegistry, tryEgovData, tryGoszakup, tryStatGov]; // statgov закрыт БНС за авторизацией (403), оставлен на случай открытия
   for (const src of sources) {
     try {
       const result = await src(bin);
