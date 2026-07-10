@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Building2, CalendarDays, Calculator, BarChart3, ChevronRight, ArrowLeft, FileText, Users, Baby, AlertTriangle, BookOpen, Scale } from 'lucide-react';
+import { Building2, CalendarDays, Calculator, BarChart3, ChevronRight, ArrowLeft, FileText, Users, Baby, AlertTriangle, BookOpen, Scale, SearchCheck } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import DashboardHeader from '../components/DashboardHeader';
 import MobileToolsNav from '../components/MobileToolsNav';
@@ -34,6 +34,7 @@ export default function ToolsPage() {
     { href: '/maternity-calculator', icon: Baby, label: t('mat.title'), desc: t('mat.toolsDesc'), hide: false, color: 'bg-pink-50 text-pink-600' },
     { href: '/penalty-calculator', icon: AlertTriangle, label: t('pen.title'), desc: t('pen.toolsDesc'), hide: false, color: 'bg-amber-50 text-amber-600' },
     { href: '/reference', icon: BookOpen, label: t('ref.title'), desc: t('ref.toolsDesc'), hide: false, color: 'bg-sky-50 text-sky-600' },
+    { href: '/bin-check', icon: SearchCheck, label: t('bin.title'), desc: t('bin.toolsDesc'), hide: false, color: 'bg-blue-50 text-blue-600' },
     { href: '/finance', icon: BarChart3, label: t('tools.finance'), desc: t('tools.financeDesc'), hide: isAccountant, color: 'bg-amber-50 text-amber-600' },
   ];
 

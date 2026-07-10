@@ -2,7 +2,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Home, Building2, CalendarDays, Calculator, BarChart3, FileText, Users, Baby, AlertTriangle, BookOpen, Briefcase, MessageSquare, Scale } from 'lucide-react';
+import { Home, Building2, CalendarDays, Calculator, BarChart3, FileText, Users, Baby, AlertTriangle, BookOpen, Briefcase, MessageSquare, Scale, SearchCheck } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 export default function ToolsSidebar() {
@@ -33,6 +33,7 @@ export default function ToolsSidebar() {
     { href: '/maternity-calculator', icon: Baby, label: t('mat.title'), hide: false },
     { href: '/penalty-calculator', icon: AlertTriangle, label: t('pen.title'), hide: false },
     { href: '/reference', icon: BookOpen, label: t('ref.title'), hide: false },
+    { href: '/bin-check', icon: SearchCheck, label: t('bin.title'), hide: false },
     { href: '/finance', icon: BarChart3, label: t('tools.finance'), hide: isAccountant },
   ];
 

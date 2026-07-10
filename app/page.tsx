@@ -8,7 +8,7 @@ import {
   Calculator, FileText, Users, Building2, Search, Star,
   ArrowRight, ChevronRight, Briefcase, TrendingUp, Shield,
   Clock, MapPin, Zap, DollarSign, BarChart2, Moon, Sun, Mail,
-  CalendarDays, Baby, AlertTriangle, BookOpen, Scale, BarChart3,
+  CalendarDays, Baby, AlertTriangle, BookOpen, Scale, BarChart3, SearchCheck,
 } from "lucide-react";
 import Reveal from "./components/Reveal";
 
@@ -30,6 +30,7 @@ const TOOLS = [
   { href: '/maternity-calculator', icon: Baby, title: 'mat.title', desc: 'mat.toolsDesc', color: 'bg-pink-100 text-pink-600', badge: true },
   { href: '/penalty-calculator', icon: AlertTriangle, title: 'pen.title', desc: 'pen.toolsDesc', color: 'bg-amber-100 text-amber-600', badge: true },
   { href: '/reference', icon: BookOpen, title: 'ref.title', desc: 'ref.toolsDesc', color: 'bg-sky-100 text-sky-600', badge: true },
+  { href: '/bin-check', icon: SearchCheck, title: 'bin.title', desc: 'bin.toolsDesc', color: 'bg-blue-100 text-blue-600', badge: true },
   { href: '/reconciliation-act', icon: Scale, title: 'act.title', desc: 'act.toolsDesc', color: 'bg-violet-100 text-violet-600', badge: true },
   { href: '/documents', icon: FileText, title: 'tools.documents', desc: 'tools.documentsDesc', color: 'bg-blue-100 text-blue-600', badge: false },
   { href: '/counterparties', icon: Users, title: 'tools.counterparties', desc: 'tools.counterpartiesDesc', color: 'bg-teal-100 text-teal-600', badge: false },

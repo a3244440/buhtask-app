@@ -16,6 +16,35 @@ const browserHeaders = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
 };
 
+// ===== stat.gov.kz — бизнес-регистр БНС (работает и для БИН юрлиц, и для ИИН ИП) =====
+async function tryStatGov(bin: string): Promise<CompanyData | null> {
+  try {
+    const url = `https://stat.gov.kz/api/juridical/counter/api/?bin=${bin}&lang=ru`;
+    const res = await fetch(url, { headers: browserHeaders, signal: AbortSignal.timeout(9000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const obj = Array.isArray(data?.obj) ? data.obj[0] : data?.obj;
+    if (!data?.success || !obj) return null;
+    const name = obj.name || obj.fullName || '';
+    const fio = obj.fio || '';
+    if (!name && !fio) return null;
+    const isIp = !!fio && (!name || /индивидуальный предприниматель|^ип\b/i.test(name));
+    return {
+      found: true,
+      bin,
+      source: 'stat.gov.kz (бизнес-регистр)',
+      name: name || `ИП ${fio}`,
+      director: fio || obj.director || '',
+      address: obj.katoAddress || obj.address || '',
+      oked: obj.okedName ? `${obj.okedCode ? obj.okedCode + ' — ' : ''}${obj.okedName}` : (obj.oked || ''),
+      registration_date: (obj.registerDate || obj.dateReg || '').toString().split('T')[0],
+      status: obj.statusName || (isIp ? 'Действующий ИП' : 'Действующее'),
+      krp: obj.krpName || '',
+      type: isIp ? 'ИП' : 'Юридическое лицо',
+    } as any;
+  } catch { return null; }
+}
+
 // ===== data.egov.kz — официальный портал открытых данных =====
 // Набор Минюста: "Регистрационные данные юридических лиц"
 // API v4 формат: /api/v4/{dataset}/{version}?source={ES query}&apiKey={key}
@@ -96,7 +125,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ...cached.data, cached: true });
   }
 
-  const sources = [tryEgovData, tryGoszakup];
+  const sources = [tryStatGov, tryEgovData, tryGoszakup];
   for (const src of sources) {
     try {
       const result = await src(bin);

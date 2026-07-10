@@ -14,6 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/maternity-calculator`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/penalty-calculator`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/reference`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/bin-check`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/reconciliation-act`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
   ];
   const seoPages: MetadataRoute.Sitemap = SEO_PAGES.map(p => ({
