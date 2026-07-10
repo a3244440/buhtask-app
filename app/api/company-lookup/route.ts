@@ -22,7 +22,7 @@ async function tryStatGov(bin: string): Promise<CompanyData | null> {
   for (const host of hosts) {
   try {
     const url = `${host}/api/juridical/counter/api/?bin=${bin}&lang=ru`;
-    const res = await fetch(url, { headers: browserHeaders, signal: AbortSignal.timeout(9000) });
+    const res = await fetch(url, { headers: { ...browserHeaders, 'Referer': host + '/', 'Origin': host }, signal: AbortSignal.timeout(9000) });
     if (!res.ok) continue;
     const ct = res.headers.get('content-type') || '';
     if (!ct.includes('json')) continue;

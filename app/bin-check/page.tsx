@@ -22,15 +22,51 @@ export default function BinCheckPage() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState('');
 
+  // Прямой запрос из браузера к бизнес-регистру (фолбэк, как делают SPA-сервисы)
+  const directStatGov = async (bin: string): Promise<Result | null> => {
+    for (const host of ['https://old.stat.gov.kz', 'https://stat.gov.kz']) {
+      try {
+        const res = await fetch(`${host}/api/juridical/counter/api/?bin=${bin}&lang=ru`, { signal: AbortSignal.timeout(9000) });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const obj = Array.isArray(data?.obj) ? data.obj[0] : data?.obj;
+        if (!obj) continue;
+        const name = obj.name || obj.fullName || '';
+        const fio = obj.fio || '';
+        if (!name && !fio) continue;
+        const isIp = !!fio && (!name || /индивидуальный предприниматель|^ип\b/i.test(name));
+        return {
+          found: true, bin,
+          source: 'stat.gov.kz (бизнес-регистр)',
+          name: name || `ИП ${fio}`,
+          director: fio || '',
+          address: obj.katoAddress || '',
+          oked: obj.okedName ? `${obj.okedCode ? obj.okedCode + ' — ' : ''}${obj.okedName}` : '',
+          registration_date: (obj.registerDate || obj.dateReg || '').toString().split('T')[0],
+          status: obj.statusName || (isIp ? 'Действующий ИП' : 'Действующее'),
+          krp: obj.krpName || '',
+          type: isIp || /^[0-3]/.test(bin[4]) ? 'ИП' : 'Юридическое лицо',
+        };
+      } catch { /* next host */ }
+    }
+    return null;
+  };
+
   const search = async (bin: string) => {
     setLoading(true); setError(''); setResult(null);
     try {
       const res = await fetch(`/api/company-lookup?bin=${bin}`);
       const data = await res.json();
-      if (data.error) setError(data.error);
-      else if (!data.found) setError(t('bin.notFound'));
-      else setResult(data);
-    } catch { setError(t('bin.notFound')); }
+      if (data.found) { setResult(data); return; }
+      // Фолбэк: браузер напрямую спрашивает реестр (гос-API иногда блокирует сервера)
+      const direct = await directStatGov(bin);
+      if (direct) { setResult(direct); return; }
+      setError(data.error || t('bin.notFound'));
+    } catch {
+      const direct = await directStatGov(bin).catch(() => null);
+      if (direct) setResult(direct);
+      else setError(t('bin.notFound'));
+    }
     finally { setLoading(false); }
   };
 
