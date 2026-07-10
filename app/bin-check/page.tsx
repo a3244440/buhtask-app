@@ -21,13 +21,15 @@ export default function BinCheckPage() {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState('');
+  const [debug, setDebug] = useState('');
 
   // Прямой запрос из браузера к бизнес-регистру (фолбэк, как делают SPA-сервисы)
   const directStatGov = async (bin: string): Promise<Result | null> => {
+    const dbg: string[] = [];
     for (const host of ['https://old.stat.gov.kz', 'https://stat.gov.kz']) {
       try {
         const res = await fetch(`${host}/api/juridical/counter/api/?bin=${bin}&lang=ru`, { signal: AbortSignal.timeout(9000) });
-        if (!res.ok) continue;
+        if (!res.ok) { dbg.push(`${host}: HTTP ${res.status}`); continue; }
         const data = await res.json();
         const obj = Array.isArray(data?.obj) ? data.obj[0] : data?.obj;
         if (!obj) continue;
@@ -47,8 +49,9 @@ export default function BinCheckPage() {
           krp: obj.krpName || '',
           type: isIp || /^[0-3]/.test(bin[4]) ? 'ИП' : 'Юридическое лицо',
         };
-      } catch { /* next host */ }
+      } catch (e: any) { dbg.push(`${host}: ${e?.message || e?.name || 'fetch failed (возможно CORS)'}`); }
     }
+    setDebug(dbg.join(' · '));
     return null;
   };
 
@@ -113,7 +116,12 @@ export default function BinCheckPage() {
             </div>
           </div>
 
-          {error && <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-700 mb-4">{error}</div>}
+          {error && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
+              <p className="text-sm text-amber-700">{error}</p>
+              {debug && <p className="text-[10px] text-gray-400 mt-2 break-all">tech: {debug}</p>}
+            </div>
+          )}
 
           {/* Карточка результата */}
           {result && (
