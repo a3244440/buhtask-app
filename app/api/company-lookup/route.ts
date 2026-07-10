@@ -18,16 +18,20 @@ const browserHeaders = {
 
 // ===== stat.gov.kz — бизнес-регистр БНС (работает и для БИН юрлиц, и для ИИН ИП) =====
 async function tryStatGov(bin: string): Promise<CompanyData | null> {
+  const hosts = ['https://old.stat.gov.kz', 'https://stat.gov.kz'];
+  for (const host of hosts) {
   try {
-    const url = `https://stat.gov.kz/api/juridical/counter/api/?bin=${bin}&lang=ru`;
+    const url = `${host}/api/juridical/counter/api/?bin=${bin}&lang=ru`;
     const res = await fetch(url, { headers: browserHeaders, signal: AbortSignal.timeout(9000) });
-    if (!res.ok) return null;
+    if (!res.ok) continue;
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('json')) continue;
     const data = await res.json();
     const obj = Array.isArray(data?.obj) ? data.obj[0] : data?.obj;
-    if (!data?.success || !obj) return null;
+    if (!obj) continue;
     const name = obj.name || obj.fullName || '';
     const fio = obj.fio || '';
-    if (!name && !fio) return null;
+    if (!name && !fio) continue;
     const isIp = !!fio && (!name || /индивидуальный предприниматель|^ип\b/i.test(name));
     return {
       found: true,
@@ -42,7 +46,9 @@ async function tryStatGov(bin: string): Promise<CompanyData | null> {
       krp: obj.krpName || '',
       type: isIp ? 'ИП' : 'Юридическое лицо',
     } as any;
-  } catch { return null; }
+  } catch { /* next host */ }
+  }
+  return null;
 }
 
 // ===== data.egov.kz — официальный портал открытых данных =====
@@ -149,7 +155,7 @@ export async function GET(req: NextRequest) {
     message: !configured
       ? 'Автозаполнение настраивается. Пока заполните вручную.'
       : isLikelyIndividual
-        ? 'Это ИИН индивидуального предпринимателя. По закону РК данные ИП не публикуются в открытом реестре — заполните вручную.'
-        : 'Компания не найдена в реестре юрлиц. Проверьте БИН или заполните вручную.',
+        ? 'ИП с таким ИИН не найден в бизнес-регистре (возможно, не зарегистрирован как ИП или реестр временно недоступен). Заполните вручную.'
+        : 'Компания не найдена в реестре. Проверьте БИН или заполните вручную.',
   });
 }
