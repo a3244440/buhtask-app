@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { LogOut, User, Settings, ChevronDown, Building2, Check, Plus, Mail, Bell } from 'lucide-react';
 import { getActiveCompany, setActiveCompany } from '@/lib/activeCompany';
 import { shortCompanyName } from '@/lib/companyName';
@@ -16,36 +17,40 @@ export default function DashboardHeader({ title, right }: Props) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [unreadSupport, setUnreadSupport] = useState(0);
-  const [uid, setUid] = useState<string | null>(null);
-  const [email, setEmail] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [subPlan, setSubPlan] = useState<'free' | 'business' | 'pro'>('free');
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [role, setRole] = useState('client');
+  // Профиль (роль, имя, аватар, тариф) берём из общего кэширующего стора —
+  // это устраняет повторный запрос профиля и "моргание" при каждом переходе между инструментами.
+  const profile = useAuthStore(s => s.user);
+  const fetchUser = useAuthStore(s => s.fetchUser);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [activeCompany, setActiveCompanyState] = useState('personal');
   const [companyMenuOpen, setCompanyMenuOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const companyRef = useRef<HTMLDivElement>(null);
 
+  const uid = profile?.id || null;
+  const email = profile?.email || '';
+  const fullName = profile?.full_name || '';
+  const avatarUrl = profile?.avatar_url || '';
+  const role = profile?.role || 'client';
+  const subPlan = activePlan((profile as any)?.subscription_plan, (profile as any)?.subscription_until);
+
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
-      setUid(data.user.id);
-      setEmail(data.user.email || '');
-      const { data: p } = await supabase.from('profiles').select('full_name,avatar_url,role,subscription_plan,subscription_until').eq('id', data.user.id).single();
-      if (p) {
-        setFullName(p.full_name || ''); setAvatarUrl(p.avatar_url || ''); setRole(p.role || 'client');
-        setSubPlan(activePlan(p.subscription_plan, p.subscription_until));
-        if (p.role !== 'accountant') {
-          const { data: comps } = await supabase.from('companies').select('id,name').eq('owner_id', data.user.id);
-          setCompanies((comps as { id: string; name: string }[]) || []);
-        }
-      }
-      // Непрочитанные сообщения поддержки
-      const { data: tk } = await supabase.from('support_tickets').select('unread_user').eq('user_id', data.user.id).maybeSingle();
+    if (!profile) fetchUser();
+  }, [profile, fetchUser]);
+
+  useEffect(() => {
+    if (!uid) return;
+    if (role !== 'accountant') {
+      supabase.from('companies').select('id,name').eq('owner_id', uid).then(({ data: comps }) => {
+        setCompanies((comps as { id: string; name: string }[]) || []);
+      });
+    }
+    supabase.from('support_tickets').select('unread_user').eq('user_id', uid).maybeSingle().then(({ data: tk }) => {
       setUnreadSupport(tk?.unread_user || 0);
     });
+  }, [uid, role]);
+
+  useEffect(() => {
     setActiveCompanyState(getActiveCompany());
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);

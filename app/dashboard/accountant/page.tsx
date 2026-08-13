@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench, Baby, AlertTriangle, BookOpen, Shield, SearchCheck } from 'lucide-react';
+import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench, Baby, AlertTriangle, BookOpen, Shield, SearchCheck, Users, FileText, Scale, BarChart3 } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 import { shortCompanyName } from '@/lib/companyName';
 import { useI18n } from '@/lib/i18n';
@@ -287,6 +287,22 @@ function AccountantDashboardInner() {
           {/* Инструменты */}
           <div className="pt-2 mt-2 border-t border-gray-100">
             <p className="px-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t('tools.title')}</p>
+            <button onClick={() => router.push('/companies')}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <Building2 className="w-4 h-4 flex-shrink-0" /> {t('tools.companies')}
+            </button>
+            <button onClick={() => router.push('/counterparties')}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <Users className="w-4 h-4 flex-shrink-0" /> {t('tools.counterparties')}
+            </button>
+            <button onClick={() => router.push('/documents')}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <FileText className="w-4 h-4 flex-shrink-0" /> {t('tools.documents')}
+            </button>
+            <button onClick={() => router.push('/reconciliation-act')}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <Scale className="w-4 h-4 flex-shrink-0" /> {t('act.title')}
+            </button>
             <button onClick={() => router.push('/tax-calendar')}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <CalendarDays className="w-4 h-4 flex-shrink-0" /> {t('tools.taxCalendar')}
@@ -314,6 +330,10 @@ function AccountantDashboardInner() {
             <button onClick={() => router.push('/bin-check')}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <SearchCheck className="w-4 h-4 flex-shrink-0" /> {t('bin.title')}
+            </button>
+            <button onClick={() => router.push('/finance')}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+              <BarChart3 className="w-4 h-4 flex-shrink-0" /> {t('tools.finance')}
             </button>
           </div>
         

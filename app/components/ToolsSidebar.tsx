@@ -1,7 +1,7 @@
 'use client';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect } from 'react';
+import { useAuthStore } from '@/store/authStore';
 import { Home, Building2, CalendarDays, Calculator, BarChart3, FileText, Users, Baby, AlertTriangle, BookOpen, Briefcase, MessageSquare, Scale, SearchCheck } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
@@ -9,24 +9,25 @@ export default function ToolsSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useI18n();
-  const [role, setRole] = useState('client');
+  // Профиль (и роль) берём из общего стора: он кэшируется в памяти между переходами
+  // между инструментами, поэтому сайдбар не дёргается и не запрашивает роль заново
+  // при каждом переключении страницы.
+  const user = useAuthStore(s => s.user);
+  const fetchUser = useAuthStore(s => s.fetchUser);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
-      const { data: p } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-      if (p) setRole(p.role || 'client');
-    });
-  }, []);
+    if (!user) fetchUser();
+  }, [user, fetchUser]);
 
+  const role = user?.role || 'client';
   const dashHref = role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client';
-  const isAccountant = role === 'accountant';
 
+  // Все инструменты доступны и клиенту, и бухгалтеру — набор разделов одинаковый для обеих ролей.
   const tools = [
-    { href: '/companies', icon: Building2, label: t('tools.companies'), hide: isAccountant },
-    { href: '/counterparties', icon: Users, label: t('tools.counterparties'), hide: isAccountant },
-    { href: '/documents', icon: FileText, label: t('tools.documents'), hide: isAccountant },
-    { href: '/reconciliation-act', icon: Scale, label: t('act.title'), hide: isAccountant },
+    { href: '/companies', icon: Building2, label: t('tools.companies'), hide: false },
+    { href: '/counterparties', icon: Users, label: t('tools.counterparties'), hide: false },
+    { href: '/documents', icon: FileText, label: t('tools.documents'), hide: false },
+    { href: '/reconciliation-act', icon: Scale, label: t('act.title'), hide: false },
     { href: '/tax-calendar', icon: CalendarDays, label: t('tools.taxCalendar'), hide: false },
     { href: '/income-910', icon: Calculator, label: t('inc910.shortTitle'), hide: false },
     { href: '/salary-calculator', icon: Calculator, label: t('tools.salaryCalc'), hide: false },
@@ -34,7 +35,7 @@ export default function ToolsSidebar() {
     { href: '/penalty-calculator', icon: AlertTriangle, label: t('pen.title'), hide: false },
     { href: '/reference', icon: BookOpen, label: t('ref.title'), hide: false },
     { href: '/bin-check', icon: SearchCheck, label: t('bin.title'), hide: false },
-    { href: '/finance', icon: BarChart3, label: t('tools.finance'), hide: isAccountant },
+    { href: '/finance', icon: BarChart3, label: t('tools.finance'), hide: false },
   ];
 
   return (

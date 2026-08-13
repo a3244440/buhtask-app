@@ -537,6 +537,10 @@ const translations: Record<string, Record<Lang, string>> = {
   'nd.selectBuyer': { ru: 'Выберите контрагента (покупателя)', kz: 'Контрагентті (сатып алушыны) таңдаңыз', en: 'Select a counterparty (buyer)' },
   'nd.selectSupplierAlert': { ru: 'Выберите компанию-поставщика', kz: 'Жеткізуші компанияны таңдаңыз', en: 'Select a supplier company' },
   'nd.addItemAlert': { ru: 'Добавьте хотя бы одну позицию', kz: 'Кемінде бір позиция қосыңыз', en: 'Add at least one item' },
+  'nd.editDoc': { ru: 'Редактировать', kz: 'Өңдеу', en: 'Edit' },
+  'nd.editTitle': { ru: 'Редактирование', kz: 'Өңдеу', en: 'Edit' },
+  'nd.saveChanges': { ru: 'Сохранить изменения', kz: 'Өзгерістерді сақтау', en: 'Save changes' },
+  'nd.saved': { ru: 'Сохранено', kz: 'Сақталды', en: 'Saved' },
 
   // === Налоговый календарь ===
   'tax.title': { ru: 'Налоговый календарь', kz: 'Салық күнтізбесі', en: 'Tax Calendar' },

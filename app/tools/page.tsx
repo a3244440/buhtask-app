@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect } from 'react';
+import { useAuthStore } from '@/store/authStore';
 import { Building2, CalendarDays, Calculator, BarChart3, ChevronRight, ArrowLeft, FileText, Users, Baby, AlertTriangle, BookOpen, Scale, SearchCheck } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import DashboardHeader from '../components/DashboardHeader';
@@ -10,32 +10,35 @@ import MobileToolsNav from '../components/MobileToolsNav';
 export default function ToolsPage() {
   const router = useRouter();
   const { t } = useI18n();
-  const [role, setRole] = useState('client');
+  const user = useAuthStore(s => s.user);
+  const loading = useAuthStore(s => s.loading);
+  const fetchUser = useAuthStore(s => s.fetchUser);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) { router.push('/auth'); return; }
-      const { data: p } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-      if (p) setRole(p.role || 'client');
-    });
-  }, []);
+    if (!user) fetchUser();
+  }, [user, fetchUser]);
 
-  const isAccountant = role === 'accountant';
-  const dash = isAccountant ? '/dashboard/accountant' : '/dashboard/client';
+  useEffect(() => {
+    if (!loading && !user) router.push('/auth');
+  }, [loading, user, router]);
 
+  const role = user?.role || 'client';
+  const dash = role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client';
+
+  // Полный набор инструментов доступен и клиентам, и бухгалтерам.
   const tools = [
     { href: '/income-910', icon: Calculator, label: t('inc910.title'), desc: t('inc910.toolsDesc'), hide: false, color: 'bg-blue-600 text-white', highlight: true },
-    { href: '/companies', icon: Building2, label: t('tools.companies'), desc: t('tools.companiesDesc'), hide: isAccountant, color: 'bg-blue-50 text-blue-600' },
-    { href: '/counterparties', icon: Users, label: t('tools.counterparties'), desc: t('tools.counterpartiesDesc'), hide: isAccountant, color: 'bg-indigo-50 text-indigo-600' },
-    { href: '/documents', icon: FileText, label: t('tools.documents'), desc: t('tools.documentsDesc'), hide: isAccountant, color: 'bg-sky-50 text-sky-600' },
-    { href: '/reconciliation-act', icon: Scale, label: t('act.title'), desc: t('act.toolsDesc'), hide: isAccountant, color: 'bg-violet-50 text-violet-600' },
+    { href: '/companies', icon: Building2, label: t('tools.companies'), desc: t('tools.companiesDesc'), hide: false, color: 'bg-blue-50 text-blue-600' },
+    { href: '/counterparties', icon: Users, label: t('tools.counterparties'), desc: t('tools.counterpartiesDesc'), hide: false, color: 'bg-indigo-50 text-indigo-600' },
+    { href: '/documents', icon: FileText, label: t('tools.documents'), desc: t('tools.documentsDesc'), hide: false, color: 'bg-sky-50 text-sky-600' },
+    { href: '/reconciliation-act', icon: Scale, label: t('act.title'), desc: t('act.toolsDesc'), hide: false, color: 'bg-violet-50 text-violet-600' },
     { href: '/tax-calendar', icon: CalendarDays, label: t('tools.taxCalendar'), desc: t('tools.taxCalendarDesc'), hide: false, color: 'bg-violet-50 text-violet-600' },
     { href: '/salary-calculator', icon: Calculator, label: t('tools.salaryCalc'), desc: t('tools.salaryCalcDesc'), hide: false, color: 'bg-emerald-50 text-emerald-600' },
     { href: '/maternity-calculator', icon: Baby, label: t('mat.title'), desc: t('mat.toolsDesc'), hide: false, color: 'bg-pink-50 text-pink-600' },
     { href: '/penalty-calculator', icon: AlertTriangle, label: t('pen.title'), desc: t('pen.toolsDesc'), hide: false, color: 'bg-amber-50 text-amber-600' },
     { href: '/reference', icon: BookOpen, label: t('ref.title'), desc: t('ref.toolsDesc'), hide: false, color: 'bg-sky-50 text-sky-600' },
     { href: '/bin-check', icon: SearchCheck, label: t('bin.title'), desc: t('bin.toolsDesc'), hide: false, color: 'bg-blue-50 text-blue-600' },
-    { href: '/finance', icon: BarChart3, label: t('tools.finance'), desc: t('tools.financeDesc'), hide: isAccountant, color: 'bg-amber-50 text-amber-600' },
+    { href: '/finance', icon: BarChart3, label: t('tools.finance'), desc: t('tools.financeDesc'), hide: false, color: 'bg-amber-50 text-amber-600' },
   ];
 
   return (

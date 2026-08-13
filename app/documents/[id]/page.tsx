@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, FileSpreadsheet, Printer, FileCheck, Receipt, Plus, Link2 } from 'lucide-react';
+import { ArrowLeft, FileSpreadsheet, Printer, FileCheck, Receipt, Plus, Link2, Pencil } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 import ToolsSidebar from '../../components/ToolsSidebar';
 import { amountToWords } from '@/lib/amountToWords';
@@ -70,6 +70,9 @@ export default function DocViewPage() {
               <ArrowLeft className="w-4 h-4" /> К документам
             </button>
             <div className="flex gap-2">
+              <button onClick={() => router.push(`/documents/${docId}/edit`)} className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium">
+                <Pencil className="w-4 h-4" /> {t('nd.editDoc')}
+              </button>
               <button onClick={() => window.print()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium">
                 <Printer className="w-4 h-4" /> Печать / PDF
               </button>
@@ -144,6 +147,8 @@ export default function DocViewPage() {
 // ===== Виды документов в формате РК =====
 function InvoiceView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
   const dateStr = new Date(doc.doc_date).toLocaleDateString('ru-RU');
+  // КБе (код бенефициара): 17 — ТОО/юр.лица-резиденты, 19 — ИП и физлица-резиденты
+  const kbe = company?.company_type === 'IP' ? '19' : '17';
   return (
     <div className="text-[13px] text-gray-900 leading-relaxed">
       {/* Внимание */}
@@ -164,7 +169,7 @@ function InvoiceView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
           </tr>
           <tr>
             <td className="border border-gray-700 px-2 py-1 text-center">{bankAcc?.iban || ''}</td>
-            <td className="border border-gray-700 px-2 py-1 text-center">17</td>
+            <td className="border border-gray-700 px-2 py-1 text-center">{kbe}</td>
           </tr>
           <tr>
             <td className="border border-gray-700 px-2 py-1 font-medium align-top" rowSpan={2}>

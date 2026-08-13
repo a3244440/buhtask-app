@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect } from 'react';
+import { useAuthStore } from '@/store/authStore';
 import { Home, Wrench, Briefcase, MessageSquare } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
@@ -9,16 +9,15 @@ import { useI18n } from '@/lib/i18n';
 export default function MobileToolsNav() {
   const router = useRouter();
   const { t } = useI18n();
-  const [role, setRole] = useState('client');
+  // Роль берём из общего стора (кэшируется между переходами — без повторных запросов и мигания)
+  const user = useAuthStore(s => s.user);
+  const fetchUser = useAuthStore(s => s.fetchUser);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
-      const { data: p } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-      if (p) setRole(p.role || 'client');
-    });
-  }, []);
+    if (!user) fetchUser();
+  }, [user, fetchUser]);
 
+  const role = user?.role || 'client';
   const dash = role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client';
 
   const items = [
