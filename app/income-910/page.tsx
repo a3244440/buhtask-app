@@ -326,50 +326,50 @@ export default function Income910Page() {
   };
 
   if (authChecking) {
-    return <div className="min-h-screen bg-[#F8FAFC] dark:bg-gray-950 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
+    return <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-gray-950 pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
       <ToolsSidebar />
       <div className="lg:pl-60">
         <DashboardHeader title={t('inc910.title')} />
         <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2"><Calculator className="w-5 h-5 text-blue-600" /> {t('inc910.title')}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('inc910.subtitle')}</p>
-          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-700 text-sm font-semibold">
+          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calculator className="w-5 h-5 text-blue-600" /> {t('inc910.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('inc910.subtitle')}</p>
+          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-semibold">
             {t('inc910.checksLeft')}: {remaining} {limit >= 100 ? '/ 100' : ''}
           </div>
         </div>
 
         {/* Баннер дубликата */}
         {txs && isDuplicate && (
-          <div className="mb-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-center gap-2">
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-            <p className="text-sm text-amber-700 dark:text-amber-400">{t('inc910.duplicateNote')}</p>
+            <p className="text-sm text-amber-700">{t('inc910.duplicateNote')}</p>
           </div>
         )}
 
         {/* Кнопка "Загрузить новую выписку" — когда есть результат */}
         {txs && (
-          <button onClick={saveAndNew} className="w-full mb-4 bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+          <button onClick={saveAndNew} className="w-full mb-4 bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
             <Upload className="w-4 h-4" /> {t('inc910.newCheck')}
           </button>
         )}
 
         {/* История проверок */}
         {history.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mb-5">
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-              <FileSpreadsheet className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{t('inc910.history')}</h3>
-              <span className="text-xs text-gray-400 dark:text-gray-500">({history.length})</span>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-5">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-gray-500" />
+              <h3 className="font-semibold text-gray-900 text-sm">{t('inc910.history')}</h3>
+              <span className="text-xs text-gray-400">({history.length})</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-gray-400 dark:text-gray-500 border-b border-gray-50 dark:border-gray-800">
+                  <tr className="text-left text-xs text-gray-400 border-b border-gray-50">
                     <th className="px-4 py-2 font-medium">{t('inc910.company')}</th>
                     <th className="px-2 py-2 font-medium">{t('inc910.histDate')}</th>
                     <th className="px-2 py-2 font-medium">{t('inc910.histFile')}</th>
@@ -380,16 +380,16 @@ export default function Income910Page() {
                 </thead>
                 <tbody>
                   {history.map(h => (
-                    <tr key={h.id} className={`border-b border-gray-50 dark:border-gray-800 last:border-0 ${h.isDuplicate ? 'bg-amber-50 dark:bg-amber-500/10' : ''}`}>
-                      <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs font-medium max-w-[150px]" title={h.company}>
+                    <tr key={h.id} className={`border-b border-gray-50 last:border-0 ${h.isDuplicate ? 'bg-amber-50' : ''}`}>
+                      <td className="px-4 py-2.5 text-gray-900 text-xs font-medium max-w-[150px]" title={h.company}>
                         <span className="block truncate">{h.company || '—'}</span>
-                        {h.isDuplicate && <span className="inline-block mt-0.5 text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-700 dark:text-amber-400 rounded font-bold">{t('inc910.duplicate')}</span>}
+                        {h.isDuplicate && <span className="inline-block mt-0.5 text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold">{t('inc910.duplicate')}</span>}
                       </td>
-                      <td className="px-2 py-2.5 text-gray-600 dark:text-gray-400 text-xs whitespace-nowrap">{new Date(h.date).toLocaleDateString('ru-RU')} {new Date(h.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</td>
-                      <td className="px-2 py-2.5 text-gray-500 dark:text-gray-400 text-xs max-w-[120px] truncate" title={h.fileName}>{h.fileName}</td>
+                      <td className="px-2 py-2.5 text-gray-600 text-xs whitespace-nowrap">{new Date(h.date).toLocaleDateString('ru-RU')} {new Date(h.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</td>
+                      <td className="px-2 py-2.5 text-gray-500 text-xs max-w-[120px] truncate" title={h.fileName}>{h.fileName}</td>
                       <td className="px-2 py-2.5 text-right font-semibold text-emerald-600 whitespace-nowrap">{h.incomeTotal.toLocaleString('ru-RU')} ₸</td>
-                      <td className="px-2 py-2.5 text-right text-indigo-600 dark:text-indigo-400 whitespace-nowrap text-xs">{h.esfTotal != null ? h.esfTotal.toLocaleString('ru-RU') + ' ₸' : '—'}</td>
-                      <td className="px-2 py-2.5 text-center text-gray-400 dark:text-gray-500 text-xs">{h.count}</td>
+                      <td className="px-2 py-2.5 text-right text-indigo-600 whitespace-nowrap text-xs">{h.esfTotal != null ? h.esfTotal.toLocaleString('ru-RU') + ' ₸' : '—'}</td>
+                      <td className="px-2 py-2.5 text-center text-gray-400 text-xs">{h.count}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -400,59 +400,59 @@ export default function Income910Page() {
 
         {/* Paywall — лимит исчерпан */}
         {showPaywall && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-blue-200 dark:border-blue-800 shadow-sm p-6 mb-5">
+          <div className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm p-6 mb-5">
             <div className="text-center mb-4">
-              <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center mx-auto mb-3">
-                <Calculator className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+              <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
+                <Calculator className="w-7 h-7 text-blue-600" />
               </div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('inc910.paywallTitle')}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('inc910.paywallDesc')}</p>
+              <h2 className="text-lg font-bold text-gray-900">{t('inc910.paywallTitle')}</h2>
+              <p className="text-sm text-gray-500 mt-1">{t('inc910.paywallDesc')}</p>
               <p className="text-3xl font-extrabold text-blue-600 mt-3">20 000 ₸</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">{t('inc910.paywallPer')}</p>
+              <p className="text-xs text-gray-400">{t('inc910.paywallPer')}</p>
             </div>
 
             {/* Kaspi QR */}
-            <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-4 mb-3 text-center">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('inc910.payKaspi')}</p>
+            <div className="bg-gray-50 rounded-xl p-4 mb-3 text-center">
+              <p className="text-sm font-semibold text-gray-700 mb-2">{t('inc910.payKaspi')}</p>
               <img src="/images/kaspi-qr.png" alt="Kaspi QR" className="w-full max-w-[220px] rounded-xl mx-auto" />
             </div>
 
             {/* Реквизиты */}
-            <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-4 mb-3">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('inc910.payDetails')}</p>
-              <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
-                <div className="flex justify-between gap-2"><span className="text-gray-400 dark:text-gray-500">Компания</span><span className="font-medium text-right">ТОО "BUHTASK"</span></div>
-                <div className="flex justify-between gap-2"><span className="text-gray-400 dark:text-gray-500">БИН</span><span className="font-medium">260540009678</span></div>
-                <div className="flex justify-between gap-2"><span className="text-gray-400 dark:text-gray-500">Банк</span><span className="font-medium text-right">АО "Kaspi Bank"</span></div>
-                <div className="flex justify-between gap-2"><span className="text-gray-400 dark:text-gray-500">КБе</span><span className="font-medium">17</span></div>
-                <div className="flex justify-between gap-2"><span className="text-gray-400 dark:text-gray-500">БИК</span><span className="font-medium">CASPKZKA</span></div>
-                <div className="flex justify-between gap-2"><span className="text-gray-400 dark:text-gray-500">Счёт (IBAN)</span><span className="font-medium">KZ45722S000054326792</span></div>
+            <div className="bg-gray-50 rounded-xl p-4 mb-3">
+              <p className="text-sm font-semibold text-gray-700 mb-2">{t('inc910.payDetails')}</p>
+              <div className="space-y-1 text-xs text-gray-600">
+                <div className="flex justify-between gap-2"><span className="text-gray-400">Компания</span><span className="font-medium text-right">ТОО "BUHTASK"</span></div>
+                <div className="flex justify-between gap-2"><span className="text-gray-400">БИН</span><span className="font-medium">260540009678</span></div>
+                <div className="flex justify-between gap-2"><span className="text-gray-400">Банк</span><span className="font-medium text-right">АО "Kaspi Bank"</span></div>
+                <div className="flex justify-between gap-2"><span className="text-gray-400">КБе</span><span className="font-medium">17</span></div>
+                <div className="flex justify-between gap-2"><span className="text-gray-400">БИК</span><span className="font-medium">CASPKZKA</span></div>
+                <div className="flex justify-between gap-2"><span className="text-gray-400">Счёт (IBAN)</span><span className="font-medium">KZ45722S000054326792</span></div>
               </div>
             </div>
 
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">{t('inc910.payAfter')} <a href="mailto:info@buhtask.kz" className="text-blue-600">info@buhtask.kz</a></p>
-            <button onClick={() => setShowPaywall(false)} className="w-full text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 text-sm py-2">{t('btn.back')}</button>
+            <p className="text-xs text-gray-500 text-center mb-3">{t('inc910.payAfter')} <a href="mailto:info@buhtask.kz" className="text-blue-600">info@buhtask.kz</a></p>
+            <button onClick={() => setShowPaywall(false)} className="w-full text-gray-400 hover:text-gray-600 text-sm py-2">{t('btn.back')}</button>
           </div>
         )}
 
         {!txs && !showPaywall && (
           <>
             {/* Загрузка */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 mb-5">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
               {loading ? (
                 <div className="py-10 text-center">
                   <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto mb-3" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('inc910.processing')}</p>
+                  <p className="text-sm text-gray-500">{t('inc910.processing')}</p>
                 </div>
               ) : (
                 <button onClick={() => fileRef.current?.click()}
                   onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                   onDragLeave={() => setDragOver(false)}
                   onDrop={handleDrop}
-                  className={`w-full border-2 border-dashed rounded-2xl py-10 transition-colors ${dragOver ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50/30 dark:hover:bg-blue-500/10'}`}>
-                  <Upload className={`w-10 h-10 mx-auto mb-3 ${dragOver ? 'text-blue-500' : 'text-gray-300 dark:text-gray-600'}`} />
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{dragOver ? t('inc910.dropHere') : t('inc910.upload')}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 px-6">{t('inc910.uploadHint')}</p>
+                  className={`w-full border-2 border-dashed rounded-2xl py-10 transition-colors ${dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'}`}>
+                  <Upload className={`w-10 h-10 mx-auto mb-3 ${dragOver ? 'text-blue-500' : 'text-gray-300'}`} />
+                  <p className="text-sm font-semibold text-gray-700">{dragOver ? t('inc910.dropHere') : t('inc910.upload')}</p>
+                  <p className="text-xs text-gray-400 mt-1 px-6">{t('inc910.uploadHint')}</p>
                 </button>
               )}
               <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="hidden" />
@@ -460,11 +460,11 @@ export default function Income910Page() {
             </div>
 
             {/* Как работает */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-3">{t('inc910.howTitle')}</h3>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <h3 className="font-semibold text-gray-900 text-sm mb-3">{t('inc910.howTitle')}</h3>
               <div className="space-y-2.5">
                 {[t('inc910.how1'), t('inc910.how2'), t('inc910.how3')].map((h, i) => (
-                  <div key={i} className="flex items-start gap-2.5 text-sm text-gray-600 dark:text-gray-400">
+                  <div key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
                     <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
                     {h}
                   </div>
@@ -479,24 +479,24 @@ export default function Income910Page() {
             <div className="grid lg:grid-cols-2 gap-5">
               {/* ===== ЛЕВАЯ КОЛОНКА: БАНК ===== */}
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-emerald-600" /> {t('inc910.byBank')}</p>
+                <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-emerald-600" /> {t('inc910.byBank')}</p>
 
                 {/* Список загруженных выписок (несколько банков) */}
                 {bankFiles.length > 0 && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-3 mb-3">
-                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">{t('inc910.statements')} ({bankFiles.length})</p>
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 mb-3">
+                    <p className="text-xs font-semibold text-gray-500 mb-2">{t('inc910.statements')} ({bankFiles.length})</p>
                     <div className="space-y-1.5">
                       {bankFiles.map((bf, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm">
                           <FileSpreadsheet className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                          <span className="flex-1 min-w-0 truncate text-gray-700 dark:text-gray-300" title={bf.name}>{bf.name}</span>
-                          <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{bf.count} · {Math.round(bf.sum).toLocaleString('ru-RU')} ₸</span>
+                          <span className="flex-1 min-w-0 truncate text-gray-700" title={bf.name}>{bf.name}</span>
+                          <span className="text-xs text-gray-400 flex-shrink-0">{bf.count} · {Math.round(bf.sum).toLocaleString('ru-RU')} ₸</span>
                           <button onClick={() => removeBankFile(i)} className="text-gray-300 hover:text-red-500 flex-shrink-0"><X className="w-4 h-4" /></button>
                         </div>
                       ))}
                     </div>
                     <button onClick={() => addFileRef.current?.click()} disabled={loading}
-                      className="w-full mt-2 border border-dashed border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-xl py-2 text-xs font-semibold flex items-center justify-center gap-1.5">
+                      className="w-full mt-2 border border-dashed border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-xl py-2 text-xs font-semibold flex items-center justify-center gap-1.5">
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Upload className="w-4 h-4" /> {t('inc910.addStatement')}</>}
                     </button>
                     <input ref={addFileRef} type="file" accept=".xlsx,.xls,.csv" onChange={e => { processFile(e.target.files?.[0]); if (addFileRef.current) addFileRef.current.value = ''; }} className="hidden" />
@@ -505,21 +505,21 @@ export default function Income910Page() {
 
                 {/* Итоги */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-500/10 dark:to-blue-500/10 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-emerald-600" /> {t('inc910.incomeTotal')}</p>
+                  <div className="bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-200 rounded-2xl p-4">
+                    <p className="text-xs text-gray-500 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-emerald-600" /> {t('inc910.incomeTotal')}</p>
                     <p className="text-2xl font-extrabold text-emerald-600 mt-1">{Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</p>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{includedCount} {t('inc910.counted')}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">{includedCount} {t('inc910.counted')}</p>
                   </div>
-                  <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('inc910.excludedTotal')}</p>
-                    <p className="text-2xl font-extrabold text-gray-400 dark:text-gray-500 mt-1">{Math.round(excludedTotal).toLocaleString('ru-RU')} ₸</p>
+                  <div className="bg-white border border-gray-100 rounded-2xl p-4">
+                    <p className="text-xs text-gray-500">{t('inc910.excludedTotal')}</p>
+                    <p className="text-2xl font-extrabold text-gray-400 mt-1">{Math.round(excludedTotal).toLocaleString('ru-RU')} ₸</p>
                   </div>
                 </div>
 
                 <button onClick={copySum} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 mb-2">
                   {copied ? <><Check className="w-4 h-4" /> {t('inc910.copied')}</> : <><Copy className="w-4 h-4" /> {t('inc910.copySum')}: {Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</>}
                 </button>
-                <p className="text-xs text-gray-400 dark:text-gray-500 text-center mb-4">{t('inc910.exportNote')}</p>
+                <p className="text-xs text-gray-400 text-center mb-4">{t('inc910.exportNote')}</p>
 
                 {/* Расчёт налога 910 */}
                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 mb-4 text-white">
@@ -558,14 +558,14 @@ export default function Income910Page() {
 
                 {/* Разбивка по КНП */}
                 {byKnp.length > 0 && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mb-4">
-                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
                       <FileSpreadsheet className="w-4 h-4 text-blue-600" />
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{t('inc910.byKnp')}</h3>
+                      <h3 className="font-semibold text-gray-900 text-sm">{t('inc910.byKnp')}</h3>
                     </div>
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-left text-xs text-gray-400 dark:text-gray-500 border-b border-gray-50 dark:border-gray-800">
+                        <tr className="text-left text-xs text-gray-400 border-b border-gray-50">
                           <th className="px-4 py-2 font-medium">{t('inc910.knpCol')}</th>
                           <th className="px-2 py-2 font-medium">{t('inc910.knpName')}</th>
                           <th className="px-2 py-2 font-medium text-center">{t('inc910.opsCol')}</th>
@@ -574,18 +574,18 @@ export default function Income910Page() {
                       </thead>
                       <tbody>
                         {byKnp.map(g => (
-                          <tr key={g.knp} className="border-b border-gray-50 dark:border-gray-800 last:border-0">
-                            <td className="px-4 py-2.5"><span className="inline-block px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-700 rounded font-semibold text-xs">{g.knp}</span></td>
-                            <td className="px-2 py-2.5 text-gray-600 dark:text-gray-400 text-xs">{t('knp.' + g.knp) !== 'knp.' + g.knp ? t('knp.' + g.knp) : '—'}</td>
-                            <td className="px-2 py-2.5 text-center text-gray-400 dark:text-gray-500 text-xs">{g.count}</td>
+                          <tr key={g.knp} className="border-b border-gray-50 last:border-0">
+                            <td className="px-4 py-2.5"><span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold text-xs">{g.knp}</span></td>
+                            <td className="px-2 py-2.5 text-gray-600 text-xs">{t('knp.' + g.knp) !== 'knp.' + g.knp ? t('knp.' + g.knp) : '—'}</td>
+                            <td className="px-2 py-2.5 text-center text-gray-400 text-xs">{g.count}</td>
                             <td className="px-4 py-2.5 text-right font-semibold text-emerald-600 whitespace-nowrap">{Math.round(g.sum).toLocaleString('ru-RU')} ₸</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-gray-50 dark:bg-gray-900/40 font-bold">
-                          <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100" colSpan={2}>{t('inc910.incomeTotal')}</td>
-                          <td className="px-2 py-2.5 text-center text-gray-500 dark:text-gray-400 text-xs">{includedCount}</td>
+                        <tr className="bg-gray-50 font-bold">
+                          <td className="px-4 py-2.5 text-gray-900" colSpan={2}>{t('inc910.incomeTotal')}</td>
+                          <td className="px-2 py-2.5 text-center text-gray-500 text-xs">{includedCount}</td>
                           <td className="px-4 py-2.5 text-right text-emerald-600 whitespace-nowrap">{Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</td>
                         </tr>
                       </tfoot>
@@ -594,25 +594,25 @@ export default function Income910Page() {
                 )}
 
                 {/* Список операций */}
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 px-1">{t('inc910.allOps')}</p>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm divide-y divide-gray-50 dark:divide-gray-800">
+                <p className="text-xs font-semibold text-gray-500 mb-2 px-1">{t('inc910.allOps')}</p>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                   {txs.map((tx, i) => (
                     <div key={i} className={`flex items-center gap-3 px-4 py-3 ${!tx.included ? 'opacity-50' : ''}`}>
-                      <button onClick={() => toggle(i)} className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${tx.included ? 'bg-emerald-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'}`}>
+                      <button onClick={() => toggle(i)} className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${tx.included ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
                         {tx.included ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          {tx.knp && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded font-medium flex-shrink-0">КНП {tx.knp}</span>}
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{shortName(tx.counterparty) || tx.description}</p>
+                          {tx.knp && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-medium flex-shrink-0">КНП {tx.knp}</span>}
+                          <p className="text-sm font-medium text-gray-900 truncate">{shortName(tx.counterparty) || tx.description}</p>
                           {(tx.reason === 'unclear' || tx.reason === 'unknown_knp') && tx.included && (
                             <span title={t('inc910.check')} className="flex-shrink-0"><AlertTriangle className="w-3.5 h-3.5 text-amber-400" /></span>
                           )}
                         </div>
-                        {tx.purpose && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{tx.purpose}</p>}
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{new Date(tx.date).toLocaleDateString('ru-RU')}</p>
+                        {tx.purpose && <p className="text-xs text-gray-500 truncate">{tx.purpose}</p>}
+                        <p className="text-xs text-gray-400">{new Date(tx.date).toLocaleDateString('ru-RU')}</p>
                       </div>
-                      <p className={`text-sm font-semibold flex-shrink-0 ${tx.included ? 'text-emerald-600' : 'text-gray-400 dark:text-gray-500 line-through'}`}>+{Math.round(tx.amount).toLocaleString('ru-RU')} ₸</p>
+                      <p className={`text-sm font-semibold flex-shrink-0 ${tx.included ? 'text-emerald-600' : 'text-gray-400 line-through'}`}>+{Math.round(tx.amount).toLocaleString('ru-RU')} ₸</p>
                     </div>
                   ))}
                 </div>
@@ -620,22 +620,22 @@ export default function Income910Page() {
 
               {/* ===== ПРАВАЯ КОЛОНКА: ЭСФ ===== */}
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2"><FileSpreadsheet className="w-4 h-4 text-indigo-600 dark:text-indigo-400 dark:text-indigo-400" /> {t('inc910.byEsf')}</p>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{t('inc910.esfDesc')}</p>
+                <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2"><FileSpreadsheet className="w-4 h-4 text-indigo-600" /> {t('inc910.byEsf')}</p>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                  <p className="text-xs text-gray-500 mb-4">{t('inc910.esfDesc')}</p>
 
                   {!esfRows ? (
                     <>
                       {esfLoading ? (
-                        <div className="py-6 text-center"><Loader2 className="w-7 h-7 text-indigo-600 dark:text-indigo-400 dark:text-indigo-400 animate-spin mx-auto" /></div>
+                        <div className="py-6 text-center"><Loader2 className="w-7 h-7 text-indigo-600 animate-spin mx-auto" /></div>
                       ) : (
                         <button onClick={() => esfFileRef.current?.click()}
                           onDragOver={e => { e.preventDefault(); setEsfDragOver(true); }}
                           onDragLeave={() => setEsfDragOver(false)}
                           onDrop={e => { e.preventDefault(); setEsfDragOver(false); processEsf(e.dataTransfer.files?.[0]); }}
-                          className={`w-full border-2 border-dashed rounded-xl py-6 transition-colors ${esfDragOver ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'border-gray-200 dark:border-gray-700 hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-indigo-500/10'}`}>
+                          className={`w-full border-2 border-dashed rounded-xl py-6 transition-colors ${esfDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-indigo-400 hover:bg-indigo-50/30'}`}>
                           <Upload className="w-7 h-7 text-gray-300 mx-auto mb-2" />
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('inc910.esfUpload')}</p>
+                          <p className="text-sm font-medium text-gray-700">{t('inc910.esfUpload')}</p>
                         </button>
                       )}
                       <input ref={esfFileRef} type="file" accept=".xlsx,.xls,.csv" onChange={e => processEsf(e.target.files?.[0])} className="hidden" />
@@ -645,16 +645,16 @@ export default function Income910Page() {
                     <>
                       {/* Сравнение банк ↔ ЭСФ */}
                       <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 rounded-xl p-3">
-                          <p className="text-[11px] text-gray-500 dark:text-gray-400">{t('inc910.byBank')}</p>
+                        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                          <p className="text-[11px] text-gray-500">{t('inc910.byBank')}</p>
                           <p className="text-lg font-bold text-emerald-600">{Math.round(incomeTotal).toLocaleString('ru-RU')} ₸</p>
                         </div>
-                        <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-800 rounded-xl p-3">
-                          <p className="text-[11px] text-gray-500 dark:text-gray-400">{t('inc910.byEsf')}</p>
-                          <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 dark:text-indigo-400">{Math.round(esfTotal).toLocaleString('ru-RU')} ₸</p>
+                        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                          <p className="text-[11px] text-gray-500">{t('inc910.byEsf')}</p>
+                          <p className="text-lg font-bold text-indigo-600">{Math.round(esfTotal).toLocaleString('ru-RU')} ₸</p>
                         </div>
                       </div>
-                      <div className={`rounded-xl p-3 mb-3 text-center ${Math.abs(esfDiff) < 1 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'}`}>
+                      <div className={`rounded-xl p-3 mb-3 text-center ${Math.abs(esfDiff) < 1 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                         {Math.abs(esfDiff) < 1 ? (
                           <p className="text-sm font-semibold flex items-center justify-center gap-1.5"><Check className="w-4 h-4" /> {t('inc910.esfMatch')}</p>
                         ) : (
@@ -662,37 +662,37 @@ export default function Income910Page() {
                         )}
                       </div>
                       {esfExcluded > 0 && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{t('inc910.esfExcludedNote')}: {Math.round(esfExcluded).toLocaleString('ru-RU')} ₸</p>
+                        <p className="text-xs text-gray-400 mb-3">{t('inc910.esfExcludedNote')}: {Math.round(esfExcluded).toLocaleString('ru-RU')} ₸</p>
                       )}
 
                       {/* ТОЧНЫЙ ДОХОД: ЭСФ + поступления без ЭСФ */}
                       {precise && (
-                        <div className="border-2 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-500/10 rounded-xl p-4 mb-3">
-                          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">🎯 {t('inc910.preciseTitle')}</p>
+                        <div className="border-2 border-emerald-300 bg-emerald-50/50 rounded-xl p-4 mb-3">
+                          <p className="text-sm font-bold text-gray-900 mb-2">🎯 {t('inc910.preciseTitle')}</p>
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-600 dark:text-gray-400">{t('inc910.preciseEsf')}</span>
-                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{Math.round(esfTotal).toLocaleString('ru-RU')} ₸</span>
+                            <span className="text-gray-600">{t('inc910.preciseEsf')}</span>
+                            <span className="font-semibold text-indigo-600">{Math.round(esfTotal).toLocaleString('ru-RU')} ₸</span>
                           </div>
                           <div className="flex justify-between text-sm mb-2">
-                            <span className="text-gray-600 dark:text-gray-400">{t('inc910.preciseNoEsf')}</span>
+                            <span className="text-gray-600">{t('inc910.preciseNoEsf')}</span>
                             <span className="font-semibold text-emerald-600">+{Math.round(precise.noEsfSum).toLocaleString('ru-RU')} ₸</span>
                           </div>
-                          <div className="flex justify-between items-center border-t border-emerald-200 dark:border-emerald-800 pt-2">
-                            <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{t('inc910.preciseTotal')}</span>
-                            <span className="text-xl font-extrabold text-emerald-700 dark:text-emerald-400">{Math.round(precise.total).toLocaleString('ru-RU')} ₸</span>
+                          <div className="flex justify-between items-center border-t border-emerald-200 pt-2">
+                            <span className="text-sm font-bold text-gray-900">{t('inc910.preciseTotal')}</span>
+                            <span className="text-xl font-extrabold text-emerald-700">{Math.round(precise.total).toLocaleString('ru-RU')} ₸</span>
                           </div>
 
                           {/* Расшифровка: по каким контрагентам нет ЭСФ */}
                           {precise.noEsfList.length > 0 && (
-                            <div className="mt-3 pt-2 border-t border-emerald-200 dark:border-emerald-800">
-                              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">{t('inc910.noEsfListTitle')}:</p>
+                            <div className="mt-3 pt-2 border-t border-emerald-200">
+                              <p className="text-xs font-semibold text-gray-600 mb-1.5">{t('inc910.noEsfListTitle')}:</p>
                               {precise.noEsfList.map((c, i) => (
                                 <div key={i} className="flex items-center justify-between text-xs py-0.5">
-                                  <span className="text-gray-600 dark:text-gray-400 truncate pr-2">{shortName(c.name)} <span className="text-gray-400 dark:text-gray-500">({c.count})</span></span>
-                                  <span className="font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">+{Math.round(c.sum).toLocaleString('ru-RU')} ₸</span>
+                                  <span className="text-gray-600 truncate pr-2">{shortName(c.name)} <span className="text-gray-400">({c.count})</span></span>
+                                  <span className="font-semibold text-emerald-700 whitespace-nowrap">+{Math.round(c.sum).toLocaleString('ru-RU')} ₸</span>
                                 </div>
                               ))}
-                              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">{t('inc910.noEsfHint')}</p>
+                              <p className="text-[11px] text-gray-400 mt-1.5">{t('inc910.noEsfHint')}</p>
                             </div>
                           )}
                         </div>
@@ -700,13 +700,13 @@ export default function Income910Page() {
 
                       {/* Сверка по компаниям (банк ↔ ЭСФ) */}
                       {reconciliation.length > 0 && (
-                        <div className="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden mb-3">
-                          <div className="px-3 py-2 bg-gray-50 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-700">
-                            <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t('inc910.reconcileTitle')}</h4>
+                        <div className="border border-gray-100 rounded-xl overflow-hidden mb-3">
+                          <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                            <h4 className="text-xs font-semibold text-gray-700">{t('inc910.reconcileTitle')}</h4>
                           </div>
                           <table className="w-full text-xs">
                             <thead>
-                              <tr className="text-left text-[10px] text-gray-400 dark:text-gray-500 border-b border-gray-50 dark:border-gray-800">
+                              <tr className="text-left text-[10px] text-gray-400 border-b border-gray-50">
                                 <th className="px-3 py-1.5 font-medium">{t('inc910.company')}</th>
                                 <th className="px-1 py-1.5 font-medium text-right">{t('inc910.byBank')}</th>
                                 <th className="px-1 py-1.5 font-medium text-right">{t('inc910.byEsf')}</th>
@@ -717,13 +717,13 @@ export default function Income910Page() {
                               {reconciliation.map((r, i) => {
                                 const ok = Math.abs(r.diff) < 1;
                                 return (
-                                  <tr key={i} className="border-b border-gray-50 dark:border-gray-800 last:border-0">
-                                    <td className="px-3 py-2 text-gray-700 dark:text-gray-300">
+                                  <tr key={i} className="border-b border-gray-50 last:border-0">
+                                    <td className="px-3 py-2 text-gray-700">
                                       <span className="block truncate max-w-[130px]">{shortName(r.name)}</span>
-                                      {r.bin && <span className="text-[9px] text-gray-400 dark:text-gray-500">{r.bin}</span>}
+                                      {r.bin && <span className="text-[9px] text-gray-400">{r.bin}</span>}
                                     </td>
                                     <td className="px-1 py-2 text-right text-emerald-600 whitespace-nowrap">{r.bank ? Math.round(r.bank).toLocaleString('ru-RU') : '—'}</td>
-                                    <td className="px-1 py-2 text-right text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{r.esf ? Math.round(r.esf).toLocaleString('ru-RU') : '—'}</td>
+                                    <td className="px-1 py-2 text-right text-indigo-600 whitespace-nowrap">{r.esf ? Math.round(r.esf).toLocaleString('ru-RU') : '—'}</td>
                                     <td className={`px-3 py-2 text-right whitespace-nowrap font-semibold ${ok ? 'text-emerald-500' : 'text-amber-600'}`}>
                                       {ok ? '✓' : (r.diff > 0 ? '+' : '') + Math.round(r.diff).toLocaleString('ru-RU')}
                                     </td>
@@ -732,24 +732,24 @@ export default function Income910Page() {
                               })}
                             </tbody>
                           </table>
-                          <p className="text-[10px] text-gray-400 dark:text-gray-500 px-3 py-2 border-t border-gray-50 dark:border-gray-800">{t('inc910.reconcileHint')}</p>
+                          <p className="text-[10px] text-gray-400 px-3 py-2 border-t border-gray-50">{t('inc910.reconcileHint')}</p>
                         </div>
                       )}
 
                       {/* Полный список ЭСФ */}
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{t('inc910.esfAllInvoices')}</p>
-                      <div className="divide-y divide-gray-50 dark:divide-gray-800 max-h-72 overflow-y-auto">
+                      <p className="text-xs font-semibold text-gray-500 mb-1.5">{t('inc910.esfAllInvoices')}</p>
+                      <div className="divide-y divide-gray-50 max-h-72 overflow-y-auto">
                         {esfRows.map((e, i) => (
                           <div key={i} className={`flex items-center gap-2 py-2 ${!e.included ? 'opacity-40' : ''}`}>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900 dark:text-gray-100 truncate">{shortName(e.counterparty)}</p>
-                              <p className="text-[11px] text-gray-400 dark:text-gray-500">{t('inc910.esfIssued')}: {e.date || '—'}{e.turnoverDate ? ` · ${t('inc910.esfTurnover')}: ${e.turnoverDate}` : ''} · {e.status}</p>
+                              <p className="text-sm text-gray-900 truncate">{shortName(e.counterparty)}</p>
+                              <p className="text-[11px] text-gray-400">{t('inc910.esfIssued')}: {e.date || '—'}{e.turnoverDate ? ` · ${t('inc910.esfTurnover')}: ${e.turnoverDate}` : ''} · {e.status}</p>
                             </div>
-                            <p className={`text-sm font-medium flex-shrink-0 ${e.included ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500 line-through'}`}>{Math.round(e.amount).toLocaleString('ru-RU')} ₸</p>
+                            <p className={`text-sm font-medium flex-shrink-0 ${e.included ? 'text-gray-700' : 'text-gray-400 line-through'}`}>{Math.round(e.amount).toLocaleString('ru-RU')} ₸</p>
                           </div>
                         ))}
                       </div>
-                      <button onClick={() => { setEsfRows(null); setEsfError(''); }} className="w-full text-indigo-600 dark:text-indigo-400 hover:underline text-xs py-2 mt-2">{t('inc910.esfReset')}</button>
+                      <button onClick={() => { setEsfRows(null); setEsfError(''); }} className="w-full text-indigo-600 hover:underline text-xs py-2 mt-2">{t('inc910.esfReset')}</button>
                     </>
                   )}
                 </div>
