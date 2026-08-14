@@ -52,13 +52,18 @@ export default function CompaniesPage() {
   useEffect(() => { init(); }, []);
 
   const init = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    // getSession() — без сетевого запроса к Auth-серверу (в отличие от getUser()),
+    // именно это раньше и вызывало задержку ~3 сек при открытии страницы.
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
-    const { data } = await supabase.from('companies').select('*').eq('owner_id', user.id).order('created_at', { ascending: false });
+    // Компании и тариф пользователя запрашиваем параллельно, а не по очереди
+    const [{ data }, { data: prof }] = await Promise.all([
+      supabase.from('companies').select('*').eq('owner_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('profiles').select('subscription_plan,subscription_until').eq('id', user.id).maybeSingle(),
+    ]);
     setCompanies((data as Company[]) || []);
-    // Тариф пользователя → лимит компаний
-    const { data: prof } = await supabase.from('profiles').select('subscription_plan,subscription_until').eq('id', user.id).maybeSingle();
     setPlanLimit(getLimits(prof?.subscription_plan, prof?.subscription_until).companies);
     setLoading(false);
   };

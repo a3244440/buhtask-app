@@ -15,10 +15,26 @@
   --radius: 12px;
 }
 
+/* Тёмная тема: холодная тёмно-синяя палитра вместо нейтрального серого —
+   чтобы зелёные/бирюзовые акценты (эмерald) не давали "болотный" эффект
+   поверх фона, а сочетались с ним. */
+.dark {
+  --primary: #5B9BFF;
+  --primary-dark: #3B82F6;
+  --secondary: #34D399;
+  --background: #0B1220;
+  --accent: #F2994A;
+  --text: #E5E9F0;
+  --text-muted: #8A94A6;
+  --border: #1F2A3D;
+  --card: #101A2C;
+}
+
 body {
   background-color: var(--background);
   color: var(--text);
   font-family: Inter, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 html { scroll-behavior: smooth; }

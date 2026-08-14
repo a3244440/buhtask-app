@@ -39,32 +39,32 @@ export default function ToolsSidebar() {
   ];
 
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-60 bg-white border-r border-gray-100 flex-col z-40">
-      <div className="px-5 py-4 border-b border-gray-50">
+    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex-col z-40">
+      <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800">
         <button onClick={() => router.push(dashHref)}>
           <img src="/images/logo-new.png" alt="BuhTask" className="h-10 w-auto" />
         </button>
       </div>
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         <button onClick={() => router.push(dashHref)}
-          className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+          className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 whitespace-nowrap">
           <Home className="w-4 h-4 flex-shrink-0" /> {t('nav.home')}
         </button>
         <button onClick={() => router.push(dashHref + '?tab=tasks')}
-          className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+          className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 whitespace-nowrap">
           <Briefcase className="w-4 h-4 flex-shrink-0" /> {t('nav.tasks')}
         </button>
         <button onClick={() => router.push(dashHref + '?tab=messages')}
-          className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+          className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 whitespace-nowrap">
           <MessageSquare className="w-4 h-4 flex-shrink-0" /> {t('nav.messages')}
         </button>
-        <div className="pt-2 mt-2 border-t border-gray-100">
-          <p className="px-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t('tools.title')}</p>
+        <div className="pt-2 mt-2 border-t border-gray-100 dark:border-gray-800">
+          <p className="px-4 pb-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">{t('tools.title')}</p>
           {tools.filter(t => !t.hide).map(t => {
             const active = pathname === t.href || pathname.startsWith(t.href + '/');
             return (
               <button key={t.href} onClick={() => router.push(t.href)}
-                className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${active ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${active ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                 <t.icon className="w-4 h-4 flex-shrink-0" /> {t.label}
               </button>
             );

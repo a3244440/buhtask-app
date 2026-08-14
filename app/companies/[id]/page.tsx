@@ -26,7 +26,8 @@ export default function CompanyDetailPage() {
   useEffect(() => { init(); }, [companyId]);
 
   const init = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) { router.push('/auth'); return; }
     const { data } = await supabase.from('companies').select('*').eq('id', companyId).eq('owner_id', user.id).maybeSingle();
     if (!data) { router.push('/companies'); return; }

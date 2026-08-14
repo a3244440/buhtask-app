@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
+import { ThemeProvider } from "@/lib/theme";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://buhtask.kz"),
@@ -100,15 +101,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        {/* Применяем сохранённую тему до первой отрисовки — без мигания светлой темой */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+    (function() {
+      try {
+        var saved = localStorage.getItem('buhtask_theme');
+        var dark;
+        if (saved) { dark = saved === 'dark'; }
+        else {
+          var now = new Date();
+          var utc = now.getTime() + now.getTimezoneOffset() * 60000;
+          var h = new Date(utc + 5 * 3600000).getHours();
+          dark = h >= 19 || h < 9;
+        }
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    })();
+            `,
+          }}
+        />
       </head>
-      <body style={{ fontFamily: "Inter, sans-serif", margin: 0, padding: 0, background: "#F8FAFC" }}>
+      <body style={{ fontFamily: "Inter, sans-serif", margin: 0, padding: 0 }} className="bg-[var(--background)]">
         <noscript>
           <div>
             <img src="https://mc.yandex.ru/watch/110500420" style={{ position: 'absolute', left: '-9999px' }} alt="" />
           </div>
         </noscript>
         <I18nProvider>
-          {children}
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
         </I18nProvider>
       </body>
     </html>

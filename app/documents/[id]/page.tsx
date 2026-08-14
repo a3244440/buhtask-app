@@ -31,7 +31,8 @@ export default function DocViewPage() {
   useEffect(() => { init(); }, [docId]);
 
   const init = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) { router.push('/auth'); return; }
     const { data: d } = await supabase.from('documents').select('*').eq('id', docId).eq('owner_id', user.id).maybeSingle();
     if (!d) { router.push('/documents'); return; }

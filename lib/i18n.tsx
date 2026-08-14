@@ -43,6 +43,8 @@ const translations: Record<string, Record<Lang, string>> = {
   'menu.settings': { ru: 'Настройки', kz: 'Параметрлер', en: 'Settings' },
   'menu.logout': { ru: 'Выйти', kz: 'Шығу', en: 'Log out' },
   'menu.support': { ru: 'Поддержка', kz: 'Қолдау', en: 'Support' },
+  'menu.lightTheme': { ru: 'Светлая тема', kz: 'Ашық тақырып', en: 'Light theme' },
+  'menu.darkTheme': { ru: 'Тёмная тема', kz: 'Қараңғы тақырып', en: 'Dark theme' },
   'common.contactUs': { ru: 'Связаться с нами:', kz: 'Бізбен байланысу:', en: 'Contact us:' },
 
   // === Чат поддержки ===

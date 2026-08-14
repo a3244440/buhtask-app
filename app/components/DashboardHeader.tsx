@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
-import { LogOut, User, Settings, ChevronDown, Building2, Check, Plus, Mail, Bell } from 'lucide-react';
+import { useTheme } from '@/lib/theme';
+import { LogOut, User, Settings, ChevronDown, Building2, Check, Plus, Mail, Bell, Sun, Moon } from 'lucide-react';
 import { getActiveCompany, setActiveCompany } from '@/lib/activeCompany';
 import { shortCompanyName } from '@/lib/companyName';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -21,6 +22,7 @@ export default function DashboardHeader({ title, right }: Props) {
   // это устраняет повторный запрос профиля и "моргание" при каждом переходе между инструментами.
   const profile = useAuthStore(s => s.user);
   const fetchUser = useAuthStore(s => s.fetchUser);
+  const { dark, toggle: toggleDark } = useTheme();
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [activeCompany, setActiveCompanyState] = useState('personal');
   const [companyMenuOpen, setCompanyMenuOpen] = useState(false);
@@ -83,19 +85,19 @@ export default function DashboardHeader({ title, right }: Props) {
   const dashHref = role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client';
 
   return (
-    <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-30">
       <div className="px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
         {/* Logo only on mobile (sidebar has it on desktop) */}
         <a href={dashHref} className="flex items-center flex-shrink-0 lg:hidden">
           <img src="/images/logo-new.png" alt="BuhTask" className="h-9 w-auto" />
         </a>
 
-        {title && <h1 className="hidden lg:block text-sm font-semibold text-gray-700 flex-shrink-0">{title}</h1>}
+        {title && <h1 className="hidden lg:block text-sm font-semibold text-gray-700 dark:text-gray-300 flex-shrink-0">{title}</h1>}
         {right && <div className="flex-1 max-w-md">{right}</div>}
 
         {/* Уведомление поддержки — не исчезает пока не прочитано */}
-        <button onClick={() => router.push('/support')} className="relative flex-shrink-0 ml-auto p-2 rounded-xl hover:bg-gray-50 transition-colors" title={t('menu.support')}>
-          <Bell className={`w-5 h-5 ${unreadSupport > 0 ? 'text-blue-600' : 'text-gray-400'}`} />
+        <button onClick={() => router.push('/support')} className="relative flex-shrink-0 ml-auto p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" title={t('menu.support')}>
+          <Bell className={`w-5 h-5 ${unreadSupport > 0 ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500'}`} />
           {unreadSupport > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
               {unreadSupport > 9 ? '9+' : unreadSupport}
@@ -103,35 +105,40 @@ export default function DashboardHeader({ title, right }: Props) {
           )}
         </button>
 
+        {/* Переключатель тёмной темы */}
+        <button onClick={toggleDark} className="flex-shrink-0 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" title={dark ? t('menu.lightTheme') : t('menu.darkTheme')}>
+          {dark ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-gray-400" />}
+        </button>
+
         {/* Company switcher (1С-style) — only for clients */}
         {role !== 'accountant' && (
           <div className="relative flex-shrink-0 mr-2" ref={companyRef}>
             <button onClick={() => setCompanyMenuOpen(v => !v)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors max-w-[200px]">
+              className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 transition-colors max-w-[200px]">
               <Building2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
-              <span className="text-sm font-medium text-gray-700 truncate">{activeCompanyName}</span>
-              <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{activeCompanyName}</span>
+              <ChevronDown className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
             </button>
             {companyMenuOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-50">
-                <p className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase">{t('menu.selectOrg')}</p>
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 py-2 z-50">
+                <p className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase">{t('menu.selectOrg')}</p>
                 <button onClick={() => chooseCompany('personal')}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                  <User className="w-4 h-4 text-gray-400" />
-                  <span className="flex-1 text-left text-gray-700">{t('menu.personal')}</span>
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <User className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  <span className="flex-1 text-left text-gray-700 dark:text-gray-300">{t('menu.personal')}</span>
                   {activeCompany === 'personal' && <Check className="w-4 h-4 text-blue-600" />}
                 </button>
                 {companies.map(c => (
                   <button key={c.id} onClick={() => chooseCompany(c.id)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                    <Building2 className="w-4 h-4 text-gray-400" />
-                    <span className="flex-1 text-left text-gray-700 truncate">{shortCompanyName(c.name)}</span>
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <Building2 className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                    <span className="flex-1 text-left text-gray-700 dark:text-gray-300 truncate">{shortCompanyName(c.name)}</span>
                     {activeCompany === c.id && <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />}
                   </button>
                 ))}
-                <div className="border-t border-gray-100 mt-1 pt-1">
+                <div className="border-t border-gray-100 dark:border-gray-800 mt-1 pt-1">
                   <button onClick={() => { setCompanyMenuOpen(false); router.push('/companies'); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50">
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10">
                     <Plus className="w-4 h-4" /> {t('menu.manageCompanies')}
                   </button>
                 </div>
@@ -148,61 +155,61 @@ export default function DashboardHeader({ title, right }: Props) {
         {/* Profile dropdown */}
         <div className="relative flex-shrink-0" ref={ref}>
           <button onClick={() => setOpen(v => !v)}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors">
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 transition-colors">
             {avatarUrl ? (
               <img src={avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
             ) : (
               <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{initials}</div>
             )}
             <div className="hidden sm:block text-left min-w-0">
-              <p className="text-xs font-semibold text-gray-900 leading-tight truncate max-w-[120px]">{fullName || (role === 'accountant' ? t('role.accountant') : role === 'admin' ? t('menu.admin') : t('role.client'))}</p>
-              <p className="text-[10px] text-gray-400">{role === 'accountant' ? t('role.accountant') : t('role.client')}</p>
+              <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 leading-tight truncate max-w-[120px]">{fullName || (role === 'accountant' ? t('role.accountant') : role === 'admin' ? t('menu.admin') : t('role.client'))}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">{role === 'accountant' ? t('role.accountant') : t('role.client')}</p>
             </div>
-            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
           </button>
 
           {open && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl border border-gray-100 shadow-xl py-2 z-50">
-              <div className="px-4 py-3 border-b border-gray-100">
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl py-2 z-50">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="avatar" className="w-10 h-10 rounded-full object-cover mb-2" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mb-2">{initials}</div>
                 )}
-                <p className="text-sm font-semibold text-gray-900 truncate">{fullName || '—'}</p>
-                <p className="text-xs text-gray-400 truncate">{email}</p>
-                <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-medium">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{fullName || '—'}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{email}</p>
+                <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-700 rounded-full text-[10px] font-medium">
                   {role === 'accountant' ? t('role.accountant') : t('role.client')}
                 </span>
                 {role !== 'accountant' && role !== 'admin' && subPlan !== 'free' && (
-                  <span className={`inline-block mt-1 ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${subPlan === 'pro' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>
+                  <span className={`inline-block mt-1 ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${subPlan === 'pro' ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700' : 'bg-blue-100 dark:bg-blue-500/20 text-blue-700'}`}>
                     {subPlan === 'pro' ? '👑 Pro' : '⚡ Business'}
                   </span>
                 )}
               </div>
               <button onClick={() => { setOpen(false); router.push('/profile'); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                <User className="w-4 h-4 text-gray-400" /> {t('menu.profile')}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                <User className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('menu.profile')}
               </button>
               {role === 'admin' && (
                 <button onClick={() => { setOpen(false); router.push('/admin'); }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-700 hover:bg-blue-50 font-medium">
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-500/10 font-medium">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
                   Админ-панель
                 </button>
               )}
               {role !== 'accountant' && (
                 <button onClick={() => { setOpen(false); router.push('/profile'); }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                  <Settings className="w-4 h-4 text-gray-400" /> {t('menu.settings')}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <Settings className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('menu.settings')}
                 </button>
               )}
               <button onClick={() => { setOpen(false); router.push('/support'); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                <Mail className="w-4 h-4 text-gray-400" /> {t('menu.support')}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                <Mail className="w-4 h-4 text-gray-400 dark:text-gray-500" /> {t('menu.support')}
                 {unreadSupport > 0 && <span className="ml-auto min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadSupport > 9 ? '9+' : unreadSupport}</span>}
               </button>
-              <div className="border-t border-gray-100 mt-1 pt-1">
+              <div className="border-t border-gray-100 dark:border-gray-800 mt-1 pt-1">
                 <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50">
                   <LogOut className="w-4 h-4" /> {t('menu.logout')}
                 </button>

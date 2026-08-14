@@ -22,7 +22,14 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   fetchUser: async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      // getSession() читает сессию из локального хранилища мгновенно, без сетевого запроса
+      // к серверу авторизации. getUser() всегда делает round-trip к Auth-серверу для
+      // ревалидации токена — именно это и было причиной задержки в несколько секунд
+      // на каждой странице, использующей эту проверку. Реальная защита данных всё равно
+      // обеспечивается RLS-политиками на стороне Supabase по JWT, так что для простого
+      // определения текущего пользователя на клиенте getSession() полностью безопасен.
+      const { data: { session } } = await supabase.auth.getSession();
+      const authUser = session?.user;
 
       if (!authUser) {
         set({ user: null, loading: false });

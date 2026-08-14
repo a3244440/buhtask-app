@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { useTheme } from "@/lib/theme";
 import NavWrapper from "./components/NavWrapper";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -65,15 +66,6 @@ const STEPS = [
   { num: "06", key: "step.6" },
 ];
 
-// Detect Astana time and set dark mode accordingly
-function getAstanaDarkMode(): boolean {
-  const now = new Date();
-  // Astana is UTC+5
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  const astanaHour = new Date(utc + 5 * 3600000).getHours();
-  return astanaHour >= 19 || astanaHour < 9;
-}
-
 // Typing animation hook
 function useTypingAnimation(words: string[], typingSpeed = 100, deletingSpeed = 60, pauseTime = 1800) {
   const [displayed, setDisplayed] = useState('');
@@ -109,18 +101,11 @@ export default function HomePage() {
   const { user, loading, fetchUser } = useAuthStore();
   const router = useRouter();
   const { t, lang } = useI18n();
-  const [dark, setDark] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const { dark, toggle: toggleDark, mounted } = useTheme();
   const { displayed, showCursor } = useTypingAnimation(TYPING_WORDS[lang] || TYPING_WORDS.ru);
 
   useEffect(() => {
     fetchUser();
-    const isDark = getAstanaDarkMode();
-    setDark(isDark);
-    setMounted(true);
-    // Check every minute
-    const interval = setInterval(() => setDark(getAstanaDarkMode()), 60000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -147,7 +132,7 @@ export default function HomePage() {
       <NavWrapper dark={D} />
 
       {/* Dark mode toggle */}
-      <button onClick={() => setDark(v => !v)}
+      <button onClick={toggleDark}
         className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 border"
         style={{ background: D ? '#1e293b' : '#fff', borderColor: D ? '#334155' : '#e2e8f0' }}
         title={D ? "Светлая тема" : "Тёмная тема"}>
@@ -162,7 +147,7 @@ export default function HomePage() {
         }} />
         <div aria-hidden className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-20 -left-20 w-96 h-96 rounded-full bg-blue-400/20 blur-3xl animate-blob" />
-          <div className="absolute -bottom-24 -right-16 w-[28rem] h-[28rem] rounded-full bg-emerald-400/15 blur-3xl animate-blob" style={{ animationDelay: '5s' }} />
+          <div className={`absolute -bottom-24 -right-16 w-[28rem] h-[28rem] rounded-full blur-3xl animate-blob ${D ? 'bg-violet-500/15' : 'bg-emerald-400/15'}`} style={{ animationDelay: '5s' }} />
         </div>
         <div className="relative max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/20 bg-white/10 text-xs text-white/90 mb-6">
@@ -385,9 +370,9 @@ export default function HomePage() {
                       </div>
                     ))}
                   </div>
-                  <div className={`mt-4 rounded-xl px-4 py-3 flex items-center gap-3 ${D ? 'bg-emerald-900/30 border border-emerald-800' : 'bg-emerald-50 border border-emerald-200'}`}>
-                    <Zap className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <p className="text-sm text-emerald-500">{t('land.newTasksAvailable')}</p>
+                  <div className={`mt-4 rounded-xl px-4 py-3 flex items-center gap-3 ${D ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-emerald-50 border border-emerald-200'}`}>
+                    <Zap className={`w-4 h-4 shrink-0 ${D ? 'text-emerald-400' : 'text-emerald-500'}`} />
+                    <p className={`text-sm ${D ? 'text-emerald-400' : 'text-emerald-500'}`}>{t('land.newTasksAvailable')}</p>
                   </div>
                 </div>
               </div>

@@ -45,7 +45,8 @@ export default function DocumentsPage() {
   }, []);
 
   const init = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) { router.push('/auth'); return; }
     setUserId(user.id);
     const [{ data: d }, { data: cp }, { data: comp }] = await Promise.all([
