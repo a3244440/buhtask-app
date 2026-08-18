@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 
@@ -33,6 +33,11 @@ export default function AdminPanel() {
   const [allTasks, setAllTasks] = useState<any[]>([]);
   const [allDocs, setAllDocs] = useState<any[]>([]);
   const [companiesByUser, setCompaniesByUser] = useState<Record<string, string[]>>({});
+  const [companiesById, setCompaniesById] = useState<Record<string, string>>({});
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [taskSearch, setTaskSearch] = useState('');
+  const [taskStatusFilter, setTaskStatusFilter] = useState<'all' | 'open' | 'in_progress' | 'completed' | 'paid' | 'cancelled'>('all');
   const [userSearch, setUserSearch] = useState('');
   const [stats, setStats] = useState({ total: 0, accountants: 0, clients: 0, tasks: 0 });
   const [saving, setSaving] = useState(false);
@@ -103,8 +108,10 @@ export default function AdminPanel() {
     const { data: users } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
     setAllUsers(users || []);
 
-    // Все задачи
-    const { data: tasks } = await supabase.from('tasks').select('id,title,category,status,city,budget,created_at,client_id,company_id').order('created_at', { ascending: false }).limit(500);
+    // Все задачи (и новые, и старые — без ограничения по количеству)
+    const { data: tasks } = await supabase.from('tasks')
+      .select('id,title,description,category,status,city,budget,deadline,created_at,updated_at,client_id,company_id,accountant_id,final_price,paid_by_client')
+      .order('created_at', { ascending: false });
     setAllTasks(tasks || []);
     // Активность инструментов (последние 200 использований)
     try {
@@ -117,10 +124,15 @@ export default function AdminPanel() {
     setAllDocs(docs || []);
 
     // Компании по пользователям
-    const { data: comps } = await supabase.from('companies').select('owner_id,name');
+    const { data: comps } = await supabase.from('companies').select('id,owner_id,name');
     const cmap: Record<string, string[]> = {};
-    (comps || []).forEach((c: any) => { (cmap[c.owner_id] = cmap[c.owner_id] || []).push(c.name); });
+    const cById: Record<string, string> = {};
+    (comps || []).forEach((c: any) => {
+      (cmap[c.owner_id] = cmap[c.owner_id] || []).push(c.name);
+      cById[c.id] = c.name;
+    });
     setCompaniesByUser(cmap);
+    setCompaniesById(cById);
 
     setAdminId(user.id);
     // Тикеты поддержки (не ломаем админку, если таблицы нет)
@@ -251,6 +263,35 @@ export default function AdminPanel() {
     });
     setSelected(null);
   };
+
+  const deleteTask = async (task: any) => {
+    if (!window.confirm(`Удалить задачу «${task.title}»?\n\nЭто действие необратимо — вместе с задачей удалятся все отклики и заказы по ней.`)) return;
+    setDeletingTaskId(task.id);
+    const { error } = await supabase.from('tasks').delete().eq('id', task.id);
+    setDeletingTaskId(null);
+    if (error) {
+      alert('Ошибка удаления: ' + error.message + '\n\nВозможно нужна RLS-политика для админа.');
+      return;
+    }
+    setAllTasks(prev => prev.filter(t => t.id !== task.id));
+    setStats(prev => ({ ...prev, tasks: Math.max(0, prev.tasks - 1) }));
+    if (selectedTask?.id === task.id) setSelectedTask(null);
+  };
+
+  const taskStatusLabel = (s: string) => ({
+    open: 'Открыта', in_progress: 'В работе', completed: 'Завершена', paid: 'Оплачена', cancelled: 'Отменена',
+  } as Record<string, string>)[s] || s;
+
+  const filteredTasks = allTasks.filter(tk => {
+    if (taskStatusFilter !== 'all' && tk.status !== taskStatusFilter) return false;
+    if (taskSearch.trim()) {
+      const q = taskSearch.trim().toLowerCase();
+      const owner = allUsers.find(u => u.id === tk.client_id);
+      const hay = `${tk.title} ${tk.description || ''} ${tk.city || ''} ${tk.category || ''} ${owner?.full_name || ''} ${owner?.email || ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
 
   const filtered = accountants.filter(a => {
     if (filter === 'pending') return a.verification_status === 'pending' || (a.iin && a.verification_status !== 'verified');
@@ -511,24 +552,47 @@ export default function AdminPanel() {
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-              <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-blue-600" />
+              <div className="px-6 py-5 border-b border-gray-100 flex flex-wrap items-center gap-3">
+                <Briefcase className="w-5 h-5 text-blue-600 flex-shrink-0" />
                 <h2 className="font-semibold text-gray-900">Созданные задачи</h2>
-                <span className="text-xs text-gray-400">({allTasks.length})</span>
+                <span className="text-xs text-gray-400">({filteredTasks.length}{filteredTasks.length !== allTasks.length ? ` из ${allTasks.length}` : ''})</span>
+                <div className="flex-1 min-w-[160px] flex flex-wrap gap-2 justify-end">
+                  <input value={taskSearch} onChange={e => setTaskSearch(e.target.value)} placeholder="Поиск по названию, заказчику…"
+                    className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 w-48" />
+                  <select value={taskStatusFilter} onChange={e => setTaskStatusFilter(e.target.value as any)}
+                    className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all">Все статусы</option>
+                    <option value="open">Открыта</option>
+                    <option value="in_progress">В работе</option>
+                    <option value="completed">Завершена</option>
+                    <option value="paid">Оплачена</option>
+                    <option value="cancelled">Отменена</option>
+                  </select>
+                </div>
               </div>
-              <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
-                {allTasks.length === 0 ? <p className="py-10 text-center text-gray-400 text-sm">Нет задач</p> :
-                allTasks.map(tk => {
+              <div className="divide-y divide-gray-50 max-h-[32rem] overflow-y-auto">
+                {filteredTasks.length === 0 ? <p className="py-10 text-center text-gray-400 text-sm">{allTasks.length === 0 ? 'Нет задач' : 'Ничего не найдено по фильтру'}</p> :
+                filteredTasks.map(tk => {
                   const owner = allUsers.find(u => u.id === tk.client_id);
                   return (
                     <div key={tk.id} className="px-6 py-3 hover:bg-gray-50 flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
+                      <button onClick={() => setSelectedTask(tk)} className="flex-1 min-w-0 text-left">
                         <p className="text-sm font-medium text-gray-900 truncate">{tk.title}</p>
                         <p className="text-xs text-gray-400">{owner?.full_name || owner?.email || '—'} · {tk.city} · {tk.category}</p>
-                      </div>
+                      </button>
                       <div className="text-right flex-shrink-0">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${tk.status === 'open' ? 'bg-emerald-50 text-emerald-600' : tk.status === 'in_progress' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>{tk.status}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${tk.status === 'open' ? 'bg-emerald-50 text-emerald-600' : tk.status === 'in_progress' ? 'bg-blue-50 text-blue-600' : tk.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'}`}>{taskStatusLabel(tk.status)}</span>
                         <p className="text-xs text-gray-400 mt-0.5">{new Date(tk.created_at).toLocaleDateString('ru-RU')}</p>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button onClick={() => setSelectedTask(tk)} title="Посмотреть содержимое"
+                          className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deleteTask(tk)} disabled={deletingTaskId === tk.id} title="Удалить задачу"
+                          className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 disabled:opacity-40 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   );
@@ -632,6 +696,97 @@ export default function AdminPanel() {
           </div>
         )}
       </main>
+
+      {/* Task detail modal */}
+      {selectedTask && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setSelectedTask(null)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900">Задача</h3>
+              <button onClick={() => setSelectedTask(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="font-semibold text-gray-900">{selectedTask.title}</h4>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${selectedTask.status === 'open' ? 'bg-emerald-50 text-emerald-600' : selectedTask.status === 'in_progress' ? 'bg-blue-50 text-blue-600' : selectedTask.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'}`}>
+                    {taskStatusLabel(selectedTask.status)}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400">ID: {selectedTask.id}</p>
+              </div>
+
+              {selectedTask.description && (
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Описание</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedTask.description}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><User className="w-3 h-3" /> Заказчик</p>
+                  <p className="font-medium text-gray-900">
+                    {allUsers.find(u => u.id === selectedTask.client_id)?.full_name || allUsers.find(u => u.id === selectedTask.client_id)?.email || '—'}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Briefcase className="w-3 h-3" /> Бухгалтер</p>
+                  <p className="font-medium text-gray-900">
+                    {selectedTask.accountant_id ? (allUsers.find(u => u.id === selectedTask.accountant_id)?.full_name || allUsers.find(u => u.id === selectedTask.accountant_id)?.email || '—') : 'Не назначен'}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Категория</p>
+                  <p className="font-medium text-gray-900">{selectedTask.category || '—'}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Город</p>
+                  <p className="font-medium text-gray-900">{selectedTask.city || '—'}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Wallet className="w-3 h-3" /> Бюджет</p>
+                  <p className="font-medium text-gray-900">{selectedTask.budget ? Number(selectedTask.budget).toLocaleString('ru-RU') + ' ₸' : '—'}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Итоговая цена</p>
+                  <p className="font-medium text-gray-900">{selectedTask.final_price ? Number(selectedTask.final_price).toLocaleString('ru-RU') + ' ₸' : '—'}</p>
+                </div>
+                {selectedTask.deadline && (
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Срок</p>
+                    <p className="font-medium text-gray-900">{new Date(selectedTask.deadline).toLocaleDateString('ru-RU')}</p>
+                  </div>
+                )}
+                {selectedTask.company_id && (
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Building2 className="w-3 h-3" /> Компания</p>
+                    <p className="font-medium text-gray-900">{companiesById[selectedTask.company_id] || '—'}</p>
+                  </div>
+                )}
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Создана</p>
+                  <p className="font-medium text-gray-900">{new Date(selectedTask.created_at).toLocaleString('ru-RU')}</p>
+                </div>
+                {selectedTask.paid_by_client && (
+                  <div className="bg-emerald-50 rounded-xl p-3">
+                    <p className="text-xs text-emerald-600 mb-1">Оплата</p>
+                    <p className="font-medium text-emerald-700">Оплачено заказчиком</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => deleteTask(selectedTask)} disabled={deletingTaskId === selectedTask.id}
+                  className="flex-1 flex items-center justify-center gap-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 disabled:opacity-50 py-3 rounded-xl font-semibold text-sm transition-colors">
+                  <Trash2 className="w-4 h-4" /> {deletingTaskId === selectedTask.id ? 'Удаление…' : 'Удалить задачу'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Detail modal */}
       {selected && (
