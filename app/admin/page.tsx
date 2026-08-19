@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
+import { attributionLabel } from '@/lib/attribution';
 
 interface Accountant {
   id: string; email: string; full_name: string; phone: string; city: string;
@@ -22,7 +23,7 @@ export default function AdminPanel() {
   const [accountants, setAccountants] = useState<Accountant[]>([]);
   const [selected, setSelected] = useState<Accountant | null>(null);
   const [filter, setFilter] = useState<'pending' | 'verified' | 'all'>('pending');
-  const [view, setView] = useState<'verify' | 'users' | 'activity' | 'support'>('verify');
+  const [view, setView] = useState<'verify' | 'users' | 'activity' | 'support' | 'blog'>('verify');
   const [tickets, setTickets] = useState<any[]>([]);
   const [activeTicket, setActiveTicket] = useState<any>(null);
   const [ticketMsgs, setTicketMsgs] = useState<any[]>([]);
@@ -44,6 +45,16 @@ export default function AdminPanel() {
   const [platformKaspi, setPlatformKaspi] = useState({ number: '', name: 'BuhTask', percent: 10 });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  // ===== Блог / SEO-статьи =====
+  const [articles, setArticles] = useState<any[]>([]);
+  const [editingArticle, setEditingArticle] = useState<any | null>(null);
+  const [articleForm, setArticleForm] = useState({
+    slug: '', title: '', meta_description: '', excerpt: '', content: '',
+    category: 'news', source_name: '', source_url: '', cover_emoji: '📰', published: false,
+  });
+  const [savingArticle, setSavingArticle] = useState(false);
+  const [articleError, setArticleError] = useState('');
 
   useEffect(() => { init(); }, []);
 
@@ -122,6 +133,12 @@ export default function AdminPanel() {
     // Все документы
     const { data: docs } = await supabase.from('documents').select('id,type,number,total,doc_date,owner_id,created_at').order('created_at', { ascending: false }).limit(500);
     setAllDocs(docs || []);
+
+    // Статьи блога (для SEO) — все, включая черновики
+    try {
+      const { data: arts } = await supabase.from('articles').select('*').order('created_at', { ascending: false });
+      setArticles(arts || []);
+    } catch { setArticles([]); }
 
     // Компании по пользователям
     const { data: comps } = await supabase.from('companies').select('id,owner_id,name');
@@ -282,6 +299,81 @@ export default function AdminPanel() {
     open: 'Открыта', in_progress: 'В работе', completed: 'Завершена', paid: 'Оплачена', cancelled: 'Отменена',
   } as Record<string, string>)[s] || s;
 
+  // ===== Блог / SEO =====
+  const slugify = (s: string) => s.toLowerCase().trim()
+    .replace(/[а-яё]/g, (c) => ({ а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'ts',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya' } as Record<string, string>)[c] || c)
+    .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+
+  const openNewArticle = () => {
+    setEditingArticle('new');
+    setArticleForm({ slug: '', title: '', meta_description: '', excerpt: '', content: '', category: 'news', source_name: '', source_url: '', cover_emoji: '📰', published: false });
+    setArticleError('');
+  };
+
+  const openEditArticle = (a: any) => {
+    setEditingArticle(a);
+    setArticleForm({
+      slug: a.slug, title: a.title, meta_description: a.meta_description || '', excerpt: a.excerpt || '',
+      content: a.content || '', category: a.category || 'news', source_name: a.source_name || '',
+      source_url: a.source_url || '', cover_emoji: a.cover_emoji || '📰', published: a.published,
+    });
+    setArticleError('');
+  };
+
+  const saveArticle = async () => {
+    if (!articleForm.title.trim()) { setArticleError('Укажите заголовок'); return; }
+    if (!articleForm.content.trim()) { setArticleError('Добавьте текст статьи'); return; }
+    const slug = articleForm.slug.trim() || slugify(articleForm.title);
+    if (!slug) { setArticleError('Не удалось сформировать slug — укажите его вручную'); return; }
+    setSavingArticle(true);
+    setArticleError('');
+
+    const payload = {
+      slug,
+      title: articleForm.title.trim(),
+      meta_description: articleForm.meta_description.trim() || articleForm.excerpt.trim().slice(0, 160) || null,
+      excerpt: articleForm.excerpt.trim() || null,
+      content: articleForm.content,
+      category: articleForm.category,
+      source_name: articleForm.source_name.trim() || null,
+      source_url: articleForm.source_url.trim() || null,
+      cover_emoji: articleForm.cover_emoji || '📰',
+      published: articleForm.published,
+      published_at: articleForm.published ? (editingArticle?.published_at || new Date().toISOString()) : null,
+      author_id: adminId || null,
+    };
+
+    if (editingArticle === 'new') {
+      const { data, error } = await supabase.from('articles').insert(payload).select().single();
+      setSavingArticle(false);
+      if (error) { setArticleError(error.message.includes('duplicate') ? 'Такой slug уже используется — измените его' : error.message); return; }
+      setArticles(prev => [data, ...prev]);
+      setEditingArticle(null);
+    } else {
+      const { data, error } = await supabase.from('articles').update(payload).eq('id', editingArticle.id).select().single();
+      setSavingArticle(false);
+      if (error) { setArticleError(error.message.includes('duplicate') ? 'Такой slug уже используется — измените его' : error.message); return; }
+      setArticles(prev => prev.map(a => a.id === data.id ? data : a));
+      setEditingArticle(null);
+    }
+  };
+
+  const deleteArticle = async (a: any) => {
+    if (!window.confirm(`Удалить статью «${a.title}»?`)) return;
+    const { error } = await supabase.from('articles').delete().eq('id', a.id);
+    if (error) { alert('Ошибка удаления: ' + error.message); return; }
+    setArticles(prev => prev.filter(x => x.id !== a.id));
+  };
+
+  const togglePublish = async (a: any) => {
+    const published = !a.published;
+    const { data, error } = await supabase.from('articles')
+      .update({ published, published_at: published ? (a.published_at || new Date().toISOString()) : a.published_at })
+      .eq('id', a.id).select().single();
+    if (error) { alert('Ошибка: ' + error.message); return; }
+    setArticles(prev => prev.map(x => x.id === data.id ? data : x));
+  };
+
   const filteredTasks = allTasks.filter(tk => {
     if (taskStatusFilter !== 'all' && tk.status !== taskStatusFilter) return false;
     if (taskSearch.trim()) {
@@ -344,6 +436,7 @@ export default function AdminPanel() {
             { id: 'verify', label: 'Проверка бухгалтеров', icon: ShieldCheck },
             { id: 'users', label: 'Все регистрации', icon: Users },
             { id: 'activity', label: 'Активность', icon: TrendingUp },
+            { id: 'blog', label: 'Блог / SEO', icon: Newspaper },
             { id: 'support', label: 'Поддержка', icon: Headphones },
             { id: 'registry', label: 'Реестр БИН', icon: ShieldCheck, external: '/admin/registry' } as any,
           ] as const).map(v => (
@@ -414,7 +507,39 @@ export default function AdminPanel() {
 
         {/* ===== USERS TAB ===== */}
         {view === 'users' && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="space-y-5">
+            {/* Сводка по источникам переходов — откуда приходят регистрации */}
+            {(() => {
+              const bySource: Record<string, number> = {};
+              allUsers.forEach(u => {
+                const label = attributionLabel(u);
+                bySource[label] = (bySource[label] || 0) + 1;
+              });
+              const rows = Object.entries(bySource).sort((a, b) => b[1] - a[1]).slice(0, 8);
+              if (rows.length === 0) return null;
+              const max = Math.max(...rows.map(r => r[1]));
+              return (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Radio className="w-5 h-5 text-blue-600" />
+                    <h2 className="font-semibold text-gray-900">Источники регистраций</h2>
+                  </div>
+                  <div className="space-y-2">
+                    {rows.map(([label, count]) => (
+                      <div key={label} className="flex items-center gap-3">
+                        <span className="text-xs text-gray-600 w-40 flex-shrink-0 truncate">{label}</span>
+                        <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(count / max) * 100}%` }} />
+                        </div>
+                        <span className="text-xs font-semibold text-gray-700 w-8 text-right flex-shrink-0">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
               <Users className="w-5 h-5 text-blue-600" />
               <h2 className="font-semibold text-gray-900">Все регистрации</h2>
@@ -453,6 +578,10 @@ export default function AdminPanel() {
                         </div>
                         <p className="text-xs text-gray-400 truncate">{u.email}{u.phone ? ` · ${u.phone}` : ''}{u.city ? ` · ${u.city}` : ''}</p>
                         {comps.length > 0 && <p className="text-xs text-gray-500 mt-0.5">🏢 {comps.join(', ')}</p>}
+                        <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">
+                          <Radio className="w-3 h-3" /> {attributionLabel(u)}
+                          {u.utm_campaign && <span className="text-gray-400">· {u.utm_campaign}</span>}
+                        </p>
                       </div>
                       <div className="text-right flex-shrink-0 text-xs text-gray-400">
                         <p>{new Date(u.created_at).toLocaleDateString('ru-RU')}</p>
@@ -483,6 +612,7 @@ export default function AdminPanel() {
                   </div>
                 );
               })}
+            </div>
             </div>
           </div>
         )}
@@ -626,6 +756,58 @@ export default function AdminPanel() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== BLOG TAB (SEO) ===== */}
+        {view === 'blog' && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
+              <Newspaper className="w-5 h-5 text-blue-600" />
+              <h2 className="font-semibold text-gray-900">Блог / Новости</h2>
+              <span className="text-xs text-gray-400">({articles.length})</span>
+              <a href="/news" target="_blank" rel="noopener noreferrer"
+                className="ml-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                <Globe className="w-3 h-3" /> Открыть страницу /news
+              </a>
+              <button onClick={openNewArticle}
+                className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold">
+                <Plus className="w-4 h-4" /> Новая статья
+              </button>
+            </div>
+
+            <div className="divide-y divide-gray-50">
+              {articles.length === 0 ? (
+                <p className="py-10 text-center text-gray-400 text-sm">
+                  Пока нет статей. Добавьте первую — например, новость по мотивам изменений от salyk.gov.kz,
+                  инструкцию или разбор сроков отчётности.
+                </p>
+              ) : articles.map(a => (
+                <div key={a.id} className="px-6 py-3.5 hover:bg-gray-50 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-lg flex-shrink-0">{a.cover_emoji || '📰'}</div>
+                  <button onClick={() => openEditArticle(a)} className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-medium text-gray-900 truncate">{a.title}</p>
+                    <p className="text-xs text-gray-400 truncate">/news/{a.slug} {a.source_name ? `· по мотивам: ${a.source_name}` : ''}</p>
+                  </button>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${a.published ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {a.published ? 'Опубликовано' : 'Черновик'}
+                  </span>
+                  <p className="text-xs text-gray-400 flex-shrink-0 hidden sm:block">{new Date(a.created_at).toLocaleDateString('ru-RU')}</p>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => togglePublish(a)} title={a.published ? 'Снять с публикации' : 'Опубликовать'}
+                      className={`p-2 rounded-lg transition-colors ${a.published ? 'hover:bg-amber-50 text-gray-400 hover:text-amber-600' : 'hover:bg-emerald-50 text-gray-400 hover:text-emerald-600'}`}>
+                      {a.published ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                    </button>
+                    <button onClick={() => openEditArticle(a)} title="Редактировать" className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteArticle(a)} title="Удалить" className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -781,6 +963,113 @@ export default function AdminPanel() {
                 <button onClick={() => deleteTask(selectedTask)} disabled={deletingTaskId === selectedTask.id}
                   className="flex-1 flex items-center justify-center gap-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 disabled:opacity-50 py-3 rounded-xl font-semibold text-sm transition-colors">
                   <Trash2 className="w-4 h-4" /> {deletingTaskId === selectedTask.id ? 'Удаление…' : 'Удалить задачу'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Article editor modal */}
+      {editingArticle && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setEditingArticle(null)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="font-bold text-gray-900">{editingArticle === 'new' ? 'Новая статья' : 'Редактирование статьи'}</h3>
+              <button onClick={() => setEditingArticle(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {articleError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2.5">{articleError}</div>
+              )}
+
+              <div className="grid grid-cols-[auto_1fr] gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Иконка</label>
+                  <input value={articleForm.cover_emoji} onChange={e => setArticleForm(f => ({ ...f, cover_emoji: e.target.value }))}
+                    maxLength={4} className="w-16 px-3 py-2.5 border border-gray-200 rounded-xl text-center text-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Заголовок</label>
+                  <input value={articleForm.title} onChange={e => setArticleForm(f => ({ ...f, title: e.target.value }))}
+                    placeholder="Например: Изменения по форме 910 с 1 июля 2026"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Ссылка (slug) — оставьте пустым, сформируется автоматически</label>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-gray-400 flex-shrink-0">buhtask.kz/news/</span>
+                  <input value={articleForm.slug} onChange={e => setArticleForm(f => ({ ...f, slug: e.target.value }))}
+                    placeholder={slugify(articleForm.title) || 'izmeneniya-po-forme-910'}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Категория</label>
+                  <select value={articleForm.category} onChange={e => setArticleForm(f => ({ ...f, category: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="news">Новость</option>
+                    <option value="guide">Руководство</option>
+                    <option value="update">Обновление платформы</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Источник (если по мотивам)</label>
+                  <input value={articleForm.source_name} onChange={e => setArticleForm(f => ({ ...f, source_name: e.target.value }))}
+                    placeholder="Например: salyk.gov.kz" className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+
+              {articleForm.source_name && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Ссылка на источник</label>
+                  <input value={articleForm.source_url} onChange={e => setArticleForm(f => ({ ...f, source_url: e.target.value }))}
+                    placeholder="https://kgd.gov.kz/..." className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Краткое описание (для карточки и превью в соцсетях)</label>
+                <textarea value={articleForm.excerpt} onChange={e => setArticleForm(f => ({ ...f, excerpt: e.target.value }))}
+                  rows={2} placeholder="1-2 предложения — что нового и кого касается"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Meta description (для Google, до ~160 символов; если пусто — возьмётся краткое описание)</label>
+                <input value={articleForm.meta_description} onChange={e => setArticleForm(f => ({ ...f, meta_description: e.target.value }))}
+                  maxLength={200} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                <p className="text-[11px] text-gray-400 mt-1">{articleForm.meta_description.length}/160</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Текст статьи (Markdown: **жирный**, ## заголовок, - список)</label>
+                <textarea value={articleForm.content} onChange={e => setArticleForm(f => ({ ...f, content: e.target.value }))}
+                  rows={12} placeholder={'## Что изменилось\n\nОписание изменений...\n\n## Что нужно сделать\n\n- Пункт первый\n- Пункт второй'}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500 resize-y" />
+              </div>
+
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={articleForm.published} onChange={e => setArticleForm(f => ({ ...f, published: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600" />
+                <span className="text-sm text-gray-700">Опубликовать сразу (иначе сохранится как черновик)</span>
+              </label>
+
+              <div className="flex gap-3 pt-2">
+                {editingArticle !== 'new' && (
+                  <button onClick={() => deleteArticle(editingArticle)}
+                    className="px-4 flex items-center justify-center gap-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 py-3 rounded-xl font-semibold text-sm transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button onClick={saveArticle} disabled={savingArticle}
+                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+                  {savingArticle ? 'Сохранение…' : (editingArticle === 'new' ? 'Создать статью' : 'Сохранить изменения')}
                 </button>
               </div>
             </div>

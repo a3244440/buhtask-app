@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
+import { getAttribution } from '@/lib/attribution';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
 type Mode = 'login' | 'register' | 'forgot';
@@ -83,7 +84,8 @@ export default function AuthPage() {
         return;
       }
       if (data.user) {
-        // Создаём профиль
+        // Создаём профиль + фиксируем источник первого перехода (для CRM в админке)
+        const attribution = getAttribution();
         await supabase.from('profiles').upsert({
           id: data.user.id,
           email: data.user.email,
@@ -94,6 +96,7 @@ export default function AuthPage() {
           completed_tasks: 0,
           verification_status: 'not_verified',
           availability: 'free',
+          ...attribution,
         });
         // Supabase автоматически отправляет письмо подтверждения
         // Перенаправляем сразу

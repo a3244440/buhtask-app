@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
+import AttributionCapture from "./components/AttributionCapture";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://buhtask.kz"),
@@ -149,6 +150,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </noscript>
         <I18nProvider>
           <ThemeProvider>
+            <AttributionCapture />
             {children}
           </ThemeProvider>
         </I18nProvider>

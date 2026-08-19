@@ -420,6 +420,7 @@ export default function HomePage() {
             <a href="/uslugi/buhgalter-astana" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Астана</a>
             <a href="/uslugi/buhgalter-almaty" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Алматы</a>
             <a href="/uslugi/buhgalter-shymkent" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Шымкент</a>
+            <a href="/news" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Новости и статьи</a>
             <a href="/uslugi" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Все услуги →</a>
           </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Briefcase, User, Check } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
+import { getAttribution } from '@/lib/attribution';
 
 export default function RoleSelectPage() {
   const { t } = useI18n();
@@ -38,6 +39,7 @@ export default function RoleSelectPage() {
       completed_tasks: 0,
       verification_status: 'not_verified',
       availability: 'free',
+      ...getAttribution(),
     });
     if (selected === 'client') router.push('/onboarding/client');
     else router.push('/dashboard/accountant');

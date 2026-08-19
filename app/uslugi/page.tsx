@@ -42,7 +42,7 @@ export default function UslugiIndexPage() {
 
       <footer className="border-t border-gray-100 bg-white mt-10">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 text-xs text-gray-400 text-center">
-          BuhTask — маркетплейс бухгалтерских услуг в Казахстане · info@buhtask.kz
+          BuhTask — маркетплейс бухгалтерских услуг в Казахстане · info@buhtask.kz · <Link href="/news" className="hover:text-blue-600">Новости и статьи</Link>
         </div>
       </footer>
     </div>
