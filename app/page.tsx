@@ -139,8 +139,8 @@ export default function HomePage() {
         {D ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-500" />}
       </button>
 
-      {/* HERO */}
-      <section className={`relative pt-32 pb-24 px-4 sm:px-6 overflow-hidden ${D ? 'bg-gradient-to-br from-gray-900 via-blue-950 to-gray-950' : 'bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700'}`}>
+      {/* HERO + Инструмент ФНО 910 — единый блок на общем синем фоне, без белой полосы между ними */}
+      <section className={`relative pt-32 pb-16 px-4 sm:px-6 overflow-hidden ${D ? 'bg-gradient-to-br from-gray-900 via-blue-950 to-gray-950' : 'bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700'}`}>
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: "linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px)",
           backgroundSize: "48px 48px",
@@ -181,16 +181,11 @@ export default function HomePage() {
               <span className={`inline-block w-0.5 h-4 bg-yellow-300 ml-0.5 align-middle transition-opacity ${showCursor ? 'opacity-100' : 'opacity-0'}`} />
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Инструмент ФНО 910 — заметный баннер */}
-      <section className="px-4 sm:px-6 py-10">
-        <div className="max-w-5xl mx-auto">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-8 sm:p-10 shadow-xl">
-            {/* декоративные круги */}
-            <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/10" />
-            <div className="absolute -bottom-16 -left-10 w-56 h-56 rounded-full bg-white/5" />
+          {/* Инструмент ФНО 910 — «стеклянная» карточка на том же синем фоне, без разрыва */}
+          <div className="relative mt-14 rounded-3xl bg-white/10 backdrop-blur border border-white/15 p-8 sm:p-10 shadow-xl overflow-hidden text-left">
+            <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/10 pointer-events-none" />
+            <div className="absolute -bottom-16 -left-10 w-56 h-56 rounded-full bg-white/5 pointer-events-none" />
             <div className="relative flex flex-col md:flex-row items-center gap-6">
               <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center flex-shrink-0">
                 <Calculator className="w-9 h-9 text-white" />
