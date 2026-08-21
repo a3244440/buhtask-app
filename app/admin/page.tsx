@@ -30,6 +30,7 @@ export default function AdminPanel() {
   const [supReply, setSupReply] = useState('');
   const [adminId, setAdminId] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [allCompanies, setAllCompanies] = useState<any[]>([]);
   const [toolUsage, setToolUsage] = useState<any[]>([]);
   const [allTasks, setAllTasks] = useState<any[]>([]);
   const [allDocs, setAllDocs] = useState<any[]>([]);
@@ -141,7 +142,8 @@ export default function AdminPanel() {
     } catch { setArticles([]); }
 
     // Компании по пользователям
-    const { data: comps } = await supabase.from('companies').select('id,owner_id,name');
+    const { data: comps } = await supabase.from('companies').select('id,owner_id,name,bin');
+    setAllCompanies(comps || []);
     const cmap: Record<string, string[]> = {};
     const cById: Record<string, string> = {};
     (comps || []).forEach((c: any) => {
@@ -704,11 +706,15 @@ export default function AdminPanel() {
                 {filteredTasks.length === 0 ? <p className="py-10 text-center text-gray-400 text-sm">{allTasks.length === 0 ? 'Нет задач' : 'Ничего не найдено по фильтру'}</p> :
                 filteredTasks.map(tk => {
                   const owner = allUsers.find(u => u.id === tk.client_id);
+                  const comp = allCompanies.find(c => c.id === tk.company_id);
                   return (
                     <div key={tk.id} className="px-6 py-3 hover:bg-gray-50 flex items-center gap-3">
                       <button onClick={() => setSelectedTask(tk)} className="flex-1 min-w-0 text-left">
                         <p className="text-sm font-medium text-gray-900 truncate">{tk.title}</p>
-                        <p className="text-xs text-gray-400">{owner?.full_name || owner?.email || '—'} · {tk.city} · {tk.category}</p>
+                        <p className="text-xs text-gray-400 truncate">
+                          👤 {owner?.full_name || owner?.email || '—'} · {tk.city} · {tk.category}
+                          {comp && <span className="text-blue-500"> · 🏢 {comp.name}</span>}
+                        </p>
                       </button>
                       <div className="text-right flex-shrink-0">
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${tk.status === 'open' ? 'bg-emerald-50 text-emerald-600' : tk.status === 'in_progress' ? 'bg-blue-50 text-blue-600' : tk.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'}`}>{taskStatusLabel(tk.status)}</span>
@@ -910,8 +916,21 @@ export default function AdminPanel() {
                 <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><User className="w-3 h-3" /> Заказчик</p>
                   <p className="font-medium text-gray-900">
-                    {allUsers.find(u => u.id === selectedTask.client_id)?.full_name || allUsers.find(u => u.id === selectedTask.client_id)?.email || '—'}
+                    {allUsers.find(u => u.id === selectedTask.client_id)?.full_name || '—'}
                   </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {allUsers.find(u => u.id === selectedTask.client_id)?.email || ''}
+                    {allUsers.find(u => u.id === selectedTask.client_id)?.phone ? ` · ${allUsers.find(u => u.id === selectedTask.client_id)?.phone}` : ''}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Building2 className="w-3 h-3" /> Компания</p>
+                  <p className="font-medium text-gray-900">
+                    {allCompanies.find(c => c.id === selectedTask.company_id)?.name || 'Не указана'}
+                  </p>
+                  {allCompanies.find(c => c.id === selectedTask.company_id)?.bin && (
+                    <p className="text-xs text-gray-400 mt-0.5">БИН: {allCompanies.find(c => c.id === selectedTask.company_id)?.bin}</p>
+                  )}
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Briefcase className="w-3 h-3" /> Бухгалтер</p>

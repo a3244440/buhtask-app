@@ -97,15 +97,21 @@ export default function CreateTask() {
       if (deadline) payload.deadline = deadline;
       if (companyId && companyId !== 'personal') payload.company_id = companyId;
 
-      const { error: e } = await supabase
+      const { data: inserted, error: e } = await supabase
         .from('tasks')
-        .insert(payload);
+        .insert(payload)
+        .select('id')
+        .single();
 
       if (e) {
         const errMsg = e.message || e.details || e.hint || JSON.stringify(e);
         console.error('Supabase error:', e);
         setError(`Ошибка: ${errMsg}`);
         return;
+      }
+
+      if (inserted?.id) {
+        fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'task', taskId: inserted.id }) }).catch(() => {});
       }
 
       router.push('/dashboard/client');

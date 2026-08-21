@@ -41,6 +41,7 @@ export default function RoleSelectPage() {
       availability: 'free',
       ...getAttribution(),
     });
+    fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'registration', userId: user.id }) }).catch(() => {});
     if (selected === 'client') router.push('/onboarding/client');
     else router.push('/dashboard/accountant');
   };
