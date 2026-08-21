@@ -424,7 +424,7 @@ export default function HomePage() {
             <a href="/uslugi" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Все услуги →</a>
           </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <img src="/images/logo-new.png" alt="BuhTask" className="h-9 w-auto brightness-0 invert" />
+          <img src="/images/logo-new.png" alt="BuhTask" className="h-9 w-auto" />
           <div className="text-center">
             <p className="text-xs text-gray-400">{t('land.footerRights')}</p>
             <a href="mailto:info@buhtask.kz" className="text-xs text-blue-300 hover:text-blue-200 transition-colors inline-flex items-center gap-1 mt-1">

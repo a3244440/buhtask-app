@@ -133,7 +133,7 @@ export default function AuthPage() {
       <div className="hidden lg:flex lg:w-5/12 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-12 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
         <a href="/" className="relative z-10">
-          <img src="/images/logo-new.png" alt="BuhTask" className="h-10 w-auto brightness-0 invert" />
+          <img src="/images/logo-new.png" alt="BuhTask" className="h-10 w-auto" />
         </a>
         <div className="relative z-10 text-white">
           <h1 className="text-3xl font-bold mb-3 leading-snug">Маркетплейс бухгалтерских услуг Казахстана</h1>
