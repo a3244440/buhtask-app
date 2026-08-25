@@ -10,6 +10,7 @@
     "vercel-install": "npm install --legacy-peer-deps"
   },
   "dependencies": {
+    "@e965/xlsx": "^0.20.3",
     "@radix-ui/react-accordion": "1.2.13",
     "@radix-ui/react-alert-dialog": "1.1.16",
     "@radix-ui/react-aspect-ratio": "1.1.9",
@@ -59,7 +60,6 @@
     "sonner": "2.0.7",
     "tailwind-merge": "3.6.0",
     "vaul": "1.1.2",
-    "xlsx": "^0.18.5",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

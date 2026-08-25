@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as XLSX from 'xlsx';
+import * as XLSX from '@e965/xlsx';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -164,6 +164,8 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     if (!file) return NextResponse.json({ error: 'Файл не получен' }, { status: 400 });
+    // Защита от DoS через огромные/вредоносные файлы — до 15MB достаточно для любой банковской выписки
+    if (file.size > 15 * 1024 * 1024) return NextResponse.json({ error: 'Файл слишком большой (макс 15MB)' }, { status: 413 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const name = file.name.toLowerCase();

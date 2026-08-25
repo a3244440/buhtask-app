@@ -99,7 +99,9 @@ export default function AuthPage() {
           ...attribution,
         });
         // Уведомление в Telegram (не блокируем регистрацию, если оно не отправится)
-        fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'registration', userId: data.user.id }) }).catch(() => {});
+        if (data.session?.access_token) {
+          fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` }, body: JSON.stringify({ type: 'registration', userId: data.user.id }) }).catch(() => {});
+        }
         // Supabase автоматически отправляет письмо подтверждения
         // Перенаправляем сразу
         router.push(role === 'client' ? '/onboarding/client' : '/dashboard/accountant');

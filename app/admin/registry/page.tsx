@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Database, Upload, Loader2, Check, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import * as XLSX from 'xlsx';
+import * as XLSX from '@e965/xlsx';
 
 // Импорт официального реестра БНС (ЮЛ/ИП) в собственную базу.
 // Файлы: XLSX/CSV выгрузки stat.gov.kz (по регионам). Парсинг в браузере, upsert батчами.

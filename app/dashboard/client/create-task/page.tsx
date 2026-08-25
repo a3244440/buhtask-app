@@ -111,7 +111,8 @@ export default function CreateTask() {
       }
 
       if (inserted?.id) {
-        fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'task', taskId: inserted.id }) }).catch(() => {});
+        const { data: sess } = await supabase.auth.getSession();
+        fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session?.access_token || ''}` }, body: JSON.stringify({ type: 'task', taskId: inserted.id }) }).catch(() => {});
       }
 
       router.push('/dashboard/client');
