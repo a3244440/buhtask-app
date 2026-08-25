@@ -50,8 +50,9 @@ export async function POST(req: NextRequest) {
         `Имя: ${esc(p?.full_name || '—')}\n` +
         `Email: ${esc(p?.email || '—')}\n` +
         (p?.city ? `Город: ${esc(p.city)}\n` : '');
-      await notifyTelegram(text);
-      return NextResponse.json({ ok: true });
+      const result = await notifyTelegram(text);
+      if (!result.ok) console.error('notify: registration Telegram send failed:', result.error);
+      return NextResponse.json({ ok: result.ok, telegramError: result.error });
     }
 
     if (body.type === 'task') {
@@ -76,8 +77,9 @@ export async function POST(req: NextRequest) {
         `\n👤 Заказчик: ${esc(client?.full_name || '—')}\n` +
         `Email: ${esc(client?.email || '—')}` +
         (client?.phone ? `\nТелефон: ${esc(client.phone)}` : '');
-      await notifyTelegram(text);
-      return NextResponse.json({ ok: true });
+      const result = await notifyTelegram(text);
+      if (!result.ok) console.error('notify: task Telegram send failed:', result.error);
+      return NextResponse.json({ ok: result.ok, telegramError: result.error });
     }
 
     return NextResponse.json({ ok: false, error: 'unknown type' }, { status: 400 });
