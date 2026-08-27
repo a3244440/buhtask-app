@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, FileSpreadsheet, Printer, FileCheck, Receipt, Plus, Link2, Pencil } from 'lucide-react';
+import { ArrowLeft, FileSpreadsheet, Printer, FileCheck, Receipt, Truck, Plus, Link2, Pencil } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 import ToolsSidebar from '../../components/ToolsSidebar';
 import { amountToWords } from '@/lib/amountToWords';
@@ -15,6 +15,7 @@ const TYPE_INFO: Record<string, { label: string; short: string }> = {
   invoice: { label: 'Счёт на оплату', short: 'Счёт' },
   avr: { label: 'Акт выполненных работ', short: 'АВР' },
   sf: { label: 'Счёт-фактура', short: 'СФ' },
+  nakladnaya: { label: 'Накладная на отпуск запасов', short: 'Накладная' },
 };
 
 export default function DocViewPage() {
@@ -80,19 +81,29 @@ export default function DocViewPage() {
             </div>
           </div>
 
-          {/* Создать на основании — строгий порядок: Счёт → АВР → Счёт-фактура */}
-          {(doc.type === 'invoice' || doc.type === 'avr') && (
+          {/* Создать на основании — Счёт → (АВР для услуг / Накладная для товаров) → Счёт-фактура; из СФ тоже можно оформить накладную */}
+          {(doc.type === 'invoice' || doc.type === 'avr' || doc.type === 'sf') && (
             <div className="print:hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
               <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2"><Link2 className="w-4 h-4 text-gray-400" /> {t('docflow.next')}</p>
               <div className="flex gap-2 flex-wrap">
                 {doc.type === 'invoice' && (
-                  <button onClick={() => router.push(`/documents/new?type=avr&parent=${docId}`)} className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-sm font-medium">
-                    <FileCheck className="w-4 h-4" /> {t('docflow.createAvr')}
-                  </button>
+                  <>
+                    <button onClick={() => router.push(`/documents/new?type=avr&parent=${docId}`)} className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-sm font-medium">
+                      <FileCheck className="w-4 h-4" /> {t('docflow.createAvr')}
+                    </button>
+                    <button onClick={() => router.push(`/documents/new?type=nakladnaya&parent=${docId}`)} className="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2 rounded-xl text-sm font-medium">
+                      <Truck className="w-4 h-4" /> {t('docflow.createNakladnaya')}
+                    </button>
+                  </>
                 )}
                 {doc.type === 'avr' && (
                   <button onClick={() => router.push(`/documents/new?type=sf&parent=${docId}`)} className="flex items-center gap-2 bg-violet-50 hover:bg-violet-100 text-violet-700 px-4 py-2 rounded-xl text-sm font-medium">
                     <FileSpreadsheet className="w-4 h-4" /> {t('docflow.createSf')}
+                  </button>
+                )}
+                {doc.type === 'sf' && (
+                  <button onClick={() => router.push(`/documents/new?type=nakladnaya&parent=${docId}`)} className="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2 rounded-xl text-sm font-medium">
+                    <Truck className="w-4 h-4" /> {t('docflow.createNakladnaya')}
                   </button>
                 )}
               </div>
@@ -101,6 +112,9 @@ export default function DocViewPage() {
               )}
               {doc.type === 'avr' && (
                 <p className="text-xs text-gray-400 mt-2">{t('docflow.hintAvr')}</p>
+              )}
+              {doc.type === 'sf' && (
+                <p className="text-xs text-gray-400 mt-2">{t('docflow.hintSf')}</p>
               )}
               {children.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-50">
@@ -127,6 +141,9 @@ export default function DocViewPage() {
             )}
             {doc.type === 'sf' && (
               <SfView doc={doc} company={company} counterparty={counterparty} bankAcc={bankAcc} items={items} fmt={fmt} />
+            )}
+            {doc.type === 'nakladnaya' && (
+              <NakladnayaView doc={doc} company={company} counterparty={counterparty} items={items} fmt={fmt} />
             )}
           </div>
         </main>
@@ -490,6 +507,183 @@ function SfView({ doc, company, counterparty, bankAcc, items, fmt }: any) {
         </tbody>
       </table>
       <p className="text-[8px] text-gray-500 mt-2">Примечание: Без печати недействительно. Оригинал (первый экземпляр) - покупателю. Копия (второй экземпляр) - поставщику.</p>
+    </div>
+  );
+}
+
+function NakladnayaView({ doc, company, counterparty, items, fmt }: any) {
+  const dateStr = new Date(doc.doc_date).toLocaleDateString('ru-RU');
+  const totalQty = items.reduce((s: number, it: any) => s + Number(it.qty), 0);
+  return (
+    <div className="text-[11px] text-gray-900 leading-snug">
+      {/* Шапка формы */}
+      <div className="flex justify-end mb-1">
+        <div className="text-right text-[9px] leading-tight">
+          <p>Приложение 26</p>
+          <p>к приказу Министра финансов</p>
+          <p>Республики Казахстан</p>
+          <p>от 20 декабря 2012 года № 562</p>
+          <p className="font-bold mt-1">Форма З-2</p>
+        </div>
+      </div>
+
+      {/* Организация-отправитель + БИН в рамке справа */}
+      <table className="w-full border-collapse mb-1 text-[10px]">
+        <tbody>
+          <tr>
+            <td style={{ width: '190px' }}></td>
+            <td></td>
+            <td className="border border-gray-700 px-1 text-center text-[8px] font-medium" style={{ width: '120px' }}>ИИН/БИН</td>
+          </tr>
+          <tr>
+            <td className="px-1 py-0.5 align-top font-medium whitespace-nowrap">Организация (индивидуальный предприниматель)</td>
+            <td className="px-1 py-0.5 border-b border-gray-700">
+              {company?.name}{company?.address ? `, ${company.address}` : ''}
+            </td>
+            <td className="border border-gray-700 px-1 py-0.5 align-middle text-center whitespace-nowrap">{company?.bin || ''}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Номер / дата в таблице справа */}
+      <div className="flex justify-end mb-3">
+        <table className="border-collapse text-[10px]">
+          <tbody>
+            <tr>
+              <td className="border border-gray-700 px-3 py-1 text-center font-medium">Номер документа</td>
+              <td className="border border-gray-700 px-3 py-1 text-center font-medium">Дата составления</td>
+            </tr>
+            <tr>
+              <td className="border border-gray-700 px-3 py-1 text-center">{doc.number}</td>
+              <td className="border border-gray-700 px-3 py-1 text-center">{dateStr}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="text-center text-[13px] font-bold mb-3">НАКЛАДНАЯ НА ОТПУСК ЗАПАСОВ НА СТОРОНУ</h2>
+
+      {/* Отправитель / Получатель / Ответственный / Транспорт / ТТН */}
+      <table className="w-full border-collapse mb-3 text-[9px]">
+        <thead>
+          <tr>
+            <th className="border border-gray-700 px-1 py-1">Организация (индивидуальный предприниматель) — отправитель</th>
+            <th className="border border-gray-700 px-1 py-1">Организация (индивидуальный предприниматель) — получатель</th>
+            <th className="border border-gray-700 px-1 py-1">Ответственный за поставку (Ф.И.О.)</th>
+            <th className="border border-gray-700 px-1 py-1">Транспортная организация</th>
+            <th className="border border-gray-700 px-1 py-1">Товарно-транспортная накладная (номер, дата)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="border border-gray-700 px-1 py-2 align-top">{company?.name || ''}</td>
+            <td className="border border-gray-700 px-1 py-2 align-top">{counterparty?.name || ''}</td>
+            <td className="border border-gray-700 px-1 py-2 align-top">{company?.director || ''}</td>
+            <td className="border border-gray-700 px-1 py-2 align-top"></td>
+            <td className="border border-gray-700 px-1 py-2 align-top"></td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Основная таблица — 9 колонок формы З-2 */}
+      <table className="w-full border-collapse text-[9px]">
+        <thead>
+          <tr>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2} style={{ width: '28px' }}>Номер по порядку</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2}>Наименование, характеристика</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2} style={{ width: '55px' }}>Номенклатурный номер</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2} style={{ width: '45px' }}>Единица измерения</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle text-center" colSpan={2}>Количество</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2} style={{ width: '55px' }}>Цена за единицу, в тенге</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2} style={{ width: '60px' }}>Сумма с НДС, в тенге</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" rowSpan={2} style={{ width: '55px' }}>Сумма НДС, в тенге</th>
+          </tr>
+          <tr>
+            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '35px' }}>к отпуску</th>
+            <th className="border border-gray-700 px-1 py-1 align-middle" style={{ width: '35px' }}>отпущено</th>
+          </tr>
+          <tr className="text-[8px] text-gray-500">
+            {[1,2,3,4,5,6,7,8,9].map(n => <td key={n} className="border border-gray-700 px-1 text-center">{n}</td>)}
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((it: any, i: number) => {
+            const total = it.qty * it.price;
+            const vat = doc.has_vat ? doc.total ? Math.round((total / doc.total) * Number(doc.vat_total)) : 0 : 0;
+            return (
+              <tr key={i}>
+                <td className="border border-gray-700 px-1 py-1 text-center">{i + 1}</td>
+                <td className="border border-gray-700 px-1 py-1">{it.name}</td>
+                <td className="border border-gray-700 px-1 py-1"></td>
+                <td className="border border-gray-700 px-1 py-1 text-center">{it.unit}</td>
+                <td className="border border-gray-700 px-1 py-1 text-center">{it.qty}</td>
+                <td className="border border-gray-700 px-1 py-1 text-center">{it.qty}</td>
+                <td className="border border-gray-700 px-1 py-1 text-right">{Number(it.price).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+                <td className="border border-gray-700 px-1 py-1 text-right">{total.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+                <td className="border border-gray-700 px-1 py-1 text-right">{doc.has_vat ? vat.toLocaleString('ru-RU', { minimumFractionDigits: 2 }) : '0,00'}</td>
+              </tr>
+            );
+          })}
+          <tr className="font-semibold">
+            <td className="border border-gray-700 px-1 py-1 text-center" colSpan={4}>Итого</td>
+            <td className="border border-gray-700 px-1 py-1 text-center">{totalQty}</td>
+            <td className="border border-gray-700 px-1 py-1 text-center">{totalQty}</td>
+            <td className="border border-gray-700 px-1 py-1 text-center">х</td>
+            <td className="border border-gray-700 px-1 py-1 text-right">{Number(doc.total).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+            <td className="border border-gray-700 px-1 py-1 text-right">{(doc.has_vat ? Number(doc.vat_total) : 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p className="mt-3 text-[10px]">
+        Всего отпущено количество запасов (прописью) <b>{totalQty}</b> на сумму (прописью), в тенге <b>{amountToWords(Number(doc.total))}</b>
+      </p>
+
+      <p className="mt-3 text-[9px]">
+        По доверенности №___________ от «____»_______________20_____года выданной ____________________________________________________________
+      </p>
+
+      {/* Подписи */}
+      <div className="mt-5 space-y-4 text-[10px]">
+        <div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-medium whitespace-nowrap">Запасы получил</span>
+            <span className="flex-1 border-b border-gray-700"></span>
+            <span>/</span>
+            <span className="w-40 border-b border-gray-700 text-center">{counterparty?.director || ''}</span>
+          </div>
+          <div className="flex text-[7px] text-gray-400 mt-0.5"><span className="flex-1 text-center">подпись</span><span className="w-40 text-center">расшифровка подписи</span></div>
+        </div>
+        <div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-medium whitespace-nowrap">Отпуск разрешил</span>
+            <span className="w-28 border-b border-gray-700 text-center">Директор</span>
+            <span className="flex-1 border-b border-gray-700"></span>
+            <span>/</span>
+            <span className="w-40 border-b border-gray-700 text-center">{company?.director || ''}</span>
+          </div>
+          <div className="flex text-[7px] text-gray-400 mt-0.5"><span className="w-28 text-center">должность</span><span className="flex-1 text-center">подпись</span><span className="w-40 text-center">расшифровка подписи</span></div>
+        </div>
+        <div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-medium whitespace-nowrap">Главный бухгалтер</span>
+            <span className="flex-1 border-b border-gray-700"></span>
+            <span>/</span>
+            <span className="w-40 border-b border-gray-700"></span>
+          </div>
+          <div className="flex text-[7px] text-gray-400 mt-0.5"><span className="flex-1 text-center">подпись</span><span className="w-40 text-center">расшифровка подписи</span></div>
+          <p className="mt-3">М.П.</p>
+        </div>
+        <div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-medium whitespace-nowrap">Отпустил</span>
+            <span className="flex-1 border-b border-gray-700"></span>
+            <span>/</span>
+            <span className="w-40 border-b border-gray-700 text-center">{company?.director || ''}</span>
+          </div>
+          <div className="flex text-[7px] text-gray-400 mt-0.5"><span className="flex-1 text-center">подпись</span><span className="w-40 text-center">расшифровка подписи</span></div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -16,7 +16,7 @@ function NewDocInner() {
   const { t } = useI18n();
   const router = useRouter();
   const sp = useSearchParams();
-  const type = (sp.get('type') || 'invoice') as 'invoice' | 'avr' | 'sf';
+  const type = (sp.get('type') || 'invoice') as 'invoice' | 'avr' | 'sf' | 'nakladnaya';
   const parentId = sp.get('parent');
 
   const [loading, setLoading] = useState(true);
@@ -29,10 +29,10 @@ function NewDocInner() {
   const [docDate, setDocDate] = useState(new Date().toISOString().split('T')[0]);
   const [contract, setContract] = useState('');
   const [hasVat, setHasVat] = useState(false);
-  const [items, setItems] = useState<Item[]>([{ name: '', unit: 'усл.', qty: 1, price: 0 }]);
+  const [items, setItems] = useState<Item[]>([{ name: '', unit: type === 'nakladnaya' ? 'шт' : 'усл.', qty: 1, price: 0 }]);
   const [saving, setSaving] = useState(false);
 
-  const TYPE_LABEL = { invoice: t('nd.typeInvoice'), avr: t('nd.typeAvr'), sf: t('nd.typeSf') }[type];
+  const TYPE_LABEL = { invoice: t('nd.typeInvoice'), avr: t('nd.typeAvr'), sf: t('nd.typeSf'), nakladnaya: t('nd.typeNakladnaya') }[type];
 
   useEffect(() => { init(); }, []);
 
@@ -72,7 +72,7 @@ function NewDocInner() {
     setLoading(false);
   };
 
-  const addItem = () => setItems([...items, { name: '', unit: 'усл.', qty: 1, price: 0 }]);
+  const addItem = () => setItems([...items, { name: '', unit: type === 'nakladnaya' ? 'шт' : 'усл.', qty: 1, price: 0 }]);
   const updateItem = (i: number, field: keyof Item, val: any) => setItems(items.map((it, idx) => idx === i ? { ...it, [field]: val } : it));
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
 
@@ -124,7 +124,7 @@ function NewDocInner() {
           </button>
           <h1 className="text-xl font-bold text-gray-900 mb-1">{t('nd.new')}: {TYPE_LABEL}</h1>
           {parentId && <p className="text-sm text-blue-600 mb-5">{t('nd.basedOnDoc')}</p>}
-          {!parentId && (type === 'avr' || type === 'sf') && (
+          {!parentId && (type === 'avr' || type === 'sf' || type === 'nakladnaya') && (
             <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
               {t('docflow.warnNoParent')}
             </div>

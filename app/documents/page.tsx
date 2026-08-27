@@ -3,7 +3,7 @@ import { logToolUsage } from '@/lib/logTool';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { FileText, Plus, Trash2, FileSpreadsheet, Receipt, FileCheck, ChevronRight, X, Search, Loader2, Users } from 'lucide-react';
+import { FileText, Plus, Trash2, FileSpreadsheet, Receipt, FileCheck, Truck, ChevronRight, X, Search, Loader2, Users } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
 import MobileToolsNav from '../components/MobileToolsNav';
@@ -12,7 +12,7 @@ import { shortCompanyName } from '@/lib/companyName';
 import { useI18n } from '@/lib/i18n';
 
 interface Doc {
-  id: string; type: 'invoice' | 'avr' | 'sf'; number: string; doc_date: string;
+  id: string; type: 'invoice' | 'avr' | 'sf' | 'nakladnaya'; number: string; doc_date: string;
   total: number; counterparty_id: string; company_id: string; parent_id: string | null;
   counterparty_name?: string;
 }
@@ -21,6 +21,7 @@ const TYPE_INFO: Record<string, { label: string; short: string; icon: any; color
   invoice: { label: 'Счёт на оплату', short: 'Счёт', icon: Receipt, color: 'bg-blue-50 text-blue-600' },
   avr: { label: 'Акт выполненных работ', short: 'АВР', icon: FileCheck, color: 'bg-emerald-50 text-emerald-600' },
   sf: { label: 'Счёт-фактура', short: 'СФ', icon: FileSpreadsheet, color: 'bg-violet-50 text-violet-600' },
+  nakladnaya: { label: 'Накладная на отпуск запасов', short: 'Накладная', icon: Truck, color: 'bg-amber-50 text-amber-600' },
 };
 
 export default function DocumentsPage() {
@@ -33,7 +34,7 @@ export default function DocumentsPage() {
   const [counterparties, setCounterparties] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
   const [activeCompany, setActiveCompanyState] = useState('personal');
-  const [filter, setFilter] = useState<'all' | 'invoice' | 'avr' | 'sf'>('all');
+  const [filter, setFilter] = useState<'all' | 'invoice' | 'avr' | 'sf' | 'nakladnaya'>('all');
   const [showCp, setShowCp] = useState(false);
 
   useEffect(() => {
@@ -108,6 +109,7 @@ export default function DocumentsPage() {
               { id: 'invoice', label: t('doc.invoices') },
               { id: 'avr', label: t('doc.avr') },
               { id: 'sf', label: t('doc.sf') },
+              { id: 'nakladnaya', label: t('doc.nakladnaya') },
             ].map(t => (
               <button key={t.id} onClick={() => setFilter(t.id as any)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${filter === t.id ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>

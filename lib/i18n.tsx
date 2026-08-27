@@ -208,6 +208,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'doc.invoices': { ru: 'Счета', kz: 'Шоттар', en: 'Invoices' },
   'doc.avr': { ru: 'АВР', kz: 'ОЖА', en: 'Acts' },
   'doc.sf': { ru: 'Счета-фактуры', kz: 'Шот-фактуралар', en: 'Tax Invoices' },
+  'doc.nakladnaya': { ru: 'Накладные', kz: 'Жүкқұжаттар', en: 'Delivery Notes' },
   'doc.noDocuments': { ru: 'Нет документов', kz: 'Құжаттар жоқ', en: 'No documents' },
 
   // Компании
@@ -338,8 +339,10 @@ const translations: Record<string, Record<Lang, string>> = {
   'docflow.next': { ru: 'Следующий документ по цепочке', kz: 'Тізбектегі келесі құжат', en: 'Next document in chain' },
   'docflow.createAvr': { ru: 'Создать АВР (акт выполненных работ)', kz: 'ОЖА құру (орындалған жұмыс актісі)', en: 'Create Act (work completion)' },
   'docflow.createSf': { ru: 'Создать счёт-фактуру', kz: 'Шот-фактура құру', en: 'Create Tax Invoice' },
-  'docflow.hintInvoice': { ru: 'Порядок: Счёт на оплату → АВР → Счёт-фактура. Сейчас создаётся АВР на основании этого счёта.', kz: 'Тәртіп: Төлемге шот → ОЖА → Шот-фактура. Қазір осы шот негізінде ОЖА жасалады.', en: 'Order: Invoice → Act → Tax Invoice. Now creating an Act based on this invoice.' },
+  'docflow.createNakladnaya': { ru: 'Создать накладную', kz: 'Жүкқұжат құру', en: 'Create Delivery Note' },
+  'docflow.hintInvoice': { ru: 'Для услуг — создайте АВР, для товаров — накладную. Из них можно будет создать счёт-фактуру.', kz: 'Қызметтер үшін — ОЖА, тауарлар үшін — жүкқұжат жасаңыз. Олардан кейін шот-фактура жасауға болады.', en: 'For services, create an Act; for goods, a Delivery Note. A Tax Invoice can be created from either.' },
   'docflow.hintAvr': { ru: 'Завершающий документ — счёт-фактура на основании этого АВР.', kz: 'Қорытынды құжат — осы ОЖА негізіндегі шот-фактура.', en: 'Final document — a tax invoice based on this Act.' },
+  'docflow.hintSf': { ru: 'При необходимости к счёту-фактуре можно оформить накладную на отпуск товара.', kz: 'Қажет болса, шот-фактураға тауарды жіберу жүкқұжатын ресімдеуге болады.', en: 'If needed, a delivery note can be created alongside this tax invoice.' },
   'docflow.created': { ru: 'Создано на основании:', kz: 'Негізінде жасалды:', en: 'Created from this:' },
   'docflow.warnNoParent': { ru: 'Этот документ обычно создаётся на основании другого: Счёт → АВР → Счёт-фактура. Рекомендуем начать со счёта на оплату.', kz: 'Бұл құжат әдетте басқа құжат негізінде жасалады: Шот → ОЖА → Шот-фактура. Төлемге шоттан бастаған жөн.', en: 'This document is usually created from another: Invoice → Act → Tax Invoice. We recommend starting with an invoice.' },
 
@@ -510,6 +513,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'nd.typeInvoice': { ru: 'Счёт на оплату', kz: 'Төлемге шот', en: 'Invoice' },
   'nd.typeAvr': { ru: 'Акт выполненных работ', kz: 'Орындалған жұмыс актісі', en: 'Work Completion Act' },
   'nd.typeSf': { ru: 'Счёт-фактура', kz: 'Шот-фактура', en: 'Tax Invoice' },
+  'nd.typeNakladnaya': { ru: 'Накладная на отпуск запасов', kz: 'Қорларды жіберу жүкқұжаты', en: 'Delivery Note' },
   'nd.toDocuments': { ru: 'К документам', kz: 'Құжаттарға', en: 'To Documents' },
   'nd.new': { ru: 'Новый', kz: 'Жаңа', en: 'New' },
   'nd.basedOnDoc': { ru: 'Создаётся на основании документа', kz: 'Құжат негізінде жасалуда', en: 'Created based on a document' },

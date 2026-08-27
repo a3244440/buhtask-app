@@ -10,7 +10,7 @@ import { useI18n } from '@/lib/i18n';
 
 interface Item { name: string; unit: string; qty: number; price: number; }
 
-const TYPE_LABEL_MAP: Record<string, string> = { invoice: 'nd.typeInvoice', avr: 'nd.typeAvr', sf: 'nd.typeSf' };
+const TYPE_LABEL_MAP: Record<string, string> = { invoice: 'nd.typeInvoice', avr: 'nd.typeAvr', sf: 'nd.typeSf', nakladnaya: 'nd.typeNakladnaya' };
 
 export default function EditDocPage() {
   const { t } = useI18n();
@@ -20,7 +20,7 @@ export default function EditDocPage() {
 
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState('');
-  const [type, setType] = useState<'invoice' | 'avr' | 'sf'>('invoice');
+  const [type, setType] = useState<'invoice' | 'avr' | 'sf' | 'nakladnaya'>('invoice');
   const [companies, setCompanies] = useState<any[]>([]);
   const [counterparties, setCounterparties] = useState<any[]>([]);
   const [companyId, setCompanyId] = useState('');
