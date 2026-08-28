@@ -16,7 +16,7 @@ interface BankAccount { bank: string; iban: string; bik?: string; }
 interface Company {
   id: string; name: string; bin: string; director: string; address: string;
   tax_regime: string; oked: string; registration_date: string; status: string;
-  bank_accounts: BankAccount[];
+  bank_accounts: BankAccount[]; company_type: 'IP' | 'TOO';
 }
 
 const TAX_REGIMES = [
@@ -46,7 +46,7 @@ export default function CompaniesPage() {
   const [error, setError] = useState('');
   const [planLimit, setPlanLimit] = useState(2);
 
-  const emptyForm: Company = { id: '', name: '', bin: '', director: '', address: '', tax_regime: TAX_REGIMES[0], oked: '', registration_date: '', status: '', bank_accounts: [] };
+  const emptyForm: Company = { id: '', name: '', bin: '', director: '', address: '', tax_regime: TAX_REGIMES[0], oked: '', registration_date: '', status: '', bank_accounts: [], company_type: 'TOO' };
   const [form, setForm] = useState<Company>(emptyForm);
 
   useEffect(() => { init(); }, []);
@@ -121,7 +121,7 @@ export default function CompaniesPage() {
     const payload = {
       owner_id: userId, name: form.name.trim(), bin: form.bin.trim(), director: form.director.trim(),
       address: form.address.trim(), tax_regime: form.tax_regime, oked: form.oked,
-      registration_date: form.registration_date, status: form.status,
+      registration_date: form.registration_date, status: form.status, company_type: form.company_type,
       bank_accounts: form.bank_accounts.filter(b => b.iban.trim()),
     };
     try {
@@ -248,6 +248,18 @@ export default function CompaniesPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">{t('comp.name')} *</label>
                 <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="ТОО «Компания»" className={inp} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('comp.type')}</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['IP', 'TOO'] as const).map(v => (
+                    <button key={v} type="button" onClick={() => setForm(f => ({ ...f, company_type: v }))}
+                      className={`px-4 py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${form.company_type === v ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                      {v === 'IP' ? t('comp.typeIp') : t('comp.typeToo')}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-1.5">{t('comp.typeHint')}</p>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">{t('comp.director')}</label>

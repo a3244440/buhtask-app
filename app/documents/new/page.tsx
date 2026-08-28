@@ -31,6 +31,7 @@ function NewDocInner() {
   const [hasVat, setHasVat] = useState(false);
   const [items, setItems] = useState<Item[]>([{ name: '', unit: type === 'nakladnaya' ? 'шт' : 'усл.', qty: 1, price: 0 }]);
   const [saving, setSaving] = useState(false);
+  const [parentSnapshots, setParentSnapshots] = useState<{ company: any; counterparty: any; companyId: string; counterpartyId: string } | null>(null);
 
   const TYPE_LABEL = { invoice: t('nd.typeInvoice'), avr: t('nd.typeAvr'), sf: t('nd.typeSf'), nakladnaya: t('nd.typeNakladnaya') }[type];
 
@@ -67,6 +68,10 @@ function NewDocInner() {
         setContract(parent.contract || '');
         setHasVat(parent.has_vat || false);
         if (parent.items && parent.items.length) setItems(parent.items);
+        // Снимок реквизитов наследуем от родителя, чтобы вся цепочка документов
+        // (счёт → АВР/накладная → СФ) навсегда показывала одни и те же данные,
+        // даже если карточку компании/контрагента потом отредактируют.
+        setParentSnapshots({ company: parent.company_snapshot || null, counterparty: parent.counterparty_snapshot || null, companyId: parent.company_id || '', counterpartyId: parent.counterparty_id || '' });
       }
     }
     setLoading(false);
@@ -98,10 +103,32 @@ function NewDocInner() {
     }
 
     setSaving(true);
+
+    // Снимок реквизитов на момент создания документа: если компания/контрагент
+    // не менялись по сравнению с родительским документом — берём его снимок как есть
+    // (сохраняем целостность цепочки счёт → АВР/накладная → СФ), иначе строим
+    // свежий снимок из выбранной сейчас компании/контрагента. Это то, что потом
+    // не даст реквизитам "исчезнуть" из документа при удалении компании.
+    const selectedCompany = companies.find(c => c.id === companyId);
+    const selectedCp = counterparties.find(c => c.id === counterpartyId);
+    const companySnapshot = (parentSnapshots?.company && parentSnapshots.companyId === companyId)
+      ? parentSnapshots.company
+      : selectedCompany ? {
+          name: selectedCompany.name, bin: selectedCompany.bin, director: selectedCompany.director,
+          address: selectedCompany.address, company_type: selectedCompany.company_type, bank_accounts: selectedCompany.bank_accounts,
+        } : null;
+    const counterpartySnapshot = (parentSnapshots?.counterparty && parentSnapshots.counterpartyId === counterpartyId)
+      ? parentSnapshots.counterparty
+      : selectedCp ? {
+          name: selectedCp.name, bin: selectedCp.bin, director: selectedCp.director, address: selectedCp.address,
+          bank: selectedCp.bank, iban: selectedCp.iban,
+        } : null;
+
     const payload = {
       owner_id: userId, company_id: companyId, counterparty_id: counterpartyId,
       parent_id: parentId || null, type, number, doc_date: docDate, contract,
       items: items.filter(it => it.name.trim()), total, vat_total: vatTotal, has_vat: hasVat,
+      company_snapshot: companySnapshot, counterparty_snapshot: counterpartySnapshot,
     };
     const { data, error } = await supabase.from('documents').insert(payload).select().single();
     setSaving(false);

@@ -57,7 +57,12 @@ export default function DocumentsPage() {
     ]);
     const cpMap: Record<string, string> = {};
     (cp || []).forEach((c: any) => { cpMap[c.id] = shortCompanyName(c.name); });
-    setDocs(((d as Doc[]) || []).map(doc => ({ ...doc, counterparty_name: cpMap[doc.counterparty_id] || '—' })));
+    // Снимок реквизитов в самом документе имеет приоритет — так название контрагента
+    // не пропадает из списка после удаления его карточки в "Мои контрагенты".
+    setDocs(((d as Doc[]) || []).map(doc => ({
+      ...doc,
+      counterparty_name: (doc as any).counterparty_snapshot?.name ? shortCompanyName((doc as any).counterparty_snapshot.name) : (cpMap[doc.counterparty_id] || '—'),
+    })));
     setCounterparties(cp || []);
     setCompanies(comp || []);
     setLoading(false);

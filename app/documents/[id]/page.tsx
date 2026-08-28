@@ -44,8 +44,12 @@ export default function DocViewPage() {
       d.counterparty_id ? supabase.from('counterparties').select('*').eq('id', d.counterparty_id).maybeSingle() : Promise.resolve({ data: null }),
       supabase.from('documents').select('id,type,number,doc_date').eq('parent_id', docId),
     ]);
-    setCompany(comp);
-    setCounterparty(cp);
+    // Снимок реквизитов, сохранённый в самом документе, имеет приоритет над "живыми"
+    // данными компании/контрагента — так документ не теряет и не меняет реквизиты
+    // задним числом, даже если компанию потом отредактировали или удалили вовсе.
+    // Для документов, созданных до этого фикса (снимка ещё нет), используем live-join.
+    setCompany(d.company_snapshot || comp);
+    setCounterparty(d.counterparty_snapshot || cp);
     setChildren(kids || []);
     setLoading(false);
   };

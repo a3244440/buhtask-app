@@ -31,6 +31,7 @@ export default function EditDocPage() {
   const [hasVat, setHasVat] = useState(false);
   const [items, setItems] = useState<Item[]>([{ name: '', unit: 'усл.', qty: 1, price: 0 }]);
   const [saving, setSaving] = useState(false);
+  const [origSnapshots, setOrigSnapshots] = useState<{ company: any; counterparty: any; companyId: string; counterpartyId: string } | null>(null);
 
   const TYPE_LABEL = t(TYPE_LABEL_MAP[type] || 'nd.typeInvoice');
 
@@ -60,6 +61,7 @@ export default function EditDocPage() {
     setContract(doc.contract || '');
     setHasVat(doc.has_vat || false);
     setItems(doc.items && doc.items.length ? doc.items : [{ name: '', unit: 'усл.', qty: 1, price: 0 }]);
+    setOrigSnapshots({ company: doc.company_snapshot || null, counterparty: doc.counterparty_snapshot || null, companyId: doc.company_id || '', counterpartyId: doc.counterparty_id || '' });
     setLoading(false);
   };
 
@@ -76,10 +78,30 @@ export default function EditDocPage() {
     if (items.every(it => !it.name.trim())) { alert(t('nd.addItemAlert')); return; }
 
     setSaving(true);
+
+    // Если компания/контрагент не менялись при редактировании — сохраняем прежний
+    // снимок реквизитов как есть (документ не должен "плыть" задним числом при
+    // правке карточки компании). Если выбор поменяли — строим свежий снимок.
+    const selectedCompany = companies.find(c => c.id === companyId);
+    const selectedCp = counterparties.find(c => c.id === counterpartyId);
+    const companySnapshot = (origSnapshots?.company && origSnapshots.companyId === companyId)
+      ? origSnapshots.company
+      : selectedCompany ? {
+          name: selectedCompany.name, bin: selectedCompany.bin, director: selectedCompany.director,
+          address: selectedCompany.address, company_type: selectedCompany.company_type, bank_accounts: selectedCompany.bank_accounts,
+        } : null;
+    const counterpartySnapshot = (origSnapshots?.counterparty && origSnapshots.counterpartyId === counterpartyId)
+      ? origSnapshots.counterparty
+      : selectedCp ? {
+          name: selectedCp.name, bin: selectedCp.bin, director: selectedCp.director, address: selectedCp.address,
+          bank: selectedCp.bank, iban: selectedCp.iban,
+        } : null;
+
     const payload = {
       company_id: companyId, counterparty_id: counterpartyId,
       number, doc_date: docDate, contract,
       items: items.filter(it => it.name.trim()), total, vat_total: vatTotal, has_vat: hasVat,
+      company_snapshot: companySnapshot, counterparty_snapshot: counterpartySnapshot,
     };
     const { error } = await supabase.from('documents').update(payload).eq('id', docId).eq('owner_id', userId);
     setSaving(false);
