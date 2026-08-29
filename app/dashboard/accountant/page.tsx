@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench, Baby, AlertTriangle, BookOpen, Shield, SearchCheck, Users, FileText, Scale, BarChart3 } from 'lucide-react';
+import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench, Baby, AlertTriangle, BookOpen, Shield, SearchCheck, Users, FileText, Scale, BarChart3, Trophy } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 import { shortCompanyName } from '@/lib/companyName';
 import { useI18n } from '@/lib/i18n';
@@ -294,6 +294,10 @@ function AccountantDashboardInner() {
             <button onClick={() => router.push('/counterparties')}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <Users className="w-4 h-4 flex-shrink-0" /> {t('tools.counterparties')}
+            </button>
+            <button onClick={() => router.push('/reyting')}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-amber-600 hover:bg-amber-50 whitespace-nowrap">
+              <Trophy className="w-4 h-4 flex-shrink-0" /> Рейтинг бухгалтеров
             </button>
             <button onClick={() => router.push('/documents')}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">

@@ -7,6 +7,10 @@ import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 import { attributionLabel } from '@/lib/attribution';
 
+const CONTEST_CATEGORY_LABEL: Record<string, string> = {
+  nds: 'НДС', kpn_ipn: 'КПН/ИПН', form910: 'Форма 910', trud: 'Трудовое право', obshee: 'Общий бухучёт',
+};
+
 interface Accountant {
   id: string; email: string; full_name: string; phone: string; city: string;
   iin: string; bio: string; experience_years: number; specialization: string[];
@@ -66,6 +70,17 @@ export default function AdminPanel() {
   const [accountantSearch, setAccountantSearch] = useState('');
   const [savingEntry, setSavingEntry] = useState(false);
   const [entryError, setEntryError] = useState('');
+
+  // ===== Квиз конкурса =====
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  const [quizAttempts, setQuizAttempts] = useState<any[]>([]);
+  const [editingQuestion, setEditingQuestion] = useState<any | null>(null);
+  const [questionForm, setQuestionForm] = useState({
+    category: 'obshee', question: '', options: ['', '', '', ''], correct_index: 0, explanation: '', is_active: false,
+  });
+  const [savingQuestion, setSavingQuestion] = useState(false);
+  const [questionError, setQuestionError] = useState('');
+  const [contestSubTab, setContestSubTab] = useState<'entries' | 'questions' | 'results'>('entries');
 
   useEffect(() => { init(); }, []);
 
@@ -156,6 +171,16 @@ export default function AdminPanel() {
       const { data: entries } = await supabase.from('contest_entries').select('*').order('rank_position', { ascending: true });
       setContestEntries(entries || []);
     } catch { setContestEntries([]); }
+
+    // Квиз конкурса — банк вопросов и результаты попыток
+    try {
+      const { data: qs } = await supabase.from('quiz_questions').select('*').order('created_at', { ascending: false });
+      setQuizQuestions(qs || []);
+    } catch { setQuizQuestions([]); }
+    try {
+      const { data: att } = await supabase.from('quiz_attempts').select('*').eq('status', 'completed').order('score', { ascending: false }).order('time_taken_seconds', { ascending: true });
+      setQuizAttempts(att || []);
+    } catch { setQuizAttempts([]); }
 
     // Компании по пользователям
     const { data: comps } = await supabase.from('companies').select('id,owner_id,name,bin');
@@ -463,6 +488,95 @@ export default function AdminPanel() {
   const filteredAccountantsForContest = accountants.filter(a =>
     !accountantSearch.trim() || `${a.full_name} ${a.email} ${a.city}`.toLowerCase().includes(accountantSearch.toLowerCase())
   );
+
+  // ===== Квиз конкурса =====
+  const openNewQuestion = () => {
+    setEditingQuestion('new');
+    setQuestionForm({ category: 'obshee', question: '', options: ['', '', '', ''], correct_index: 0, explanation: '', is_active: false });
+    setQuestionError('');
+  };
+
+  const openEditQuestion = (q: any) => {
+    setEditingQuestion(q);
+    setQuestionForm({
+      category: q.category, question: q.question, options: [...q.options], correct_index: q.correct_index,
+      explanation: q.explanation || '', is_active: q.is_active,
+    });
+    setQuestionError('');
+  };
+
+  const saveQuestion = async () => {
+    if (!questionForm.question.trim()) { setQuestionError('Укажите текст вопроса'); return; }
+    if (questionForm.options.some(o => !o.trim())) { setQuestionError('Заполните все 4 варианта ответа'); return; }
+    setSavingQuestion(true);
+    setQuestionError('');
+
+    const payload = {
+      category: questionForm.category, question: questionForm.question.trim(),
+      options: questionForm.options.map(o => o.trim()), correct_index: questionForm.correct_index,
+      explanation: questionForm.explanation.trim() || null, is_active: questionForm.is_active,
+    };
+
+    if (editingQuestion === 'new') {
+      const { data, error } = await supabase.from('quiz_questions').insert(payload).select().single();
+      setSavingQuestion(false);
+      if (error) { setQuestionError(error.message); return; }
+      setQuizQuestions(prev => [data, ...prev]);
+      setEditingQuestion(null);
+    } else {
+      const { data, error } = await supabase.from('quiz_questions').update(payload).eq('id', editingQuestion.id).select().single();
+      setSavingQuestion(false);
+      if (error) { setQuestionError(error.message); return; }
+      setQuizQuestions(prev => prev.map(q => q.id === data.id ? data : q));
+      setEditingQuestion(null);
+    }
+  };
+
+  const deleteQuestion = async (q: any) => {
+    if (!window.confirm('Удалить вопрос из банка квиза?')) return;
+    const { error } = await supabase.from('quiz_questions').delete().eq('id', q.id);
+    if (error) { alert('Ошибка удаления: ' + error.message + (error.message.includes('foreign key') ? ' — вопрос уже использован в чьей-то попытке, удалить нельзя, можно только деактивировать' : '')); return; }
+    setQuizQuestions(prev => prev.filter(x => x.id !== q.id));
+  };
+
+  const toggleQuestionActive = async (q: any) => {
+    const is_active = !q.is_active;
+    const { data, error } = await supabase.from('quiz_questions').update({ is_active }).eq('id', q.id).select().single();
+    if (error) { alert('Ошибка: ' + error.message); return; }
+    setQuizQuestions(prev => prev.map(x => x.id === data.id ? data : x));
+  };
+
+  // Одним кликом переносит результат квиза бухгалтера в топ-N рейтинга (contest_entries)
+  const promoteAttemptToRank = async (attempt: any, rank: 1 | 2 | 3) => {
+    const existingAtRank = contestEntries.find(e => e.rank_position === rank && e.published);
+    if (existingAtRank && !window.confirm(`Место ${rank} сейчас занято другим участником — заменить?`)) return;
+
+    const acc = accountants.find(a => a.id === attempt.accountant_id);
+    if (!acc) { alert('Профиль бухгалтера не найден'); return; }
+
+    if (existingAtRank) {
+      await supabase.from('contest_entries').update({ published: false }).eq('id', existingAtRank.id);
+    }
+
+    const payload = {
+      accountant_id: acc.id, rank_position: rank, full_name: acc.full_name || acc.email,
+      avatar_url: (acc as any).avatar_url || null, city: acc.city || null, badge_type: 'quiz_winner',
+      note: `Результат квиза: ${attempt.score}/${attempt.total_questions}`, published: true,
+    };
+
+    const already = contestEntries.find(e => e.accountant_id === acc.id);
+    let error;
+    if (already) {
+      ({ error } = await supabase.from('contest_entries').update(payload).eq('id', already.id));
+    } else {
+      ({ error } = await supabase.from('contest_entries').insert(payload));
+    }
+    if (error) { alert('Ошибка: ' + error.message); return; }
+
+    const { data: entries } = await supabase.from('contest_entries').select('*').order('rank_position', { ascending: true });
+    setContestEntries(entries || []);
+    alert(`${acc.full_name || acc.email} назначен(а) на место ${rank}`);
+  };
 
   const filteredTasks = allTasks.filter(tk => {
     if (taskStatusFilter !== 'all' && tk.status !== taskStatusFilter) return false;
@@ -909,10 +1023,25 @@ export default function AdminPanel() {
 
         {/* ===== CONTEST TAB (Рейтинг бухгалтеров) ===== */}
         {view === 'contest' && (
+          <div>
+            <div className="flex gap-2 mb-4">
+              {[
+                { id: 'entries', label: 'Участники рейтинга' },
+                { id: 'questions', label: `Вопросы квиза (${quizQuestions.filter(q => q.is_active).length}/${quizQuestions.length} активно)` },
+                { id: 'results', label: `Результаты квиза (${quizAttempts.length})` },
+              ].map(t => (
+                <button key={t.id} onClick={() => setContestSubTab(t.id as any)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${contestSubTab === t.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+          {contestSubTab === 'entries' && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
               <Award className="w-5 h-5 text-amber-500" />
-              <h2 className="font-semibold text-gray-900">Рейтинг бухгалтеров</h2>
+              <h2 className="font-semibold text-gray-900">Участники рейтинга</h2>
               <span className="text-xs text-gray-400">({contestEntries.length})</span>
               <a href="/reyting" target="_blank" rel="noopener noreferrer"
                 className="ml-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
@@ -924,8 +1053,8 @@ export default function AdminPanel() {
               </button>
             </div>
             <p className="px-6 pt-3 text-xs text-gray-400">
-              Места 1–3 — «заслуженные» (пока квиза нет, назначаются вручную); с 4-го места — обычный список/продвижение.
-              Место в рамках сезона должно быть уникальным среди опубликованных.
+              Места 1–3 лучше назначать через вкладку «Результаты квиза» (кнопка «В топ-N») — так они действительно отражают
+              квиз, а не ручной выбор. С 4-го места — обычный список/продвижение. Место в рамках сезона уникально среди опубликованных.
             </p>
 
             <div className="divide-y divide-gray-50 mt-2">
@@ -939,7 +1068,7 @@ export default function AdminPanel() {
                       {e.rank_position}
                     </div>
                     <button onClick={() => openEditEntry(e)} className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-medium text-gray-900 truncate">{acc?.full_name || acc?.email || 'Профиль не найден'}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{acc?.full_name || acc?.email || e.full_name || 'Профиль не найден'}</p>
                       <p className="text-xs text-gray-400 truncate">{e.city || acc?.city || '—'}{e.company_name ? ` · ${e.company_name}` : ''}</p>
                     </button>
                     {e.badge_type === 'quiz_winner' && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-600 flex-shrink-0">По квизу</span>}
@@ -963,6 +1092,89 @@ export default function AdminPanel() {
                 );
               })}
             </div>
+          </div>
+          )}
+
+          {contestSubTab === 'questions' && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
+              <BookOpen className="w-5 h-5 text-blue-600" />
+              <h2 className="font-semibold text-gray-900">Банк вопросов квиза</h2>
+              <span className="text-xs text-gray-400">({quizQuestions.length})</span>
+              <button onClick={openNewQuestion}
+                className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold">
+                <Plus className="w-4 h-4" /> Добавить вопрос
+              </button>
+            </div>
+            <p className="px-6 pt-3 text-xs text-gray-400">
+              Только вопросы со статусом «Активен» реально попадают участникам в квиз. Черновики (в т.ч. посеянные автоматически)
+              стоит вычитать перед активацией — часть формулировок/цифр могла устареть из-за изменений в законодательстве.
+            </p>
+            <div className="divide-y divide-gray-50 mt-2">
+              {quizQuestions.length === 0 ? (
+                <p className="py-10 text-center text-gray-400 text-sm">Вопросов пока нет.</p>
+              ) : quizQuestions.map(q => (
+                <div key={q.id} className="px-6 py-3.5 hover:bg-gray-50 flex items-center gap-3">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500 flex-shrink-0">{CONTEST_CATEGORY_LABEL[q.category] || q.category}</span>
+                  <button onClick={() => openEditQuestion(q)} className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-medium text-gray-900 truncate">{q.question}</p>
+                  </button>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${q.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {q.is_active ? 'Активен' : 'Черновик'}
+                  </span>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => toggleQuestionActive(q)} title={q.is_active ? 'Деактивировать' : 'Активировать'}
+                      className={`p-2 rounded-lg transition-colors ${q.is_active ? 'hover:bg-amber-50 text-gray-400 hover:text-amber-600' : 'hover:bg-emerald-50 text-gray-400 hover:text-emerald-600'}`}>
+                      {q.is_active ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                    </button>
+                    <button onClick={() => openEditQuestion(q)} title="Редактировать" className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteQuestion(q)} title="Удалить" className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          )}
+
+          {contestSubTab === 'results' && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
+              <TrendingUp className="w-5 h-5 text-emerald-600" />
+              <h2 className="font-semibold text-gray-900">Результаты квиза</h2>
+              <span className="text-xs text-gray-400">({quizAttempts.length})</span>
+            </div>
+            <p className="px-6 pt-3 text-xs text-gray-400">Отсортировано по результату (лучший — сверху), при равном счёте — по скорости прохождения.</p>
+            <div className="divide-y divide-gray-50 mt-2">
+              {quizAttempts.length === 0 ? (
+                <p className="py-10 text-center text-gray-400 text-sm">Пока никто не завершил квиз.</p>
+              ) : quizAttempts.map((a, i) => {
+                const acc = accountants.find(x => x.id === a.accountant_id);
+                return (
+                  <div key={a.id} className="px-6 py-3.5 hover:bg-gray-50 flex items-center gap-3">
+                    <span className="w-6 text-center text-xs font-bold text-gray-300 flex-shrink-0">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{acc?.full_name || acc?.email || 'Профиль не найден'}</p>
+                      <p className="text-xs text-gray-400 truncate">{acc?.city || '—'} · {a.time_taken_seconds ? `${Math.round(a.time_taken_seconds / 60)} мин` : '—'}</p>
+                    </div>
+                    <span className="text-sm font-bold text-blue-600 flex-shrink-0">{a.score}/{a.total_questions}</span>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {[1, 2, 3].map(rank => (
+                        <button key={rank} onClick={() => promoteAttemptToRank(a, rank as 1 | 2 | 3)}
+                          className="text-[11px] px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-medium">
+                          В топ-{rank}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          )}
           </div>
         )}
 
@@ -1333,6 +1545,80 @@ export default function AdminPanel() {
                 <button onClick={saveEntry} disabled={savingEntry}
                   className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
                   {savingEntry ? 'Сохранение…' : (editingEntry === 'new' ? 'Добавить' : 'Сохранить изменения')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quiz question editor modal */}
+      {editingQuestion && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setEditingQuestion(null)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="font-bold text-gray-900">{editingQuestion === 'new' ? 'Новый вопрос' : 'Редактирование вопроса'}</h3>
+              <button onClick={() => setEditingQuestion(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {questionError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2.5">{questionError}</div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Категория</label>
+                <select value={questionForm.category} onChange={e => setQuestionForm(f => ({ ...f, category: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                  {Object.entries(CONTEST_CATEGORY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Текст вопроса</label>
+                <textarea value={questionForm.question} onChange={e => setQuestionForm(f => ({ ...f, question: e.target.value }))}
+                  rows={2} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Варианты ответа — отметьте кружком правильный</label>
+                <div className="space-y-2">
+                  {questionForm.options.map((opt, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <button type="button" onClick={() => setQuestionForm(f => ({ ...f, correct_index: i }))}
+                        className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${questionForm.correct_index === i ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'}`}>
+                        {questionForm.correct_index === i && <Check className="w-3 h-3 text-white" />}
+                      </button>
+                      <input value={opt} onChange={e => setQuestionForm(f => ({ ...f, options: f.options.map((o, oi) => oi === i ? e.target.value : o) }))}
+                        placeholder={`Вариант ${i + 1}`} className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Пояснение (покажется участнику после ответа)</label>
+                <textarea value={questionForm.explanation} onChange={e => setQuestionForm(f => ({ ...f, explanation: e.target.value }))}
+                  rows={2} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={questionForm.is_active} onChange={e => setQuestionForm(f => ({ ...f, is_active: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600" />
+                <span className="text-sm text-gray-700">Активен (попадёт в квиз участникам)</span>
+              </label>
+              <p className="text-xs text-amber-600 -mt-2">Включайте только после проверки актуальности вопроса живым бухгалтером/налоговым консультантом.</p>
+
+              <div className="flex gap-3 pt-2">
+                {editingQuestion !== 'new' && (
+                  <button onClick={() => deleteQuestion(editingQuestion)}
+                    className="px-4 flex items-center justify-center gap-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 py-3 rounded-xl font-semibold text-sm transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button onClick={saveQuestion} disabled={savingQuestion}
+                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+                  {savingQuestion ? 'Сохранение…' : (editingQuestion === 'new' ? 'Создать вопрос' : 'Сохранить изменения')}
                 </button>
               </div>
             </div>

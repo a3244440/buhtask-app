@@ -148,11 +148,11 @@ export default async function ContestPage() {
         {/* CTA — участие */}
         <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 sm:p-8 mt-10 text-white flex flex-col sm:flex-row items-center gap-5">
           <div className="flex-1 text-center sm:text-left">
-            <p className="font-bold text-lg">Вы бухгалтер и хотите попасть в рейтинг?</p>
-            <p className="text-blue-100 text-sm mt-1">Зарегистрируйтесь на платформе — квиз для отбора в топ-3 запустим совсем скоро.</p>
+            <p className="font-bold text-lg">Вы бухгалтер и хотите попасть в топ-3?</p>
+            <p className="text-blue-100 text-sm mt-1">Пройдите квиз на знание бухучёта и налогов — займите место в рейтинге по-настоящему.</p>
           </div>
-          <Link href="/auth" className="px-6 py-3 bg-white text-blue-700 font-bold rounded-xl hover:bg-yellow-300 hover:text-blue-900 transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0">
-            Присоединиться <ArrowRight className="w-4 h-4" />
+          <Link href="/quiz" className="px-6 py-3 bg-white text-blue-700 font-bold rounded-xl hover:bg-yellow-300 hover:text-blue-900 transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0">
+            Пройти квиз <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </main>
