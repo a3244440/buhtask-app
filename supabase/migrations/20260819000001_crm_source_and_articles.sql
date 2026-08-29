@@ -35,6 +35,17 @@ create table if not exists articles (
 create index if not exists idx_articles_published on articles(published, published_at desc);
 create index if not exists idx_articles_slug on articles(slug);
 
+-- Функция для авто-обновления updated_at при любом UPDATE — используется триггером ниже.
+-- Создаём явно здесь (idempotent), не полагаясь на то, что она уже есть в базе.
+create or replace function update_updated_at_column()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists update_articles_updated_at on articles;
 create trigger update_articles_updated_at before update on articles
   for each row execute function update_updated_at_column();
 

@@ -23,6 +23,17 @@ create table if not exists contest_entries (
 create unique index if not exists idx_contest_season_rank on contest_entries(season, rank_position) where published = true;
 create index if not exists idx_contest_published on contest_entries(season, published, rank_position);
 
+-- Та же функция может уже существовать (создана в другой миграции) — create or replace
+-- безопасен и идемпотентен в любом случае, поэтому дублируем здесь без риска конфликта.
+create or replace function update_updated_at_column()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists update_contest_entries_updated_at on contest_entries;
 create trigger update_contest_entries_updated_at before update on contest_entries
   for each row execute function update_updated_at_column();
 
