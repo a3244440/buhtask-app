@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe, Award, MapPin, GripVertical } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 import { attributionLabel } from '@/lib/attribution';
@@ -23,7 +23,7 @@ export default function AdminPanel() {
   const [accountants, setAccountants] = useState<Accountant[]>([]);
   const [selected, setSelected] = useState<Accountant | null>(null);
   const [filter, setFilter] = useState<'pending' | 'verified' | 'all'>('pending');
-  const [view, setView] = useState<'verify' | 'users' | 'activity' | 'support' | 'blog'>('verify');
+  const [view, setView] = useState<'verify' | 'users' | 'activity' | 'support' | 'blog' | 'contest'>('verify');
   const [tickets, setTickets] = useState<any[]>([]);
   const [activeTicket, setActiveTicket] = useState<any>(null);
   const [ticketMsgs, setTicketMsgs] = useState<any[]>([]);
@@ -56,6 +56,16 @@ export default function AdminPanel() {
   });
   const [savingArticle, setSavingArticle] = useState(false);
   const [articleError, setArticleError] = useState('');
+
+  // ===== Рейтинг бухгалтеров (конкурс) =====
+  const [contestEntries, setContestEntries] = useState<any[]>([]);
+  const [editingEntry, setEditingEntry] = useState<any | null>(null);
+  const [entryForm, setEntryForm] = useState({
+    accountant_id: '', rank_position: 1, city: '', company_name: '', badge_type: '', note: '', published: false,
+  });
+  const [accountantSearch, setAccountantSearch] = useState('');
+  const [savingEntry, setSavingEntry] = useState(false);
+  const [entryError, setEntryError] = useState('');
 
   useEffect(() => { init(); }, []);
 
@@ -140,6 +150,12 @@ export default function AdminPanel() {
       const { data: arts } = await supabase.from('articles').select('*').order('created_at', { ascending: false });
       setArticles(arts || []);
     } catch { setArticles([]); }
+
+    // Рейтинг бухгалтеров — все записи, включая неопубликованные
+    try {
+      const { data: entries } = await supabase.from('contest_entries').select('*').order('rank_position', { ascending: true });
+      setContestEntries(entries || []);
+    } catch { setContestEntries([]); }
 
     // Компании по пользователям
     const { data: comps } = await supabase.from('companies').select('id,owner_id,name,bin');
@@ -376,6 +392,78 @@ export default function AdminPanel() {
     setArticles(prev => prev.map(x => x.id === data.id ? data : x));
   };
 
+  // ===== Рейтинг бухгалтеров =====
+  const openNewEntry = () => {
+    const nextRank = contestEntries.length > 0 ? Math.max(...contestEntries.map(e => e.rank_position)) + 1 : 4;
+    setEditingEntry('new');
+    setEntryForm({ accountant_id: '', rank_position: nextRank, city: '', company_name: '', badge_type: '', note: '', published: false });
+    setAccountantSearch('');
+    setEntryError('');
+  };
+
+  const openEditEntry = (e: any) => {
+    setEditingEntry(e);
+    const acc = accountants.find(a => a.id === e.accountant_id);
+    setEntryForm({
+      accountant_id: e.accountant_id || '', rank_position: e.rank_position, city: e.city || acc?.city || '',
+      company_name: e.company_name || '', badge_type: e.badge_type || '', note: e.note || '', published: e.published,
+    });
+    setAccountantSearch(acc?.full_name || '');
+    setEntryError('');
+  };
+
+  const saveEntry = async () => {
+    if (!entryForm.accountant_id) { setEntryError('Выберите бухгалтера'); return; }
+    if (!entryForm.rank_position || entryForm.rank_position < 1) { setEntryError('Укажите место (число от 1)'); return; }
+    setSavingEntry(true);
+    setEntryError('');
+
+    const acc = accountants.find(a => a.id === entryForm.accountant_id);
+    const payload = {
+      accountant_id: entryForm.accountant_id,
+      rank_position: entryForm.rank_position,
+      full_name: acc?.full_name || acc?.email || null,
+      avatar_url: (acc as any)?.avatar_url || null,
+      city: entryForm.city.trim() || acc?.city || null,
+      company_name: entryForm.company_name.trim() || null,
+      badge_type: entryForm.rank_position <= 3 ? 'quiz_winner' : (entryForm.badge_type || null),
+      note: entryForm.note.trim() || null,
+      published: entryForm.published,
+    };
+
+    if (editingEntry === 'new') {
+      const { data, error } = await supabase.from('contest_entries').insert(payload).select().single();
+      setSavingEntry(false);
+      if (error) { setEntryError(error.message.includes('duplicate') ? 'Это место в сезоне уже занято другим участником' : error.message); return; }
+      setContestEntries(prev => [...prev, data].sort((a, b) => a.rank_position - b.rank_position));
+      setEditingEntry(null);
+    } else {
+      const { data, error } = await supabase.from('contest_entries').update(payload).eq('id', editingEntry.id).select().single();
+      setSavingEntry(false);
+      if (error) { setEntryError(error.message.includes('duplicate') ? 'Это место в сезоне уже занято другим участником' : error.message); return; }
+      setContestEntries(prev => prev.map(e => e.id === data.id ? data : e).sort((a, b) => a.rank_position - b.rank_position));
+      setEditingEntry(null);
+    }
+  };
+
+  const deleteEntry = async (e: any) => {
+    if (!window.confirm('Убрать участника из рейтинга?')) return;
+    const { error } = await supabase.from('contest_entries').delete().eq('id', e.id);
+    if (error) { alert('Ошибка удаления: ' + error.message); return; }
+    setContestEntries(prev => prev.filter(x => x.id !== e.id));
+  };
+
+  const toggleEntryPublish = async (e: any) => {
+    const published = !e.published;
+    const { data, error } = await supabase.from('contest_entries').update({ published }).eq('id', e.id).select().single();
+    if (error) { alert('Ошибка: ' + error.message + (error.message.includes('duplicate') ? ' — это место уже занято другим опубликованным участником' : '')); return; }
+    setContestEntries(prev => prev.map(x => x.id === data.id ? data : x));
+  };
+
+  const filteredAccountantsForContest = accountants.filter(a =>
+    !accountantSearch.trim() || `${a.full_name} ${a.email} ${a.city}`.toLowerCase().includes(accountantSearch.toLowerCase())
+  );
+
   const filteredTasks = allTasks.filter(tk => {
     if (taskStatusFilter !== 'all' && tk.status !== taskStatusFilter) return false;
     if (taskSearch.trim()) {
@@ -439,6 +527,7 @@ export default function AdminPanel() {
             { id: 'users', label: 'Все регистрации', icon: Users },
             { id: 'activity', label: 'Активность', icon: TrendingUp },
             { id: 'blog', label: 'Блог / SEO', icon: Newspaper },
+            { id: 'contest', label: 'Рейтинг', icon: Award },
             { id: 'support', label: 'Поддержка', icon: Headphones },
             { id: 'registry', label: 'Реестр БИН', icon: ShieldCheck, external: '/admin/registry' } as any,
           ] as const).map(v => (
@@ -818,6 +907,65 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* ===== CONTEST TAB (Рейтинг бухгалтеров) ===== */}
+        {view === 'contest' && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
+              <Award className="w-5 h-5 text-amber-500" />
+              <h2 className="font-semibold text-gray-900">Рейтинг бухгалтеров</h2>
+              <span className="text-xs text-gray-400">({contestEntries.length})</span>
+              <a href="/reyting" target="_blank" rel="noopener noreferrer"
+                className="ml-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                <Globe className="w-3 h-3" /> Открыть страницу /reyting
+              </a>
+              <button onClick={openNewEntry}
+                className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold">
+                <Plus className="w-4 h-4" /> Добавить участника
+              </button>
+            </div>
+            <p className="px-6 pt-3 text-xs text-gray-400">
+              Места 1–3 — «заслуженные» (пока квиза нет, назначаются вручную); с 4-го места — обычный список/продвижение.
+              Место в рамках сезона должно быть уникальным среди опубликованных.
+            </p>
+
+            <div className="divide-y divide-gray-50 mt-2">
+              {contestEntries.length === 0 ? (
+                <p className="py-10 text-center text-gray-400 text-sm">Пока никого нет в рейтинге. Добавьте первого участника.</p>
+              ) : contestEntries.map(e => {
+                const acc = accountants.find(a => a.id === e.accountant_id);
+                return (
+                  <div key={e.id} className="px-6 py-3.5 hover:bg-gray-50 flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${e.rank_position <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {e.rank_position}
+                    </div>
+                    <button onClick={() => openEditEntry(e)} className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-medium text-gray-900 truncate">{acc?.full_name || acc?.email || 'Профиль не найден'}</p>
+                      <p className="text-xs text-gray-400 truncate">{e.city || acc?.city || '—'}{e.company_name ? ` · ${e.company_name}` : ''}</p>
+                    </button>
+                    {e.badge_type === 'quiz_winner' && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-600 flex-shrink-0">По квизу</span>}
+                    {e.badge_type === 'promoted' && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-violet-50 text-violet-600 flex-shrink-0">Продвигается</span>}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${e.published ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
+                      {e.published ? 'Опубликовано' : 'Черновик'}
+                    </span>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => toggleEntryPublish(e)} title={e.published ? 'Снять с публикации' : 'Опубликовать'}
+                        className={`p-2 rounded-lg transition-colors ${e.published ? 'hover:bg-amber-50 text-gray-400 hover:text-amber-600' : 'hover:bg-emerald-50 text-gray-400 hover:text-emerald-600'}`}>
+                        {e.published ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                      </button>
+                      <button onClick={() => openEditEntry(e)} title="Редактировать" className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => deleteEntry(e)} title="Убрать" className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* ===== SUPPORT TAB ===== */}
         {view === 'support' && (
           <div className="grid md:grid-cols-3 gap-4" style={{ minHeight: '60vh' }}>
@@ -1089,6 +1237,102 @@ export default function AdminPanel() {
                 <button onClick={saveArticle} disabled={savingArticle}
                   className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
                   {savingArticle ? 'Сохранение…' : (editingArticle === 'new' ? 'Создать статью' : 'Сохранить изменения')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contest entry editor modal */}
+      {editingEntry && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setEditingEntry(null)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="font-bold text-gray-900">{editingEntry === 'new' ? 'Добавить в рейтинг' : 'Редактирование места'}</h3>
+              <button onClick={() => setEditingEntry(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {entryError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2.5">{entryError}</div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Бухгалтер</label>
+                <input value={accountantSearch} onChange={e => setAccountantSearch(e.target.value)}
+                  placeholder="Поиск по имени, email, городу…"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 mb-2" />
+                <div className="max-h-40 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
+                  {filteredAccountantsForContest.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-4">Никто не найден</p>
+                  ) : filteredAccountantsForContest.slice(0, 30).map(a => (
+                    <button key={a.id} onClick={() => { setEntryForm(f => ({ ...f, accountant_id: a.id, city: f.city || a.city || '' })); setAccountantSearch(a.full_name || a.email); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center justify-between ${entryForm.accountant_id === a.id ? 'bg-blue-50' : ''}`}>
+                      <span className="truncate">{a.full_name || a.email}</span>
+                      <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{a.city}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Место</label>
+                  <input type="number" min={1} value={entryForm.rank_position}
+                    onChange={e => setEntryForm(f => ({ ...f, rank_position: parseInt(e.target.value) || 1 }))}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                  <p className="text-[11px] text-gray-400 mt-1">{entryForm.rank_position <= 3 ? 'Заслуженное место — бейдж «По квизу» проставится автоматически' : 'Обычное место'}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Город</label>
+                  <input value={entryForm.city} onChange={e => setEntryForm(f => ({ ...f, city: e.target.value }))}
+                    placeholder="Если пусто — возьмём из профиля"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Компания / бренд (необязательно)</label>
+                <input value={entryForm.company_name} onChange={e => setEntryForm(f => ({ ...f, company_name: e.target.value }))}
+                  placeholder="Например: ТОО «Ваш Бухгалтер»"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+
+              {entryForm.rank_position > 3 && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Бейдж</label>
+                  <select value={entryForm.badge_type} onChange={e => setEntryForm(f => ({ ...f, badge_type: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Без бейджа</option>
+                    <option value="promoted">Продвигается (партнёрское размещение)</option>
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Подпись под карточкой (необязательно)</label>
+                <input value={entryForm.note} onChange={e => setEntryForm(f => ({ ...f, note: e.target.value }))}
+                  placeholder="Например: «10 лет опыта, специализация — НДС»"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={entryForm.published} onChange={e => setEntryForm(f => ({ ...f, published: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600" />
+                <span className="text-sm text-gray-700">Опубликовать сразу на странице /reyting</span>
+              </label>
+
+              <div className="flex gap-3 pt-2">
+                {editingEntry !== 'new' && (
+                  <button onClick={() => deleteEntry(editingEntry)}
+                    className="px-4 flex items-center justify-center gap-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 py-3 rounded-xl font-semibold text-sm transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button onClick={saveEntry} disabled={savingEntry}
+                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+                  {savingEntry ? 'Сохранение…' : (editingEntry === 'new' ? 'Добавить' : 'Сохранить изменения')}
                 </button>
               </div>
             </div>

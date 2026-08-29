@@ -236,6 +236,30 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* КОНКУРС — Рейтинг лучших бухгалтеров Казахстана */}
+      <section className="py-16 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <Reveal>
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 p-8 sm:p-12 text-center shadow-xl">
+              <div aria-hidden className="absolute inset-0 opacity-10" style={{
+                backgroundImage: 'radial-gradient(circle, white 1.5px, transparent 1.5px)', backgroundSize: '28px 28px',
+              }} />
+              <div className="relative">
+                <span className="text-5xl">🏆</span>
+                <h2 className="text-2xl sm:text-4xl font-extrabold text-white mt-4 mb-3">Рейтинг лучших бухгалтеров Казахстана</h2>
+                <p className="text-white/90 max-w-xl mx-auto leading-relaxed mb-6">
+                  Топ-3 нельзя купить — их нужно заслужить в квизе на знание бухучёта и налогов. Победители получают призы от партнёров конкурса.
+                </p>
+                <button onClick={() => router.push('/reyting')}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-white text-orange-600 font-bold hover:bg-gray-50 transition-all shadow-lg hover:-translate-y-0.5">
+                  Смотреть рейтинг <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* CATEGORIES */}
       <section id="categories" className={`py-24 px-4 sm:px-6 ${bg}`}>
         <div className="max-w-6xl mx-auto">
@@ -421,6 +445,7 @@ export default function HomePage() {
             <a href="/uslugi/buhgalter-almaty" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Алматы</a>
             <a href="/uslugi/buhgalter-shymkent" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Шымкент</a>
             <a href="/news" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Новости и статьи</a>
+            <a href="/reyting" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Рейтинг бухгалтеров</a>
             <a href="/uslugi" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Все услуги →</a>
           </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
