@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe, Award, MapPin, GripVertical } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe, Award, MapPin, GripVertical, Gift, Mail, Phone } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 import { attributionLabel } from '@/lib/attribution';
@@ -27,7 +27,7 @@ export default function AdminPanel() {
   const [accountants, setAccountants] = useState<Accountant[]>([]);
   const [selected, setSelected] = useState<Accountant | null>(null);
   const [filter, setFilter] = useState<'pending' | 'verified' | 'all'>('pending');
-  const [view, setView] = useState<'verify' | 'users' | 'activity' | 'support' | 'blog' | 'contest'>('verify');
+  const [view, setView] = useState<'verify' | 'users' | 'activity' | 'support' | 'blog' | 'contest' | 'partners'>('verify');
   const [tickets, setTickets] = useState<any[]>([]);
   const [activeTicket, setActiveTicket] = useState<any>(null);
   const [ticketMsgs, setTicketMsgs] = useState<any[]>([]);
@@ -81,6 +81,15 @@ export default function AdminPanel() {
   const [savingQuestion, setSavingQuestion] = useState(false);
   const [questionError, setQuestionError] = useState('');
   const [contestSubTab, setContestSubTab] = useState<'entries' | 'questions' | 'results'>('entries');
+
+  // ===== Партнёры =====
+  const [partners, setPartners] = useState<any[]>([]);
+  const [partnerFilter, setPartnerFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+  const [editingPartner, setEditingPartner] = useState<any | null>(null);
+  const [partnerForm, setPartnerForm] = useState({
+    name: '', category: 'other', description: '', website_url: '', logo_url: '', prize_offer: '', admin_note: '',
+  });
+  const [savingPartner, setSavingPartner] = useState(false);
 
   useEffect(() => { init(); }, []);
 
@@ -181,6 +190,12 @@ export default function AdminPanel() {
       const { data: att } = await supabase.from('quiz_attempts').select('*').eq('status', 'completed').order('score', { ascending: false }).order('time_taken_seconds', { ascending: true });
       setQuizAttempts(att || []);
     } catch { setQuizAttempts([]); }
+
+    // Заявки партнёров конкурса — все статусы, модерация здесь
+    try {
+      const { data: prts } = await supabase.from('partners').select('*').order('created_at', { ascending: false });
+      setPartners(prts || []);
+    } catch { setPartners([]); }
 
     // Компании по пользователям
     const { data: comps } = await supabase.from('companies').select('id,owner_id,name,bin');
@@ -489,6 +504,47 @@ export default function AdminPanel() {
     !accountantSearch.trim() || `${a.full_name} ${a.email} ${a.city}`.toLowerCase().includes(accountantSearch.toLowerCase())
   );
 
+  // ===== Партнёры =====
+  const openEditPartner = (p: any) => {
+    setEditingPartner(p);
+    setPartnerForm({
+      name: p.name, category: p.category, description: p.description || '', website_url: p.website_url || '',
+      logo_url: p.logo_url || '', prize_offer: p.prize_offer || '', admin_note: p.admin_note || '',
+    });
+  };
+
+  const savePartner = async () => {
+    setSavingPartner(true);
+    const payload = {
+      name: partnerForm.name.trim(), category: partnerForm.category, description: partnerForm.description.trim() || null,
+      website_url: partnerForm.website_url.trim() || null, logo_url: partnerForm.logo_url.trim() || null,
+      prize_offer: partnerForm.prize_offer.trim() || null, admin_note: partnerForm.admin_note.trim() || null,
+    };
+    const { data, error } = await supabase.from('partners').update(payload).eq('id', editingPartner.id).select().single();
+    setSavingPartner(false);
+    if (error) { alert('Ошибка: ' + error.message); return; }
+    setPartners(prev => prev.map(p => p.id === data.id ? data : p));
+    setEditingPartner(null);
+  };
+
+  const setPartnerStatus = async (p: any, status: 'approved' | 'rejected' | 'pending') => {
+    const payload: any = { status };
+    if (status === 'approved') payload.approved_at = new Date().toISOString();
+    const { data, error } = await supabase.from('partners').update(payload).eq('id', p.id).select().single();
+    if (error) { alert('Ошибка: ' + error.message); return; }
+    setPartners(prev => prev.map(x => x.id === data.id ? data : x));
+  };
+
+  const deletePartner = async (p: any) => {
+    if (!window.confirm(`Удалить заявку «${p.name}»?`)) return;
+    const { error } = await supabase.from('partners').delete().eq('id', p.id);
+    if (error) { alert('Ошибка удаления: ' + error.message); return; }
+    setPartners(prev => prev.filter(x => x.id !== p.id));
+  };
+
+  const filteredPartners = partners.filter(p => partnerFilter === 'all' || p.status === partnerFilter);
+  const pendingPartnersCount = partners.filter(p => p.status === 'pending').length;
+
   // ===== Квиз конкурса =====
   const openNewQuestion = () => {
     setEditingQuestion('new');
@@ -642,12 +698,18 @@ export default function AdminPanel() {
             { id: 'activity', label: 'Активность', icon: TrendingUp },
             { id: 'blog', label: 'Блог / SEO', icon: Newspaper },
             { id: 'contest', label: 'Рейтинг', icon: Award },
+            { id: 'partners', label: 'Партнёры', icon: Gift },
             { id: 'support', label: 'Поддержка', icon: Headphones },
             { id: 'registry', label: 'Реестр БИН', icon: ShieldCheck, external: '/admin/registry' } as any,
           ] as const).map(v => (
             <button key={v.id} onClick={() => (v as any).external ? router.push((v as any).external) : setView(v.id as any)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${view === v.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
+              className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${view === v.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
               <v.icon className="w-4 h-4" /> {v.label}
+              {v.id === 'partners' && pendingPartnersCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {pendingPartnersCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -1178,6 +1240,88 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* ===== PARTNERS TAB ===== */}
+        {view === 'partners' && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
+              <Gift className="w-5 h-5 text-violet-500" />
+              <h2 className="font-semibold text-gray-900">Заявки партнёров</h2>
+              <span className="text-xs text-gray-400">({filteredPartners.length})</span>
+              <a href="/partners" target="_blank" rel="noopener noreferrer"
+                className="ml-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                <Globe className="w-3 h-3" /> Открыть страницу /partners
+              </a>
+              <div className="ml-auto flex gap-2">
+                {([
+                  { id: 'pending', label: `На модерации (${partners.filter(p => p.status === 'pending').length})` },
+                  { id: 'approved', label: 'Опубликованные' },
+                  { id: 'rejected', label: 'Отклонённые' },
+                  { id: 'all', label: 'Все' },
+                ] as const).map(f => (
+                  <button key={f.id} onClick={() => setPartnerFilter(f.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${partnerFilter === f.id ? 'bg-violet-600 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="divide-y divide-gray-50">
+              {filteredPartners.length === 0 ? (
+                <p className="py-10 text-center text-gray-400 text-sm">Заявок нет</p>
+              ) : filteredPartners.map(p => (
+                <div key={p.id} className="px-6 py-4">
+                  <div className="flex items-start gap-3">
+                    {p.logo_url ? (
+                      <img src={p.logo_url} alt={p.name} className="w-11 h-11 rounded-xl object-contain border border-gray-100 flex-shrink-0" />
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-5 h-5" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-gray-900">{p.name}</p>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${p.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : p.status === 'rejected' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600'}`}>
+                          {p.status === 'approved' ? 'Опубликован' : p.status === 'rejected' ? 'Отклонён' : 'На модерации'}
+                        </span>
+                      </div>
+                      {p.description && <p className="text-xs text-gray-500 mt-1">{p.description}</p>}
+                      {p.prize_offer && <p className="text-xs text-emerald-600 font-medium mt-1">🎁 {p.prize_offer}</p>}
+                      <div className="flex items-center gap-3 text-xs text-gray-400 mt-1.5 flex-wrap">
+                        <span className="inline-flex items-center gap-1"><Mail className="w-3 h-3" /> {p.contact_email}</span>
+                        {p.contact_phone && <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3" /> {p.contact_phone}</span>}
+                        {p.contact_name && <span>{p.contact_name}</span>}
+                        {p.website_url && <a href={p.website_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Сайт</a>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {p.status !== 'approved' && (
+                        <button onClick={() => setPartnerStatus(p, 'approved')} title="Одобрить и опубликовать"
+                          className="p-2 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 transition-colors">
+                          <Check className="w-4 h-4" />
+                        </button>
+                      )}
+                      {p.status !== 'rejected' && (
+                        <button onClick={() => setPartnerStatus(p, 'rejected')} title="Отклонить"
+                          className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors">
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button onClick={() => openEditPartner(p)} title="Редактировать" className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => deletePartner(p)} title="Удалить" className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ===== SUPPORT TAB ===== */}
         {view === 'support' && (
           <div className="grid md:grid-cols-3 gap-4" style={{ minHeight: '60vh' }}>
@@ -1621,6 +1765,67 @@ export default function AdminPanel() {
                   {savingQuestion ? 'Сохранение…' : (editingQuestion === 'new' ? 'Создать вопрос' : 'Сохранить изменения')}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Partner editor modal */}
+      {editingPartner && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setEditingPartner(null)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="font-bold text-gray-900">Редактирование партнёра</h3>
+              <button onClick={() => setEditingPartner(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Название</label>
+                <input value={partnerForm.name} onChange={e => setPartnerForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Категория</label>
+                <select value={partnerForm.category} onChange={e => setPartnerForm(f => ({ ...f, category: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="bank">Банк / финансы</option>
+                  <option value="software">Софт для бизнеса</option>
+                  <option value="education">Обучение</option>
+                  <option value="office">Офис и товары</option>
+                  <option value="other">Другое</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Описание</label>
+                <textarea value={partnerForm.description} onChange={e => setPartnerForm(f => ({ ...f, description: e.target.value }))} rows={2}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Приз победителям</label>
+                <input value={partnerForm.prize_offer} onChange={e => setPartnerForm(f => ({ ...f, prize_offer: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Сайт</label>
+                  <input value={partnerForm.website_url} onChange={e => setPartnerForm(f => ({ ...f, website_url: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Логотип (ссылка)</label>
+                  <input value={partnerForm.logo_url} onChange={e => setPartnerForm(f => ({ ...f, logo_url: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Внутренняя заметка (не видна публично)</label>
+                <textarea value={partnerForm.admin_note} onChange={e => setPartnerForm(f => ({ ...f, admin_note: e.target.value }))} rows={2}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+              <button onClick={savePartner} disabled={savingPartner}
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+                {savingPartner ? 'Сохранение…' : 'Сохранить изменения'}
+              </button>
             </div>
           </div>
         </div>

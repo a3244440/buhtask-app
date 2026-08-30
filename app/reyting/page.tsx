@@ -78,6 +78,7 @@ export default async function ContestPage() {
             <p className="text-2xl mb-2">🎁</p>
             <p className="font-bold text-gray-900 text-sm mb-1">Призы от партнёров</p>
             <p className="text-xs text-gray-500 leading-relaxed">Победители получают призы от компаний-партнёров конкурса — от профессиональных инструментов до курсов и сертификатов.</p>
+            <Link href="/partners" className="text-xs text-blue-600 hover:underline inline-block mt-1.5">Стать партнёром →</Link>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-2xl mb-2">📈</p>

@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/dashboard/', '/admin/', '/api/', '/auth', '/onboarding/', '/support', '/profile'],
+        disallow: ['/dashboard/', '/admin/', '/api/', '/auth', '/onboarding/', '/support', '/profile', '/quiz'],
       },
     ],
     sitemap: 'https://buhtask.kz/sitemap.xml',
