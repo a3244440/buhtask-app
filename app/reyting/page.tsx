@@ -21,7 +21,9 @@ export default async function ContestPage() {
     .order('rank_position', { ascending: true });
 
   const top3 = (entries || []).filter(e => e.rank_position <= 3);
-  const rest = (entries || []).filter(e => e.rank_position > 3);
+  // Продвигаемые места скрываем с истёкшим сроком оплаты — без крон-джобы,
+  // просто фильтруем на выдаче (paid_until = null у ручных/непромо-записей не отфильтровывается)
+  const rest = (entries || []).filter(e => e.rank_position > 3 && (!e.paid_until || new Date(e.paid_until) > new Date()));
 
   const medal = (pos: number) => (pos === 1 ? '🥇' : pos === 2 ? '🥈' : '🥉');
 
@@ -84,6 +86,7 @@ export default async function ContestPage() {
             <p className="text-2xl mb-2">📈</p>
             <p className="font-bold text-gray-900 text-sm mb-1">Остальные места — по заявке</p>
             <p className="text-xs text-gray-500 leading-relaxed">Места с 4-го можно занять как продвигаемое размещение — честно помечено, чтобы не путать с заслуженным топ-3.</p>
+            <Link href="/promote" className="text-xs text-blue-600 hover:underline inline-block mt-1.5">Занять место →</Link>
           </div>
         </div>
 

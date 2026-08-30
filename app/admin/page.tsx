@@ -80,7 +80,10 @@ export default function AdminPanel() {
   });
   const [savingQuestion, setSavingQuestion] = useState(false);
   const [questionError, setQuestionError] = useState('');
-  const [contestSubTab, setContestSubTab] = useState<'entries' | 'questions' | 'results'>('entries');
+  const [contestSubTab, setContestSubTab] = useState<'entries' | 'questions' | 'results' | 'promotions'>('entries');
+
+  // ===== Заявки на платное продвижение =====
+  const [promotionRequests, setPromotionRequests] = useState<any[]>([]);
 
   // ===== Партнёры =====
   const [partners, setPartners] = useState<any[]>([]);
@@ -196,6 +199,12 @@ export default function AdminPanel() {
       const { data: prts } = await supabase.from('partners').select('*').order('created_at', { ascending: false });
       setPartners(prts || []);
     } catch { setPartners([]); }
+
+    // Заявки на платное продвижение в рейтинге
+    try {
+      const { data: promos } = await supabase.from('promotion_requests').select('*').order('requested_at', { ascending: false });
+      setPromotionRequests(promos || []);
+    } catch { setPromotionRequests([]); }
 
     // Компании по пользователям
     const { data: comps } = await supabase.from('companies').select('id,owner_id,name,bin');
@@ -544,6 +553,51 @@ export default function AdminPanel() {
 
   const filteredPartners = partners.filter(p => partnerFilter === 'all' || p.status === partnerFilter);
   const pendingPartnersCount = partners.filter(p => p.status === 'pending').length;
+
+  // ===== Заявки на платное продвижение =====
+  const approvePromotion = async (req: any) => {
+    if (!window.confirm(`Подтвердить оплату и разместить ${req.full_name || 'участника'} в рейтинге на ${req.period_months} мес?`)) return;
+
+    // Следующее свободное место с 4-го, среди опубликованных
+    const publishedRanks = contestEntries.filter(e => e.published).map(e => e.rank_position);
+    let nextRank = 4;
+    while (publishedRanks.includes(nextRank)) nextRank++;
+
+    const paidUntil = new Date();
+    paidUntil.setMonth(paidUntil.getMonth() + req.period_months);
+
+    const existing = contestEntries.find(e => e.accountant_id === req.accountant_id);
+    const payload = {
+      accountant_id: req.accountant_id, rank_position: existing?.published ? existing.rank_position : nextRank,
+      full_name: req.full_name, avatar_url: req.avatar_url, city: req.city, company_name: req.company_name,
+      badge_type: 'promoted', published: true, paid_until: paidUntil.toISOString(),
+    };
+
+    let error;
+    if (existing) {
+      ({ error } = await supabase.from('contest_entries').update(payload).eq('id', existing.id));
+    } else {
+      ({ error } = await supabase.from('contest_entries').insert(payload));
+    }
+    if (error) { alert('Ошибка размещения: ' + error.message); return; }
+
+    await supabase.from('promotion_requests').update({ status: 'approved', processed_at: new Date().toISOString() }).eq('id', req.id);
+
+    const [{ data: entries }, { data: promos }] = await Promise.all([
+      supabase.from('contest_entries').select('*').order('rank_position', { ascending: true }),
+      supabase.from('promotion_requests').select('*').order('requested_at', { ascending: false }),
+    ]);
+    setContestEntries(entries || []);
+    setPromotionRequests(promos || []);
+  };
+
+  const rejectPromotion = async (req: any) => {
+    const { error } = await supabase.from('promotion_requests').update({ status: 'rejected', processed_at: new Date().toISOString() }).eq('id', req.id);
+    if (error) { alert('Ошибка: ' + error.message); return; }
+    setPromotionRequests(prev => prev.map(p => p.id === req.id ? { ...p, status: 'rejected' } : p));
+  };
+
+  const pendingPromotionsCount = promotionRequests.filter(p => p.status === 'pending').length;
 
   // ===== Квиз конкурса =====
   const openNewQuestion = () => {
@@ -1091,6 +1145,7 @@ export default function AdminPanel() {
                 { id: 'entries', label: 'Участники рейтинга' },
                 { id: 'questions', label: `Вопросы квиза (${quizQuestions.filter(q => q.is_active).length}/${quizQuestions.length} активно)` },
                 { id: 'results', label: `Результаты квиза (${quizAttempts.length})` },
+                { id: 'promotions', label: `Заявки на продвижение${pendingPromotionsCount > 0 ? ` (${pendingPromotionsCount})` : ''}` },
               ].map(t => (
                 <button key={t.id} onClick={() => setContestSubTab(t.id as any)}
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${contestSubTab === t.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
@@ -1234,6 +1289,49 @@ export default function AdminPanel() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+          )}
+
+          {contestSubTab === 'promotions' && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
+              <TrendingUp className="w-5 h-5 text-violet-600" />
+              <h2 className="font-semibold text-gray-900">Заявки на платное продвижение</h2>
+              <span className="text-xs text-gray-400">({promotionRequests.length})</span>
+            </div>
+            <p className="px-6 pt-3 text-xs text-gray-400">
+              Одобряйте только после того, как реально проверили поступление оплаты по Kaspi/реквизитам —
+              подтверждение здесь не связано с автоматической проверкой платежа.
+            </p>
+            <div className="divide-y divide-gray-50 mt-2">
+              {promotionRequests.length === 0 ? (
+                <p className="py-10 text-center text-gray-400 text-sm">Заявок пока нет.</p>
+              ) : promotionRequests.map(req => (
+                <div key={req.id} className="px-6 py-3.5 flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{req.full_name || 'Без имени'}</p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {req.city || '—'} · {req.period_months} мес · {Number(req.amount).toLocaleString('ru-RU')} ₸ · {new Date(req.requested_at).toLocaleDateString('ru-RU')}
+                    </p>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : req.status === 'rejected' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600'}`}>
+                    {req.status === 'approved' ? 'Одобрена' : req.status === 'rejected' ? 'Отклонена' : 'На проверке'}
+                  </span>
+                  {req.status === 'pending' && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button onClick={() => approvePromotion(req)}
+                        className="text-[11px] px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium">
+                        Оплата пришла — разместить
+                      </button>
+                      <button onClick={() => rejectPromotion(req)}
+                        className="text-[11px] px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-medium">
+                        Отклонить
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
           )}
