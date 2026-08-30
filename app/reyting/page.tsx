@@ -83,10 +83,10 @@ export default async function ContestPage() {
             <Link href="/partners" className="text-xs text-blue-600 hover:underline inline-block mt-1.5">Стать партнёром →</Link>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <p className="text-2xl mb-2">📈</p>
-            <p className="font-bold text-gray-900 text-sm mb-1">Остальные места — по заявке</p>
-            <p className="text-xs text-gray-500 leading-relaxed">Места с 4-го можно занять как продвигаемое размещение — честно помечено, чтобы не путать с заслуженным топ-3.</p>
-            <Link href="/promote" className="text-xs text-blue-600 hover:underline inline-block mt-1.5">Занять место →</Link>
+            <p className="text-2xl mb-2">🔨</p>
+            <p className="font-bold text-gray-900 text-sm mb-1">Остальные места — аукцион на повышение</p>
+            <p className="text-xs text-gray-500 leading-relaxed">Место с 4-го определяется суммой ставки: кто предложил больше, тот выше. Перебили вашу ставку — вы опускаетесь на следующее место. Честно помечено «Продвигается», не путается с заслуженным топ-3.</p>
+            <Link href="/promote" className="text-xs text-blue-600 hover:underline inline-block mt-1.5">Сделать ставку →</Link>
           </div>
         </div>
 

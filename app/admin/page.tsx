@@ -555,22 +555,62 @@ export default function AdminPanel() {
   const pendingPartnersCount = partners.filter(p => p.status === 'pending').length;
 
   // ===== Заявки на платное продвижение =====
-  const approvePromotion = async (req: any) => {
-    if (!window.confirm(`Подтвердить оплату и разместить ${req.full_name || 'участника'} в рейтинге на ${req.period_months} мес?`)) return;
+  // Пересчитывает места 4+ по сумме активной ставки — реализует аукцион на повышение:
+  // кто предложил больше, тот выше; кого перебили — автоматически опускается на следующее
+  // место (каскадом для всех, кто ниже). Заодно снимает с публикации истёкшие места.
+  //
+  // Технический нюанс: в базе уникальный индекс на (season, rank_position) среди
+  // опубликованных записей — расставлять новые ранги по одному напрямую нельзя,
+  // легко словить конфликт (например, новая ставка должна встать на уже занятое место 4).
+  // Поэтому в два прохода: сначала разводим всех во временную безопасную зону рангов,
+  // затем уже расставляем финальные 4, 5, 6...
+  const resortPromotedRanks = async () => {
+    const now = new Date();
+    const { data: all } = await supabase.from('contest_entries').select('*').eq('badge_type', 'promoted');
+    const list = all || [];
 
-    // Следующее свободное место с 4-го, среди опубликованных
-    const publishedRanks = contestEntries.filter(e => e.published).map(e => e.rank_position);
-    let nextRank = 4;
-    while (publishedRanks.includes(nextRank)) nextRank++;
+    const expired = list.filter(e => e.published && (!e.paid_until || new Date(e.paid_until) <= now));
+    for (const e of expired) {
+      await supabase.from('contest_entries').update({ published: false }).eq('id', e.id);
+    }
+
+    const active = list.filter(e => e.published && e.paid_until && new Date(e.paid_until) > now);
+    const sorted = [...active].sort((a, b) => {
+      const diff = Number(b.paid_amount || 0) - Number(a.paid_amount || 0);
+      if (diff !== 0) return diff; // выше ставка — выше место
+      // при равной ставке — кто занял место раньше, тот и остаётся выше (не вытесняется равной ставкой)
+      return new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime();
+    });
+
+    for (let i = 0; i < sorted.length; i++) {
+      await supabase.from('contest_entries').update({ rank_position: 100000 + i }).eq('id', sorted[i].id);
+    }
+    for (let i = 0; i < sorted.length; i++) {
+      await supabase.from('contest_entries').update({ rank_position: 4 + i }).eq('id', sorted[i].id);
+    }
+
+    const { data: entries } = await supabase.from('contest_entries').select('*').order('rank_position', { ascending: true });
+    setContestEntries(entries || []);
+  };
+
+  const approvePromotion = async (req: any) => {
+    if (!window.confirm(`Подтвердить оплату ${Number(req.amount).toLocaleString('ru-RU')} ₸ от ${req.full_name || 'участника'} и пересчитать места?`)) return;
 
     const paidUntil = new Date();
     paidUntil.setMonth(paidUntil.getMonth() + req.period_months);
 
-    const existing = contestEntries.find(e => e.accountant_id === req.accountant_id);
+    const existing = contestEntries.find(e => e.accountant_id === req.accountant_id && e.badge_type === 'promoted');
+    // Временный "безопасный" ранг для новой/неопубликованной записи — реальное место назначит
+    // resortPromotedRanks() ниже. Если у записи уже был published=true ранг — переиспользуем его как
+    // временный (это безопасно, конфликта не будет: с самим собой не пересекается, а с чужими текущими
+    // рангами конфликтов нет, раз индекс уникален только среди published=true). Если запись не была
+    // опубликована, её старый rank_position мог протухнуть и сейчас принадлежать кому-то другому —
+    // в этом случае используем свежий временной диапазон, а не чужой занятый ранг.
+    const tempRank = 500000 + Math.floor(Math.random() * 100000);
     const payload = {
-      accountant_id: req.accountant_id, rank_position: existing?.published ? existing.rank_position : nextRank,
+      accountant_id: req.accountant_id, rank_position: (existing && existing.published) ? existing.rank_position : tempRank,
       full_name: req.full_name, avatar_url: req.avatar_url, city: req.city, company_name: req.company_name,
-      badge_type: 'promoted', published: true, paid_until: paidUntil.toISOString(),
+      badge_type: 'promoted', published: true, paid_until: paidUntil.toISOString(), paid_amount: req.amount,
     };
 
     let error;
@@ -582,12 +622,9 @@ export default function AdminPanel() {
     if (error) { alert('Ошибка размещения: ' + error.message); return; }
 
     await supabase.from('promotion_requests').update({ status: 'approved', processed_at: new Date().toISOString() }).eq('id', req.id);
+    await resortPromotedRanks();
 
-    const [{ data: entries }, { data: promos }] = await Promise.all([
-      supabase.from('contest_entries').select('*').order('rank_position', { ascending: true }),
-      supabase.from('promotion_requests').select('*').order('requested_at', { ascending: false }),
-    ]);
-    setContestEntries(entries || []);
+    const { data: promos } = await supabase.from('promotion_requests').select('*').order('requested_at', { ascending: false });
     setPromotionRequests(promos || []);
   };
 
@@ -1189,7 +1226,11 @@ export default function AdminPanel() {
                       <p className="text-xs text-gray-400 truncate">{e.city || acc?.city || '—'}{e.company_name ? ` · ${e.company_name}` : ''}</p>
                     </button>
                     {e.badge_type === 'quiz_winner' && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-600 flex-shrink-0">По квизу</span>}
-                    {e.badge_type === 'promoted' && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-violet-50 text-violet-600 flex-shrink-0">Продвигается</span>}
+                    {e.badge_type === 'promoted' && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-violet-50 text-violet-600 flex-shrink-0">
+                        Продвигается{e.paid_amount ? ` · ${Number(e.paid_amount).toLocaleString('ru-RU')} ₸` : ''}
+                      </span>
+                    )}
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${e.published ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
                       {e.published ? 'Опубликовано' : 'Черновик'}
                     </span>
@@ -1299,10 +1340,16 @@ export default function AdminPanel() {
               <TrendingUp className="w-5 h-5 text-violet-600" />
               <h2 className="font-semibold text-gray-900">Заявки на платное продвижение</h2>
               <span className="text-xs text-gray-400">({promotionRequests.length})</span>
+              <button onClick={() => resortPromotedRanks()}
+                className="ml-auto text-xs px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium">
+                Пересчитать места
+              </button>
             </div>
             <p className="px-6 pt-3 text-xs text-gray-400">
-              Одобряйте только после того, как реально проверили поступление оплаты по Kaspi/реквизитам —
-              подтверждение здесь не связано с автоматической проверкой платежа.
+              Места с 4-го — аукцион на повышение: кто заплатил больше, тот выше; кого перебили — опускается на
+              следующее место. Одобряйте заявку только после того, как реально проверили поступление оплаты по
+              Kaspi/реквизитам — подтверждение здесь не связано с автоматической проверкой платежа. Кнопка «Пересчитать
+              места» полезна, если истекли чьи-то оплаченные места, а новых заявок пока не было.
             </p>
             <div className="divide-y divide-gray-50 mt-2">
               {promotionRequests.length === 0 ? (
