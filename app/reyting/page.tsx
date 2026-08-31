@@ -84,9 +84,9 @@ export default async function ContestPage() {
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-2xl mb-2">🔨</p>
-            <p className="font-bold text-gray-900 text-sm mb-1">Остальные места — аукцион на повышение</p>
-            <p className="text-xs text-gray-500 leading-relaxed">Место с 4-го определяется суммой ставки: кто предложил больше, тот выше. Перебили вашу ставку — вы опускаетесь на следующее место. Честно помечено «Продвигается», не путается с заслуженным топ-3.</p>
-            <Link href="/promote" className="text-xs text-blue-600 hover:underline inline-block mt-1.5">Сделать ставку →</Link>
+            <p className="font-bold text-gray-900 text-sm mb-1">Остальные места — купить можно всегда</p>
+            <p className="text-xs text-gray-500 leading-relaxed">Место с 4-го можно выкупить в любой момент: перебили — предыдущий владелец опускается на следующее место, а цена этого места растёт на 10 000 ₸. Честно помечено «Продвигается», не путается с заслуженным топ-3.</p>
+            <Link href="/promote" className="text-xs text-blue-600 hover:underline inline-block mt-1.5">Купить место →</Link>
           </div>
         </div>
 

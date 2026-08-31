@@ -38,6 +38,7 @@ const NAV = [
   { id: 'tools', icon: Wrench, key: 'nav.tools' },
   { id: 'tasks', icon: Briefcase, key: 'nav.tasks' },
   { id: 'messages', icon: MessageSquare, key: 'nav.messages' },
+  { id: 'rating', icon: Trophy, key: 'nav.rating' },
 ];
 
 function AccountantDashboardInner() {
@@ -379,6 +380,24 @@ function AccountantDashboardInner() {
                   <button onClick={() => router.push('/profile')} className="mt-2 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg">{t('acc.fillProfile')}</button>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Конкурс — квиз и продвижение в рейтинге, отдельным заметным блоком */}
+          {tab === 'home' && (
+            <div className="grid sm:grid-cols-2 gap-3 mb-6">
+              <button onClick={() => router.push('/quiz')}
+                className="text-left bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-5 text-white hover:-translate-y-0.5 transition-transform shadow-sm">
+                <span className="text-2xl">🎁</span>
+                <p className="font-bold mt-2">Пройти квиз и получить подарок</p>
+                <p className="text-xs text-white/90 mt-1">Топ-3 по результатам квиза получают призы от партнёров конкурса</p>
+              </button>
+              <button onClick={() => router.push('/promote')}
+                className="text-left bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-5 text-white hover:-translate-y-0.5 transition-transform shadow-sm">
+                <span className="text-2xl">📈</span>
+                <p className="font-bold mt-2">Купить место для рекламы</p>
+                <p className="text-xs text-white/90 mt-1">Разместите себя в рейтинге бухгалтеров Казахстана — места с 4-го</p>
+              </button>
             </div>
           )}
 
@@ -743,12 +762,12 @@ function AccountantDashboardInner() {
 
       {/* Mobile nav */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-40">
-        <div className="grid grid-cols-4 h-16">
+        <div className="grid grid-cols-5 h-16">
           {NAV.map(item => (
-            <button key={item.id} onClick={() => item.id === 'tools' ? router.push('/tools') : setTab(item.id)}
-              className={`flex flex-col items-center justify-center gap-1 text-[10px] font-medium relative ${tab === item.id ? 'text-blue-600' : 'text-gray-400'}`}>
+            <button key={item.id} onClick={() => item.id === 'tools' ? router.push('/tools') : item.id === 'rating' ? router.push('/reyting') : setTab(item.id)}
+              className={`flex flex-col items-center justify-center gap-1 text-[10px] font-medium relative ${tab === item.id ? 'text-blue-600' : item.id === 'rating' ? 'text-amber-500' : 'text-gray-400'}`}>
               <item.icon className="w-5 h-5" />
-              {item.label}
+              {t(item.key)}
               {item.id === 'messages' && conversations.length > 0 && (
                 <span className="absolute top-2 right-6 bg-blue-600 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">{conversations.length}</span>
               )}

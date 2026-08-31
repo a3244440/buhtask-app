@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Camera, Save, ArrowLeft, User, Phone, MapPin, Briefcase, FileText, ShieldCheck, BadgeCheck, Upload, CheckCircle2, Clock, CreditCard } from 'lucide-react';
+import { Camera, Save, ArrowLeft, User, Phone, MapPin, Briefcase, FileText, ShieldCheck, BadgeCheck, Upload, CheckCircle2, Clock, CreditCard, Trash2, AlertTriangle, X } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 
 const CITIES = ['Астана','Алматы','Шымкент','Актобе','Тараз','Павлодар','Усть-Каменогорск','Семей','Атырау','Костанай','Кызылорда','Уральск','Петропавловск','Актау','Темиртау','Туркестан','Кокшетау','Талдыкорган'];
@@ -19,6 +19,11 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [userId, setUserId] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deletingRequest, setDeletingRequest] = useState(false);
+  const [deletionRequested, setDeletionRequested] = useState(false);
+  const [pendingDeletion, setPendingDeletion] = useState<any>(null);
   const [profile, setProfile] = useState({
     full_name: '', phone: '', city: 'Астана', role: 'client',
     bio: '', avatar_url: '', experience_years: 0, min_price: 0,
@@ -67,6 +72,10 @@ export default function ProfilePage() {
       setProfile(prev => ({ ...prev, email: user.email || '' }));
     }
     setLoading(false);
+
+    // Есть ли уже поданная заявка на удаление аккаунта
+    const { data: delReq } = await supabase.from('account_deletion_requests').select('*').eq('user_id', user.id).eq('status', 'pending').maybeSingle();
+    setPendingDeletion(delReq || null);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,6 +158,12 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setSaving(true); setError(''); setSuccess('');
     try {
+      // Берём свежий id из текущей сессии, а не из state, установленного при загрузке страницы —
+      // если форму заполняли долго, старое значение могло разойтись с актуальной сессией.
+      const { data: { user: freshUser } } = await supabase.auth.getUser();
+      if (!freshUser) throw new Error('Сессия истекла. Войдите заново и попробуйте снова.');
+      const uid = freshUser.id;
+
       const update: any = { full_name: profile.full_name, phone: profile.phone, city: profile.city, avatar_url: profile.avatar_url };
       // Роль админа никогда не перезаписываем через профиль
       if (profile.role !== 'admin') update.role = profile.role;
@@ -169,8 +184,14 @@ export default function ProfilePage() {
           update.verification_status = 'pending';
         }
       }
-      const { error: e } = await supabase.from('profiles').update(update).eq('id', userId);
+      const { data: updated, error: e } = await supabase.from('profiles').update(update).eq('id', uid).select();
       if (e) throw e;
+      // Supabase/Postgrest не считает 0 обновлённых строк ошибкой (обычно это RLS тихо
+      // отфильтровал запрос — например, истекла сессия и auth.uid() больше не совпадает
+      // с userId). Раньше это выглядело как "сохранение прошло", хотя ничего не менялось.
+      if (!updated || updated.length === 0) {
+        throw new Error('Изменения не применились — возможно, истекла сессия. Обновите страницу и войдите заново, затем попробуйте снова.');
+      }
       setSuccess('Профиль успешно сохранён!');
       if (profile.role === 'accountant' && profile.id_card_url && profile.iin && profile.verification_status === 'not_verified') {
         setProfile(p => ({ ...p, verification_status: 'pending' }));
@@ -182,6 +203,21 @@ export default function ProfilePage() {
 
   const dashHref = profile.role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client';
   const initials = profile.full_name ? profile.full_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : profile.email[0]?.toUpperCase() || '?';
+
+  const submitDeletionRequest = async () => {
+    if (!deleteReason.trim()) { setError('Укажите причину удаления аккаунта'); return; }
+    setDeletingRequest(true);
+    setError('');
+    const { error: e } = await supabase.from('account_deletion_requests').insert({
+      user_id: userId, full_name: profile.full_name || null, email: profile.email || null,
+      role: profile.role, reason: deleteReason.trim(), status: 'pending',
+    });
+    setDeletingRequest(false);
+    if (e) { setError('Не удалось отправить заявку: ' + e.message); return; }
+    setDeletionRequested(true);
+    setShowDeleteModal(false);
+    setPendingDeletion({ reason: deleteReason.trim(), requested_at: new Date().toISOString() });
+  };
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
 
@@ -396,7 +432,69 @@ export default function ProfilePage() {
           className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3.5 rounded-xl font-semibold text-sm transition-colors">
           <Save className="w-4 h-4" /> {saving ? 'Сохраняем...' : 'Сохранить изменения'}
         </button>
+
+        {/* Удаление аккаунта */}
+        <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-6 mt-8">
+          <div className="flex items-center gap-2 mb-1">
+            <Trash2 className="w-5 h-5 text-red-500" />
+            <h2 className="font-semibold text-gray-900">Удаление аккаунта</h2>
+          </div>
+          {pendingDeletion || deletionRequested ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-3 flex items-center gap-3">
+              <Clock className="w-5 h-5 text-amber-500 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">Заявка на удаление на рассмотрении</p>
+                <p className="text-xs text-amber-600">Аккаунт остаётся активным до подтверждения администратором.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-gray-500 mb-4 mt-1">
+                Аккаунт удаляется не мгновенно — заявка с указанной причиной передаётся администратору,
+                и удаление происходит после подтверждения.
+              </p>
+              <button onClick={() => setShowDeleteModal(true)}
+                className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-2">
+                <Trash2 className="w-4 h-4" /> Подать заявку на удаление аккаунта
+              </button>
+            </>
+          )}
+        </div>
       </main>
+
+      {/* Модалка удаления */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowDeleteModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" /> Удаление аккаунта
+              </h3>
+              <button onClick={() => setShowDeleteModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Пожалуйста, укажите причину — это поможет нам стать лучше. Заявка попадёт администратору,
+                который подтвердит удаление.
+              </p>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Причина удаления *</label>
+              <textarea value={deleteReason} onChange={e => setDeleteReason(e.target.value)} rows={3}
+                placeholder="Расскажите, почему хотите удалить аккаунт"
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500 resize-none mb-4" />
+              {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2.5 mb-4">{error}</div>}
+              <div className="flex gap-3">
+                <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100">
+                  Отмена
+                </button>
+                <button onClick={submitDeletionRequest} disabled={deletingRequest}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-300">
+                  {deletingRequest ? 'Отправка…' : 'Отправить заявку'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

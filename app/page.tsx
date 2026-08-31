@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useTheme } from "@/lib/theme";
+import { supabase } from "@/lib/supabase";
 import NavWrapper from "./components/NavWrapper";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -103,9 +104,13 @@ export default function HomePage() {
   const { t, lang } = useI18n();
   const { dark, toggle: toggleDark, mounted } = useTheme();
   const { displayed, showCursor } = useTypingAnimation(TYPING_WORDS[lang] || TYPING_WORDS.ru);
+  const [contestTop3, setContestTop3] = useState<any[]>([]);
 
   useEffect(() => {
     fetchUser();
+    supabase.from('contest_entries').select('*').eq('published', true).eq('season', 'permanent')
+      .lte('rank_position', 3).order('rank_position', { ascending: true })
+      .then(({ data }) => setContestTop3(data || []));
   }, []);
 
   useEffect(() => {
@@ -203,6 +208,55 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* КОНКУРС — Рейтинг лучших бухгалтеров Казахстана, сразу под шапкой */}
+      <section className="py-14 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <Reveal>
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 p-6 sm:p-10 shadow-xl">
+              <div aria-hidden className="absolute inset-0 opacity-10" style={{
+                backgroundImage: 'radial-gradient(circle, white 1.5px, transparent 1.5px)', backgroundSize: '28px 28px',
+              }} />
+              <div className="relative text-center mb-6">
+                <span className="text-4xl">🏆</span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-2 mb-2">Рейтинг лучших бухгалтеров Казахстана</h2>
+                <p className="text-white/90 max-w-xl mx-auto leading-relaxed text-sm">
+                  Топ-3 нельзя купить — их нужно заслужить в квизе на знание бухучёта и налогов
+                </p>
+              </div>
+
+              {contestTop3.length > 0 ? (
+                <div className="relative grid sm:grid-cols-3 gap-3 mb-6">
+                  {contestTop3.map(e => (
+                    <button key={e.id} onClick={() => router.push('/reyting')}
+                      className={`bg-white/95 backdrop-blur rounded-2xl p-4 text-center hover:-translate-y-1 transition-transform ${e.rank_position === 1 ? 'sm:-translate-y-2 shadow-lg' : 'shadow'}`}>
+                      <p className="text-2xl mb-1">{e.rank_position === 1 ? '🥇' : e.rank_position === 2 ? '🥈' : '🥉'}</p>
+                      {e.avatar_url ? (
+                        <img src={e.avatar_url} alt={e.full_name || ''} className="w-14 h-14 rounded-full object-cover mx-auto mb-2 border-2 border-white shadow" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-2 font-bold text-lg">
+                          {(e.full_name || '?').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <p className="font-bold text-gray-900 text-sm truncate">{e.full_name}</p>
+                      {e.city && <p className="text-xs text-gray-400">{e.city}</p>}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="relative text-center text-white/80 text-sm mb-6">Первый сезон рейтинга скоро стартует — станьте одним из первых участников</p>
+              )}
+
+              <div className="relative text-center">
+                <button onClick={() => router.push('/reyting')}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-white text-orange-600 font-bold hover:bg-gray-50 transition-all shadow-lg hover:-translate-y-0.5">
+                  Смотреть рейтинг <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ВСЕ ИНСТРУМЕНТЫ */}
       <section className={`py-16 px-4 sm:px-6 ${bg}`}>
         <div className="max-w-6xl mx-auto">
@@ -233,30 +287,6 @@ export default function HomePage() {
               );
             })}
           </div>
-        </div>
-      </section>
-
-      {/* КОНКУРС — Рейтинг лучших бухгалтеров Казахстана */}
-      <section className="py-16 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <Reveal>
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 p-8 sm:p-12 text-center shadow-xl">
-              <div aria-hidden className="absolute inset-0 opacity-10" style={{
-                backgroundImage: 'radial-gradient(circle, white 1.5px, transparent 1.5px)', backgroundSize: '28px 28px',
-              }} />
-              <div className="relative">
-                <span className="text-5xl">🏆</span>
-                <h2 className="text-2xl sm:text-4xl font-extrabold text-white mt-4 mb-3">Рейтинг лучших бухгалтеров Казахстана</h2>
-                <p className="text-white/90 max-w-xl mx-auto leading-relaxed mb-6">
-                  Топ-3 нельзя купить — их нужно заслужить в квизе на знание бухучёта и налогов. Победители получают призы от партнёров конкурса.
-                </p>
-                <button onClick={() => router.push('/reyting')}
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-white text-orange-600 font-bold hover:bg-gray-50 transition-all shadow-lg hover:-translate-y-0.5">
-                  Смотреть рейтинг <ArrowRight className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </Reveal>
         </div>
       </section>
 

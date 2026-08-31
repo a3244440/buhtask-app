@@ -11,6 +11,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'nav.tasks': { ru: 'Мои задачи', kz: 'Менің тапсырмаларым', en: 'My Tasks' },
   'nav.messages': { ru: 'Сообщения', kz: 'Хабарламалар', en: 'Messages' },
   'nav.tools': { ru: 'Инструменты', kz: 'Құралдар', en: 'Tools' },
+  'nav.rating': { ru: 'Рейтинг', kz: 'Рейтинг', en: 'Rating' },
   'nav.availableTasks': { ru: 'Доступные задачи', kz: 'Қолжетімді тапсырмалар', en: 'Available Tasks' },
   'nav.myOrders': { ru: 'Мои заказы', kz: 'Менің тапсырыстарым', en: 'My Orders' },
   'nav.balance': { ru: 'Баланс и комиссии', kz: 'Баланс және комиссиялар', en: 'Balance & Fees' },

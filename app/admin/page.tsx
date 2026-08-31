@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe, Award, MapPin, GripVertical, Gift, Mail, Phone } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe, Award, MapPin, GripVertical, Gift, Mail, Phone, BookOpen } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 import { attributionLabel } from '@/lib/attribution';
@@ -205,6 +205,12 @@ export default function AdminPanel() {
       const { data: promos } = await supabase.from('promotion_requests').select('*').order('requested_at', { ascending: false });
       setPromotionRequests(promos || []);
     } catch { setPromotionRequests([]); }
+
+    // Заявки на удаление аккаунта — только ожидающие рассмотрения
+    try {
+      const { data: dels } = await supabase.from('account_deletion_requests').select('*').eq('status', 'pending').order('requested_at', { ascending: false });
+      setDeletionRequests(dels || []);
+    } catch { setDeletionRequests([]); }
 
     // Компании по пользователям
     const { data: comps } = await supabase.from('companies').select('id,owner_id,name,bin');
@@ -636,6 +642,36 @@ export default function AdminPanel() {
 
   const pendingPromotionsCount = promotionRequests.filter(p => p.status === 'pending').length;
 
+  // ===== Заявки на удаление аккаунта =====
+  const [deletionRequests, setDeletionRequests] = useState<any[]>([]);
+  const [processingDeletion, setProcessingDeletion] = useState<string | null>(null);
+
+  const approveDeletion = async (req: any) => {
+    if (!window.confirm(`Удалить аккаунт «${req.full_name || req.email}» НАВСЕГДА? Это необратимо.`)) return;
+    setProcessingDeletion(req.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ requestId: req.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Ошибка');
+      setDeletionRequests(prev => prev.filter(r => r.id !== req.id));
+    } catch (e: any) {
+      alert('Ошибка удаления: ' + e.message);
+    } finally {
+      setProcessingDeletion(null);
+    }
+  };
+
+  const rejectDeletion = async (req: any) => {
+    const { error } = await supabase.from('account_deletion_requests').update({ status: 'rejected', processed_at: new Date().toISOString() }).eq('id', req.id);
+    if (error) { alert('Ошибка: ' + error.message); return; }
+    setDeletionRequests(prev => prev.filter(r => r.id !== req.id));
+  };
+
   // ===== Квиз конкурса =====
   const openNewQuestion = () => {
     setEditingQuestion('new');
@@ -896,6 +932,40 @@ export default function AdminPanel() {
                 </div>
               );
             })()}
+
+            {/* Заявки на удаление аккаунта */}
+            {deletionRequests.length > 0 && (
+              <div className="bg-white rounded-2xl border border-red-100 shadow-sm">
+                <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2">
+                  <Trash2 className="w-5 h-5 text-red-500" />
+                  <h2 className="font-semibold text-gray-900">Заявки на удаление аккаунта</h2>
+                  <span className="text-xs text-gray-400">({deletionRequests.length})</span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {deletionRequests.map(req => (
+                    <div key={req.id} className="px-6 py-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">{req.full_name || req.email || 'Без имени'}</p>
+                          <p className="text-xs text-gray-400 mb-1.5">{req.email} · {req.role === 'accountant' ? 'Бухгалтер' : 'Заказчик'} · {new Date(req.requested_at).toLocaleDateString('ru-RU')}</p>
+                          <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">«{req.reason}»</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button onClick={() => approveDeletion(req)} disabled={processingDeletion === req.id}
+                            className="text-[11px] px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-medium disabled:opacity-50">
+                            {processingDeletion === req.id ? 'Удаление…' : 'Подтвердить и удалить'}
+                          </button>
+                          <button onClick={() => rejectDeletion(req)} disabled={processingDeletion === req.id}
+                            className="text-[11px] px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium">
+                            Отклонить
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
