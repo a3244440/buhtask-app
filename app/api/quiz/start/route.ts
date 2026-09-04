@@ -35,17 +35,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (existing?.status === 'pending_review') {
+      return NextResponse.json({
+        status: 'pending_review', autoScore: existing.auto_score, total: existing.total_questions,
+      });
+    }
+
     if (existing?.status === 'in_progress') {
       // Возобновляем — отдаём ТЕ ЖЕ вопросы (без правильных ответов), плюс уже сохранённые ответы участника
-      const { data: questions } = await db.from('quiz_questions').select('id, category, question, options').in('id', existing.question_ids);
+      const { data: questions } = await db.from('quiz_questions').select('id, category, question, options, question_type').in('id', existing.question_ids);
       const ordered = existing.question_ids.map((id: string) => questions?.find(q => q.id === id)).filter(Boolean);
+      // Уже отправленные text/voice-ответы — чтобы при возобновлении показать, что на этот вопрос уже отвечено
+      const { data: manual } = await db.from('quiz_manual_answers').select('question_id, text_answer, voice_url').eq('attempt_id', existing.id);
       return NextResponse.json({
         status: 'in_progress', attemptId: existing.id, questions: ordered, answers: existing.answers || {},
+        manualAnswers: manual || [],
       });
     }
 
     // Новая попытка — набираем случайные активные вопросы
-    const { data: pool } = await db.from('quiz_questions').select('id, category, question, options').eq('is_active', true);
+    const { data: pool } = await db.from('quiz_questions').select('id, category, question, options, question_type').eq('is_active', true);
     if (!pool || pool.length === 0) {
       return NextResponse.json({ error: 'Квиз пока не готов — вопросы ещё не опубликованы. Попробуйте позже.' }, { status: 409 });
     }
@@ -60,9 +69,9 @@ export async function POST(req: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    return NextResponse.json({ status: 'in_progress', attemptId: attempt.id, questions: selected, answers: {} });
+    return NextResponse.json({ status: 'in_progress', attemptId: attempt.id, questions: selected, answers: {}, manualAnswers: [] });
   } catch (e: any) {
     console.error('quiz/start error', e);
-    return NextResponse.json({ error: 'Внутренняя ошибка' }, { status: 500 });
+    return NextResponse.json({ error: 'Внутренняя ошибка: ' + (e?.message || String(e)) }, { status: 500 });
   }
 }

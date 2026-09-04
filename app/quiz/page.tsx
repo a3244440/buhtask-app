@@ -1,16 +1,21 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
-import { CheckCircle2, XCircle, Trophy, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle, Trophy, ArrowRight, Loader2, AlertTriangle, Mic, Square, Play, Clock3, Type } from 'lucide-react';
 
-interface Question { id: string; category: string; question: string; options: string[]; }
-interface Result { questionId: string; question: string; options: string[]; selectedIndex: number | null; correctIndex: number; correct: boolean; explanation: string; }
+type QType = 'multiple_choice' | 'text' | 'voice';
+interface Question { id: string; category: string; question: string; options: string[] | null; question_type: QType; }
+interface Result {
+  questionId: string; type: QType; question: string; category?: string;
+  options?: string[]; selectedIndex?: number | null; correctIndex?: number; correct?: boolean; explanation?: string;
+  textAnswer?: string | null; voiceUrl?: boolean; pendingReview?: boolean;
+}
 
 const CATEGORY_LABEL: Record<string, string> = {
-  nds: 'НДС', kpn_ipn: 'КПН/ИПН', form910: 'Форма 910', trud: 'Трудовое право', obshee: 'Общий бухучёт',
+  nds: 'НДС', kpn_ipn: 'КПН/ИПН', form910: 'Форма 910', trud: 'Трудовое право', obshee: 'Общий бухучёт', msfo: 'МСФО',
 };
 
 async function authedFetch(url: string, body?: any) {
@@ -29,19 +34,33 @@ export default function QuizPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [status, setStatus] = useState<'in_progress' | 'completed' | null>(null);
+  const [status, setStatus] = useState<'in_progress' | 'completed' | 'pending_review' | null>(null);
   const [attemptId, setAttemptId] = useState('');
+  const [userId, setUserId] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [manualAnswered, setManualAnswered] = useState<Record<string, boolean>>({}); // questionId -> уже отправлен text/voice ответ
+  const [textDraft, setTextDraft] = useState<Record<string, string>>({});
   const [current, setCurrent] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [finalScore, setFinalScore] = useState<{ score: number; total: number } | null>(null);
+  const [savingManual, setSavingManual] = useState(false);
+  const [finalScore, setFinalScore] = useState<{ score?: number; autoScore?: number; total: number } | null>(null);
   const [results, setResults] = useState<Result[] | null>(null);
+
+  // Запись голоса
+  const [recording, setRecording] = useState(false);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [uploadingVoice, setUploadingVoice] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.replace('/auth?redirect=/quiz'); return; }
+      setUserId(session.user.id);
       try {
         const data = await authedFetch('/api/quiz/start');
         setStatus(data.status);
@@ -49,9 +68,15 @@ export default function QuizPage() {
           setAttemptId(data.attemptId);
           setQuestions(data.questions);
           setAnswers(data.answers || {});
-          // встаём на первый вопрос без ответа
-          const firstUnanswered = data.questions.findIndex((q: Question) => data.answers?.[q.id] === undefined);
+          const manualDone: Record<string, boolean> = {};
+          (data.manualAnswers || []).forEach((m: any) => { manualDone[m.question_id] = true; });
+          setManualAnswered(manualDone);
+          const firstUnanswered = data.questions.findIndex((q: Question) =>
+            q.question_type === 'multiple_choice' ? data.answers?.[q.id] === undefined : !manualDone[q.id]
+          );
           setCurrent(firstUnanswered === -1 ? 0 : firstUnanswered);
+        } else if (data.status === 'pending_review') {
+          setFinalScore({ autoScore: data.autoScore, total: data.total });
         } else {
           setFinalScore({ score: data.score, total: data.total });
         }
@@ -68,13 +93,72 @@ export default function QuizPage() {
     try { await authedFetch('/api/quiz/answer', { attemptId, questionId, selectedIndex: idx }); } catch { /* сохранится при следующей попытке ответить */ }
   }, [attemptId]);
 
+  const submitTextAnswer = async (questionId: string) => {
+    const text = (textDraft[questionId] || '').trim();
+    if (!text) return;
+    setSavingManual(true);
+    try {
+      await authedFetch('/api/quiz/answer', { attemptId, questionId, textAnswer: text });
+      setManualAnswered(prev => ({ ...prev, [questionId]: true }));
+    } catch (e: any) {
+      setError(e.message || 'Не удалось сохранить ответ');
+    } finally {
+      setSavingManual(false);
+    }
+  };
+
+  const startRecording = async () => {
+    setRecordedBlob(null);
+    setRecordSeconds(0);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      chunksRef.current = [];
+      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        setRecordedBlob(new Blob(chunksRef.current, { type: 'audio/webm' }));
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      setRecording(true);
+      timerRef.current = setInterval(() => setRecordSeconds(s => s + 1), 1000);
+    } catch {
+      setError('Не удалось получить доступ к микрофону — разрешите доступ в браузере');
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
+  const submitVoiceAnswer = async (questionId: string) => {
+    if (!recordedBlob) return;
+    setUploadingVoice(true);
+    try {
+      const path = `${userId}/${attemptId}_${questionId}.webm`;
+      const { error: upErr } = await supabase.storage.from('quiz-voice-answers').upload(path, recordedBlob, { upsert: true });
+      if (upErr) throw upErr;
+      await authedFetch('/api/quiz/answer', { attemptId, questionId, voiceUrl: path });
+      setManualAnswered(prev => ({ ...prev, [questionId]: true }));
+      setRecordedBlob(null);
+      setRecordSeconds(0);
+    } catch (e: any) {
+      setError(e.message || 'Не удалось отправить голосовой ответ');
+    } finally {
+      setUploadingVoice(false);
+    }
+  };
+
   const finish = async () => {
     setSubmitting(true);
     try {
       const data = await authedFetch('/api/quiz/finish', { attemptId });
-      setFinalScore({ score: data.score, total: data.total });
+      setFinalScore({ score: data.score, autoScore: data.autoScore, total: data.total });
       setResults(data.results);
-      setStatus('completed');
+      setStatus(data.status);
     } catch (e: any) {
       setError(e.message || 'Не удалось завершить квиз');
     } finally {
@@ -83,8 +167,8 @@ export default function QuizPage() {
   };
 
   const q = questions[current];
-  const answeredCount = Object.keys(answers).length;
-  const allAnswered = questions.length > 0 && answeredCount === questions.length;
+  const isAnswered = (qq: Question) => qq.question_type === 'multiple_choice' ? answers[qq.id] !== undefined : !!manualAnswered[qq.id];
+  const allAnswered = questions.length > 0 && questions.every(isAnswered);
 
   if (loading) return <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>;
 
@@ -95,7 +179,7 @@ export default function QuizPage() {
         <DashboardHeader title="Квиз конкурса" />
         <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
 
-          {error && (
+          {error && !questions.length && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
               <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-3" />
               <p className="text-gray-700 font-medium mb-1">{error}</p>
@@ -103,8 +187,21 @@ export default function QuizPage() {
             </div>
           )}
 
-          {/* Результат — уже пройден или только что завершён */}
-          {!error && status === 'completed' && finalScore && (
+          {/* Ждём ручной проверки текстовых/голосовых вопросов */}
+          {status === 'pending_review' && finalScore && (
+            <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-8 text-center">
+              <Clock3 className="w-12 h-12 text-amber-400 mx-auto mb-3" />
+              <h1 className="text-xl font-bold text-gray-900 mb-1">Ответы на проверке</h1>
+              <p className="text-sm text-gray-500 mb-2">
+                Вопросы с вариантами уже проверены автоматически: <b>{finalScore.autoScore} баллов</b> из них.
+                Часть вопросов требует ручной проверки — итоговый результат появится после того, как администратор их оценит.
+              </p>
+              <button onClick={() => router.push('/reyting')} className="text-sm text-blue-600 hover:underline mt-2">← К рейтингу</button>
+            </div>
+          )}
+
+          {/* Результат — полностью автопроверяемый квиз уже пройден */}
+          {status === 'completed' && finalScore && (
             <div>
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center mb-5">
                 <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-3" />
@@ -126,7 +223,7 @@ export default function QuizPage() {
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900 mb-2">{i + 1}. {r.question}</p>
                           <div className="space-y-1 mb-2">
-                            {r.options.map((opt, oi) => (
+                            {(r.options || []).map((opt, oi) => (
                               <p key={oi} className={`text-xs px-2.5 py-1.5 rounded-lg ${oi === r.correctIndex ? 'bg-emerald-50 text-emerald-700 font-medium' : oi === r.selectedIndex ? 'bg-red-50 text-red-600' : 'text-gray-500'}`}>
                                 {opt}
                               </p>
@@ -143,7 +240,7 @@ export default function QuizPage() {
           )}
 
           {/* Прохождение квиза */}
-          {!error && status === 'in_progress' && q && (
+          {status === 'in_progress' && q && (
             <div>
               <div className="mb-4">
                 <div className="flex items-center justify-between text-xs text-gray-400 mb-1.5">
@@ -155,19 +252,87 @@ export default function QuizPage() {
                 </div>
               </div>
 
+              {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2.5 mb-3">{error}</div>}
+
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-5 leading-snug">{q.question}</h2>
-                <div className="space-y-2.5">
-                  {q.options.map((opt, idx) => {
-                    const selected = answers[q.id] === idx;
-                    return (
-                      <button key={idx} onClick={() => selectAnswer(q.id, idx)}
-                        className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm transition-all ${selected ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
+
+                {/* Вариант ответа */}
+                {q.question_type === 'multiple_choice' && (
+                  <div className="space-y-2.5">
+                    {(q.options || []).map((opt, idx) => {
+                      const selected = answers[q.id] === idx;
+                      return (
+                        <button key={idx} onClick={() => selectAnswer(q.id, idx)}
+                          className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm transition-all ${selected ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Свободный текстовый ответ */}
+                {q.question_type === 'text' && (
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-2"><Type className="w-3.5 h-3.5" /> Напишите ответ своими словами</div>
+                    {manualAnswered[q.id] ? (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> Ответ отправлен, будет проверен вручную
+                      </div>
+                    ) : (
+                      <>
+                        <textarea value={textDraft[q.id] || ''} onChange={e => setTextDraft(prev => ({ ...prev, [q.id]: e.target.value }))}
+                          rows={4} placeholder="Ваш ответ..."
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none mb-3" />
+                        <button onClick={() => submitTextAnswer(q.id)} disabled={savingManual || !(textDraft[q.id] || '').trim()}
+                          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white py-2.5 rounded-xl text-sm font-semibold">
+                          {savingManual ? 'Отправка…' : 'Отправить ответ'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Голосовой ответ */}
+                {q.question_type === 'voice' && (
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3"><Mic className="w-3.5 h-3.5" /> Наговорите ответ своим голосом</div>
+                    {manualAnswered[q.id] ? (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> Голосовой ответ отправлен, будет проверен вручную
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 rounded-xl p-5 text-center">
+                        {!recording && !recordedBlob && (
+                          <button onClick={startRecording} className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center mx-auto mb-2">
+                            <Mic className="w-7 h-7" />
+                          </button>
+                        )}
+                        {recording && (
+                          <button onClick={stopRecording} className="w-16 h-16 rounded-full bg-gray-800 hover:bg-gray-900 text-white flex items-center justify-center mx-auto mb-2 animate-pulse">
+                            <Square className="w-6 h-6" />
+                          </button>
+                        )}
+                        {recording && <p className="text-sm text-gray-500 mb-1">Запись… {recordSeconds}с</p>}
+                        {!recording && !recordedBlob && <p className="text-xs text-gray-400">Нажмите, чтобы начать запись</p>}
+                        {recordedBlob && !recording && (
+                          <div className="mt-2 space-y-3">
+                            <audio controls src={URL.createObjectURL(recordedBlob)} className="w-full" />
+                            <div className="flex gap-2">
+                              <button onClick={startRecording} className="flex-1 text-xs text-gray-500 hover:text-gray-700 py-2">Перезаписать</button>
+                              <button onClick={() => submitVoiceAnswer(q.id)} disabled={uploadingVoice}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5">
+                                {uploadingVoice ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                                {uploadingVoice ? 'Отправка…' : 'Отправить ответ'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between mt-5">
@@ -177,7 +342,7 @@ export default function QuizPage() {
                 </button>
 
                 {current < questions.length - 1 ? (
-                  <button onClick={() => setCurrent(c => c + 1)} disabled={answers[q.id] === undefined}
+                  <button onClick={() => setCurrent(c => c + 1)} disabled={!isAnswered(q)}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white px-6 py-2.5 rounded-xl text-sm font-semibold">
                     Далее <ArrowRight className="w-4 h-4" />
                   </button>

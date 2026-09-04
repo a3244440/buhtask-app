@@ -2,13 +2,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe, Award, MapPin, GripVertical, Gift, Mail, Phone, BookOpen } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe, Award, MapPin, GripVertical, Gift, Mail, Phone, BookOpen, Mic, Upload, Loader2 } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 import { attributionLabel } from '@/lib/attribution';
 
 const CONTEST_CATEGORY_LABEL: Record<string, string> = {
-  nds: 'НДС', kpn_ipn: 'КПН/ИПН', form910: 'Форма 910', trud: 'Трудовое право', obshee: 'Общий бухучёт',
+  nds: 'НДС', kpn_ipn: 'КПН/ИПН', form910: 'Форма 910', trud: 'Трудовое право', obshee: 'Общий бухучёт', msfo: 'МСФО',
 };
 
 interface Accountant {
@@ -76,11 +76,17 @@ export default function AdminPanel() {
   const [quizAttempts, setQuizAttempts] = useState<any[]>([]);
   const [editingQuestion, setEditingQuestion] = useState<any | null>(null);
   const [questionForm, setQuestionForm] = useState({
-    category: 'obshee', question: '', options: ['', '', '', ''], correct_index: 0, explanation: '', is_active: false,
+    question_type: 'multiple_choice', category: 'obshee', question: '', options: ['', '', '', ''], correct_index: 0, explanation: '', is_active: false,
   });
   const [savingQuestion, setSavingQuestion] = useState(false);
   const [questionError, setQuestionError] = useState('');
-  const [contestSubTab, setContestSubTab] = useState<'entries' | 'questions' | 'results' | 'promotions'>('entries');
+  const [contestSubTab, setContestSubTab] = useState<'entries' | 'questions' | 'results' | 'promotions' | 'manualReview'>('entries');
+
+  // ===== Ручная проверка вопросов квиза (text/voice) =====
+  const [manualAnswers, setManualAnswers] = useState<any[]>([]);
+  const [manualQuestionsMap, setManualQuestionsMap] = useState<Record<string, any>>({});
+  const [pendingReviewAttemptMap, setPendingReviewAttemptMap] = useState<Record<string, string>>({});
+  const [gradingId, setGradingId] = useState<string | null>(null);
 
   // ===== Заявки на платное продвижение =====
   const [promotionRequests, setPromotionRequests] = useState<any[]>([]);
@@ -93,6 +99,7 @@ export default function AdminPanel() {
     name: '', category: 'other', description: '', website_url: '', logo_url: '', prize_offer: '', admin_note: '',
   });
   const [savingPartner, setSavingPartner] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => { init(); }, []);
 
@@ -193,6 +200,28 @@ export default function AdminPanel() {
       const { data: att } = await supabase.from('quiz_attempts').select('*').eq('status', 'completed').order('score', { ascending: false }).order('time_taken_seconds', { ascending: true });
       setQuizAttempts(att || []);
     } catch { setQuizAttempts([]); }
+
+    // Ответы, ожидающие ручной проверки (text/voice вопросы квиза)
+    try {
+      const { data: manual } = await supabase.from('quiz_manual_answers').select('*').is('points_awarded', null).order('created_at', { ascending: true });
+      setManualAnswers(manual || []);
+      const qIds = [...new Set((manual || []).map(m => m.question_id))];
+      if (qIds.length) {
+        const { data: qs } = await supabase.from('quiz_questions').select('id, question, category, question_type').in('id', qIds);
+        const map: Record<string, any> = {};
+        (qs || []).forEach(q => { map[q.id] = q; });
+        setManualQuestionsMap(map);
+      }
+      // Попытки, ожидающие ручной проверки, не входят в quizAttempts (там только completed) —
+      // подтягиваем отдельно, чтобы знать, чей это ответ.
+      const attemptIds = [...new Set((manual || []).map(m => m.attempt_id))];
+      if (attemptIds.length) {
+        const { data: pendingAttempts } = await supabase.from('quiz_attempts').select('id, accountant_id').in('id', attemptIds);
+        const map: Record<string, string> = {};
+        (pendingAttempts || []).forEach(pa => { map[pa.id] = pa.accountant_id; });
+        setPendingReviewAttemptMap(map);
+      }
+    } catch { setManualAnswers([]); }
 
     // Заявки партнёров конкурса — все статусы, модерация здесь
     try {
@@ -528,6 +557,25 @@ export default function AdminPanel() {
     });
   };
 
+  const uploadPartnerLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingPartner) return;
+    setUploadingLogo(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${editingPartner === 'new' ? 'tmp' : editingPartner.id}_${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('partner-logos').upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from('partner-logos').getPublicUrl(path);
+      setPartnerForm(f => ({ ...f, logo_url: data.publicUrl }));
+    } catch (err: any) {
+      alert('Не удалось загрузить логотип: ' + err.message);
+    } finally {
+      setUploadingLogo(false);
+      e.target.value = '';
+    }
+  };
+
   const savePartner = async () => {
     setSavingPartner(true);
     const payload = {
@@ -675,14 +723,15 @@ export default function AdminPanel() {
   // ===== Квиз конкурса =====
   const openNewQuestion = () => {
     setEditingQuestion('new');
-    setQuestionForm({ category: 'obshee', question: '', options: ['', '', '', ''], correct_index: 0, explanation: '', is_active: false });
+    setQuestionForm({ question_type: 'multiple_choice', category: 'obshee', question: '', options: ['', '', '', ''], correct_index: 0, explanation: '', is_active: false });
     setQuestionError('');
   };
 
   const openEditQuestion = (q: any) => {
     setEditingQuestion(q);
     setQuestionForm({
-      category: q.category, question: q.question, options: [...q.options], correct_index: q.correct_index,
+      question_type: q.question_type || 'multiple_choice', category: q.category, question: q.question,
+      options: q.options ? [...q.options] : ['', '', '', ''], correct_index: q.correct_index ?? 0,
       explanation: q.explanation || '', is_active: q.is_active,
     });
     setQuestionError('');
@@ -690,13 +739,16 @@ export default function AdminPanel() {
 
   const saveQuestion = async () => {
     if (!questionForm.question.trim()) { setQuestionError('Укажите текст вопроса'); return; }
-    if (questionForm.options.some(o => !o.trim())) { setQuestionError('Заполните все 4 варианта ответа'); return; }
+    const isChoice = questionForm.question_type === 'multiple_choice';
+    if (isChoice && questionForm.options.some(o => !o.trim())) { setQuestionError('Заполните все 4 варианта ответа'); return; }
     setSavingQuestion(true);
     setQuestionError('');
 
     const payload = {
+      question_type: questionForm.question_type,
       category: questionForm.category, question: questionForm.question.trim(),
-      options: questionForm.options.map(o => o.trim()), correct_index: questionForm.correct_index,
+      options: isChoice ? questionForm.options.map(o => o.trim()) : null,
+      correct_index: isChoice ? questionForm.correct_index : null,
       explanation: questionForm.explanation.trim() || null, is_active: questionForm.is_active,
     };
 
@@ -727,6 +779,32 @@ export default function AdminPanel() {
     const { data, error } = await supabase.from('quiz_questions').update({ is_active }).eq('id', q.id).select().single();
     if (error) { alert('Ошибка: ' + error.message); return; }
     setQuizQuestions(prev => prev.map(x => x.id === data.id ? data : x));
+  };
+
+  // Ставит оценку за text/voice-ответ; если это был последний неоценённый ответ в попытке —
+  // считает итоговый score и закрывает попытку статусом completed.
+  const gradeManualAnswer = async (answer: any, points: number, comment: string) => {
+    setGradingId(answer.id);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from('quiz_manual_answers').update({
+      points_awarded: points, admin_comment: comment.trim() || null, reviewed_by: user?.id, reviewed_at: new Date().toISOString(),
+    }).eq('id', answer.id);
+    if (error) { alert('Ошибка: ' + error.message); setGradingId(null); return; }
+
+    const { data: remaining } = await supabase.from('quiz_manual_answers').select('points_awarded').eq('attempt_id', answer.attempt_id);
+    const allGraded = (remaining || []).every(r => r.points_awarded !== null);
+
+    if (allGraded) {
+      const manualScore = (remaining || []).reduce((s, r) => s + (r.points_awarded || 0), 0);
+      const { data: attempt } = await supabase.from('quiz_attempts').select('auto_score').eq('id', answer.attempt_id).maybeSingle();
+      await supabase.from('quiz_attempts').update({
+        manual_score: manualScore, score: (attempt?.auto_score || 0) + manualScore,
+        status: 'completed', manual_reviewed_at: new Date().toISOString(),
+      }).eq('id', answer.attempt_id);
+    }
+
+    setManualAnswers(prev => prev.filter(a => a.id !== answer.id));
+    setGradingId(null);
   };
 
   // Одним кликом переносит результат квиза бухгалтера в топ-N рейтинга (contest_entries)
@@ -1253,6 +1331,7 @@ export default function AdminPanel() {
                 { id: 'questions', label: `Вопросы квиза (${quizQuestions.filter(q => q.is_active).length}/${quizQuestions.length} активно)` },
                 { id: 'results', label: `Результаты квиза (${quizAttempts.length})` },
                 { id: 'promotions', label: `Заявки на продвижение${pendingPromotionsCount > 0 ? ` (${pendingPromotionsCount})` : ''}` },
+                { id: 'manualReview', label: `Ручная проверка${manualAnswers.length > 0 ? ` (${manualAnswers.length})` : ''}` },
               ].map(t => (
                 <button key={t.id} onClick={() => setContestSubTab(t.id as any)}
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${contestSubTab === t.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
@@ -1449,6 +1528,33 @@ export default function AdminPanel() {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+          )}
+
+          {contestSubTab === 'manualReview' && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
+              <Mic className="w-5 h-5 text-emerald-600" />
+              <h2 className="font-semibold text-gray-900">Ручная проверка ответов</h2>
+              <span className="text-xs text-gray-400">({manualAnswers.length})</span>
+            </div>
+            <p className="px-6 pt-3 text-xs text-gray-400">
+              Текстовые и голосовые ответы на вопросы квиза — их нельзя проверить автоматически.
+              Как только оценены все такие ответы конкретной попытки, итоговый балл считается и попытка
+              появляется в «Результаты квиза».
+            </p>
+            <div className="divide-y divide-gray-50 mt-2">
+              {manualAnswers.length === 0 ? (
+                <p className="py-10 text-center text-gray-400 text-sm">Проверять пока нечего.</p>
+              ) : manualAnswers.map(a => {
+                const q = manualQuestionsMap[a.question_id];
+                const acc = accountants.find(x => x.id === pendingReviewAttemptMap[a.attempt_id]);
+                return (
+                  <ManualAnswerReviewRow key={a.id} answer={a} question={q} accountantName={acc?.full_name || acc?.email}
+                    onGrade={gradeManualAnswer} grading={gradingId === a.id} />
+                );
+              })}
             </div>
           </div>
           )}
@@ -1926,6 +2032,28 @@ export default function AdminPanel() {
               )}
 
               <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Тип вопроса</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { v: 'multiple_choice', label: 'Варианты' },
+                    { v: 'text', label: 'Текстовый ответ' },
+                    { v: 'voice', label: 'Голосовой ответ' },
+                  ].map(t => (
+                    <button key={t.v} type="button" onClick={() => setQuestionForm(f => ({ ...f, question_type: t.v }))}
+                      className={`px-3 py-2 rounded-xl text-xs font-medium border-2 transition-all ${questionForm.question_type === t.v ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                {questionForm.question_type !== 'multiple_choice' && (
+                  <p className="text-xs text-amber-600 mt-1.5">
+                    Такие ответы не проверяются автоматически — их нужно будет вручную оценить во вкладке «Ручная проверка».
+                    {questionForm.question_type === 'voice' && ' Голосовой ответ дополнительно усложняет прохождение квиза чужими руками или чистым ИИ.'}
+                  </p>
+                )}
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">Категория</label>
                 <select value={questionForm.category} onChange={e => setQuestionForm(f => ({ ...f, category: e.target.value }))}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
@@ -1939,24 +2067,28 @@ export default function AdminPanel() {
                   rows={2} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Варианты ответа — отметьте кружком правильный</label>
-                <div className="space-y-2">
-                  {questionForm.options.map((opt, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <button type="button" onClick={() => setQuestionForm(f => ({ ...f, correct_index: i }))}
-                        className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${questionForm.correct_index === i ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'}`}>
-                        {questionForm.correct_index === i && <Check className="w-3 h-3 text-white" />}
-                      </button>
-                      <input value={opt} onChange={e => setQuestionForm(f => ({ ...f, options: f.options.map((o, oi) => oi === i ? e.target.value : o) }))}
-                        placeholder={`Вариант ${i + 1}`} className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-                  ))}
+              {questionForm.question_type === 'multiple_choice' && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Варианты ответа — отметьте кружком правильный</label>
+                  <div className="space-y-2">
+                    {questionForm.options.map((opt, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <button type="button" onClick={() => setQuestionForm(f => ({ ...f, correct_index: i }))}
+                          className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${questionForm.correct_index === i ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'}`}>
+                          {questionForm.correct_index === i && <Check className="w-3 h-3 text-white" />}
+                        </button>
+                        <input value={opt} onChange={e => setQuestionForm(f => ({ ...f, options: f.options.map((o, oi) => oi === i ? e.target.value : o) }))}
+                          placeholder={`Вариант ${i + 1}`} className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Пояснение (покажется участнику после ответа)</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                  {questionForm.question_type === 'multiple_choice' ? 'Пояснение (покажется участнику после ответа)' : 'Ориентир для проверки (виден только админу — что должно быть в правильном ответе)'}
+                </label>
                 <textarea value={questionForm.explanation} onChange={e => setQuestionForm(f => ({ ...f, explanation: e.target.value }))}
                   rows={2} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
               </div>
@@ -2027,9 +2159,19 @@ export default function AdminPanel() {
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Логотип (ссылка)</label>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Логотип</label>
+                  <div className="flex items-center gap-2">
+                    {partnerForm.logo_url && (
+                      <img src={partnerForm.logo_url} alt="" className="w-10 h-10 rounded-lg object-contain border border-gray-100 flex-shrink-0" />
+                    )}
+                    <label className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-dashed rounded-xl text-xs font-medium cursor-pointer transition-colors ${uploadingLogo ? 'border-gray-200 text-gray-400' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}>
+                      {uploadingLogo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      {uploadingLogo ? 'Загрузка…' : 'Загрузить файл'}
+                      <input type="file" accept="image/*" className="hidden" disabled={uploadingLogo} onChange={uploadPartnerLogo} />
+                    </label>
+                  </div>
                   <input value={partnerForm.logo_url} onChange={e => setPartnerForm(f => ({ ...f, logo_url: e.target.value }))}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                    placeholder="или вставьте ссылку" className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 mt-1.5" />
                 </div>
               </div>
               <div>
@@ -2194,4 +2336,57 @@ function DocLink({ label, url }: { label: string; url?: string }) {
     </button>
   );
 }
+function ManualAnswerReviewRow({ answer, question, accountantName, onGrade, grading }: any) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loadingUrl, setLoadingUrl] = useState(false);
+  const [points, setPoints] = useState<number | null>(null);
+  const [comment, setComment] = useState('');
+
+  useEffect(() => {
+    if (answer.voice_url && !signedUrl) {
+      setLoadingUrl(true);
+      supabase.storage.from('quiz-voice-answers').createSignedUrl(answer.voice_url, 600)
+        .then(({ data }) => setSignedUrl(data?.signedUrl || null))
+        .finally(() => setLoadingUrl(false));
+    }
+  }, [answer.voice_url, signedUrl]);
+
+  return (
+    <div className="px-6 py-4">
+      <div className="flex items-center gap-2 mb-1.5">
+        <p className="text-sm font-medium text-gray-900">{accountantName || 'Без имени'}</p>
+        {question?.category && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{CONTEST_CATEGORY_LABEL[question.category] || question.category}</span>}
+      </div>
+      <p className="text-sm text-gray-600 mb-2">{question?.question || 'Вопрос не найден'}</p>
+
+      {answer.text_answer && (
+        <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-700 mb-3">«{answer.text_answer}»</div>
+      )}
+      {answer.voice_url && (
+        <div className="mb-3">
+          {loadingUrl ? (
+            <p className="text-xs text-gray-400">Загрузка записи…</p>
+          ) : signedUrl ? (
+            <audio controls src={signedUrl} className="w-full" />
+          ) : (
+            <p className="text-xs text-red-500">Не удалось загрузить запись</p>
+          )}
+        </div>
+      )}
+
+      <textarea value={comment} onChange={e => setComment(e.target.value)} rows={1} placeholder="Комментарий (необязательно)"
+        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-2" />
+
+      <div className="flex items-center gap-2">
+        <button onClick={() => setPoints(1)} className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 ${points === 1 ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-500'}`}>Верно (+1)</button>
+        <button onClick={() => setPoints(0)} className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 ${points === 0 ? 'border-red-400 bg-red-50 text-red-600' : 'border-gray-200 text-gray-500'}`}>Неверно (0)</button>
+        <button onClick={() => onGrade(answer, points, comment)} disabled={points === null || grading}
+          className="ml-auto px-4 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white">
+          {grading ? 'Сохранение…' : 'Сохранить оценку'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export const dynamic = 'force-dynamic';

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Trophy, MapPin, Building2, ArrowRight } from 'lucide-react';
+import { Trophy, MapPin, Building2, ArrowRight, Gavel } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Рейтинг лучших бухгалтеров Казахстана',
@@ -103,9 +103,9 @@ export default async function ContestPage() {
                   <div key={e.id} className={`bg-white rounded-2xl border-2 shadow-sm p-6 text-center ${e.rank_position === 1 ? 'border-amber-300 sm:-translate-y-3 sm:shadow-lg' : 'border-gray-100'}`}>
                     <p className="text-4xl mb-3">{medal(e.rank_position)}</p>
                     {e.avatar_url ? (
-                      <img src={e.avatar_url} alt={e.full_name || ''} className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2 border-white shadow" />
+                      <img src={e.avatar_url} alt={e.full_name || ''} className="w-20 h-20 rounded-full object-cover mx-auto mb-3 border-2 border-white shadow" />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3 font-bold text-xl">
+                      <div className="w-20 h-20 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3 font-bold text-2xl">
                         {(e.full_name || '?').charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -119,29 +119,32 @@ export default async function ContestPage() {
               </div>
             )}
 
-            {/* Остальные места */}
+            {/* Остальные места — купить можно всегда */}
             {rest.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                 {rest.map(e => (
                   <div key={e.id} className="px-5 py-4 flex items-center gap-4">
                     <span className="w-8 text-center font-bold text-gray-300 flex-shrink-0">{e.rank_position}</span>
                     {e.avatar_url ? (
-                      <img src={e.avatar_url} alt={e.full_name || ''} className="w-11 h-11 rounded-full object-cover flex-shrink-0" />
+                      <img src={e.avatar_url} alt={e.full_name || ''} className="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-white shadow" />
                     ) : (
-                      <div className="w-11 h-11 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center flex-shrink-0 font-bold">
+                      <div className="w-16 h-16 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center flex-shrink-0 font-bold text-lg">
                         {(e.full_name || '?').charAt(0).toUpperCase()}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">{e.full_name}</p>
-                      <p className="text-xs text-gray-400 truncate">
+                      <p className="text-xs text-gray-400 truncate flex items-center gap-1 flex-wrap">
                         {e.city && <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" />{e.city}</span>}
-                        {e.company_name && ` · ${e.company_name}`}
+                        {e.company_name && <span className="inline-flex items-center gap-1"><Building2 className="w-3 h-3" />{e.company_name}</span>}
                       </p>
+                      {e.badge_type === 'promoted' && (
+                        <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">Продвигается</span>
+                      )}
                     </div>
-                    {e.badge_type === 'promoted' && (
-                      <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-50 text-violet-600 flex-shrink-0">Продвигается</span>
-                    )}
+                    <Link href="/promote" className="flex-shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold whitespace-nowrap">
+                      <Gavel className="w-3.5 h-3.5" /> Купить это место
+                    </Link>
                   </div>
                 ))}
               </div>

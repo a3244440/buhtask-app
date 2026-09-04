@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import DashboardHeader from '../components/DashboardHeader';
 import ToolsSidebar from '../components/ToolsSidebar';
-import { CheckCircle2, Clock, Loader2, ArrowLeft, TrendingUp, ArrowUp } from 'lucide-react';
+import { CheckCircle2, Clock, Loader2, ArrowLeft, TrendingUp, ArrowUp, AlertTriangle, Tag } from 'lucide-react';
 
 const BASE_PRICE = 20000;   // цена занять свободное место с нуля
 const INCREMENT = 10000;    // на столько дороже стоит перебить текущего занимающего место
@@ -13,6 +13,14 @@ const DURATIONS = [
   { months: 3, label: '3 месяца' },
 ];
 
+// Скидка за повторный выкуп места — чем чаще уже покупали, тем дешевле вернуться.
+// count = сколько раз до этого уже была одобрена оплата продвижения у этого бухгалтера.
+function loyaltyDiscount(count: number): number {
+  if (count >= 2) return 0.3; // третий и последующие разы
+  if (count === 1) return 0.2; // второй раз (выкуп обратно после того, как перебили)
+  return 0;
+}
+
 interface Slot { rank: number; price: number; holderName: string | null; }
 
 export default function PromotePage() {
@@ -20,9 +28,11 @@ export default function PromotePage() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState('');
   const [profile, setProfile] = useState<any>(null);
+  const [companyName, setCompanyName] = useState('');
   const [activeEntry, setActiveEntry] = useState<any>(null);
   const [pendingRequest, setPendingRequest] = useState<any>(null);
   const [occupied, setOccupied] = useState<{ rank_position: number; paid_amount: number; full_name: string | null }[]>([]);
+  const [purchaseCount, setPurchaseCount] = useState(0);
   const [periodMonths, setPeriodMonths] = useState(1);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -40,33 +50,40 @@ export default function PromotePage() {
       if (p?.role !== 'accountant') { setError('Продвижение в рейтинге доступно только бухгалтерам'); setLoading(false); return; }
       setProfile(p);
 
-      const [{ data: entry }, { data: req }, { data: bids }] = await Promise.all([
+      const [{ data: entry }, { data: req }, { data: bids }, { data: pastApproved }, { data: lastOwn }] = await Promise.all([
         supabase.from('contest_entries').select('*').eq('accountant_id', user.id).eq('badge_type', 'promoted').maybeSingle(),
         supabase.from('promotion_requests').select('*').eq('accountant_id', user.id).eq('status', 'pending').order('requested_at', { ascending: false }).maybeSingle(),
         supabase.from('contest_entries').select('rank_position, paid_amount, paid_until, full_name').eq('badge_type', 'promoted').eq('published', true).order('rank_position', { ascending: true }),
+        supabase.from('promotion_requests').select('id', { count: 'exact', head: true }).eq('accountant_id', user.id).eq('status', 'approved'),
+        supabase.from('promotion_requests').select('company_name').eq('accountant_id', user.id).order('requested_at', { ascending: false }).limit(1).maybeSingle(),
       ]);
 
       if (entry && entry.paid_until && new Date(entry.paid_until) > new Date()) setActiveEntry(entry);
       setPendingRequest(req || null);
+      setCompanyName(lastOwn?.company_name || '');
 
       const now = new Date();
       const active = (bids || []).filter(b => b.paid_amount != null && b.paid_until && new Date(b.paid_until) > now);
       setOccupied(active as any);
+      setPurchaseCount((pastApproved as any)?.count || 0);
 
       setLoading(false);
     })();
   }, [router]);
 
+  const discount = loyaltyDiscount(purchaseCount);
+
   // Лестница мест: каждое занятое место стоит (текущая ставка + 10 000 ₸), чтобы перебить;
-  // первое свободное место после занятых стоит базовую цену 20 000 ₸.
+  // первое свободное место после занятых стоит базовую цену 20 000 ₸. Затем применяем
+  // персональную скидку за повторный выкуп (если применима).
   const ladder: Slot[] = useMemo(() => {
     const slots: Slot[] = occupied.map(e => ({
-      rank: e.rank_position, price: Number(e.paid_amount) + INCREMENT, holderName: e.full_name,
+      rank: e.rank_position, price: Math.round((Number(e.paid_amount) + INCREMENT) * (1 - discount)), holderName: e.full_name,
     }));
     const nextRank = occupied.length ? Math.max(...occupied.map(e => e.rank_position)) + 1 : 4;
-    slots.push({ rank: nextRank, price: BASE_PRICE, holderName: null });
+    slots.push({ rank: nextRank, price: Math.round(BASE_PRICE * (1 - discount)), holderName: null });
     return slots;
-  }, [occupied]);
+  }, [occupied, discount]);
 
   const submit = async () => {
     if (!selectedSlot) { setError('Выберите место'); return; }
@@ -74,7 +91,8 @@ export default function PromotePage() {
     setSubmitting(true);
     const { error: e } = await supabase.from('promotion_requests').insert({
       accountant_id: userId, full_name: profile?.full_name || null, avatar_url: profile?.avatar_url || null,
-      city: profile?.city || null, period_months: periodMonths, amount: selectedSlot.price, status: 'pending',
+      city: profile?.city || null, company_name: companyName.trim() || null,
+      period_months: periodMonths, amount: selectedSlot.price, status: 'pending',
     });
     setSubmitting(false);
     if (e) { setError('Не удалось отправить заявку: ' + e.message); return; }
@@ -132,6 +150,11 @@ export default function PromotePage() {
                   Выберите место — цена растёт на {INCREMENT.toLocaleString('ru-RU')} ₸ каждый раз, когда его перекупают.
                   Если вашу ставку перебьют, вы опуститесь на следующее место, но останетесь в списке до конца срока.
                 </p>
+                {discount > 0 && (
+                  <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                    <Tag className="w-3.5 h-3.5" /> Ваша персональная скидка {Math.round(discount * 100)}% уже учтена в ценах ниже
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2.5">
@@ -165,10 +188,25 @@ export default function PromotePage() {
               <div className="bg-violet-50 rounded-2xl p-4 mb-4 text-center">
                 <p className="text-xs text-violet-600">Место №{selectedSlot.rank}{selectedSlot.holderName ? ` — перебить ${selectedSlot.holderName}` : ' — свободно'}</p>
                 <p className="text-3xl font-extrabold text-violet-700 mt-1">{selectedSlot.price.toLocaleString('ru-RU')} ₸</p>
+                {discount > 0 && <p className="text-xs text-emerald-600 mt-1">Учтена скидка {Math.round(discount * 100)}% за повторную покупку</p>}
+              </div>
+
+              {/* Предупреждение перед оплатой про то, что место можно перекупить обратно */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 flex gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  Кто-то может выкупить ваше место в любой момент — тогда вы опуститесь на следующее место.
+                  Чтобы вернуть место обратно, нужно будет выкупить его снова — но уже со скидкой:
+                  <b> 20% при повторной покупке</b>, а <b>с третьего раза — 30%</b>.
+                </p>
               </div>
 
               <div className="bg-white rounded-2xl border-2 border-violet-200 shadow-sm p-6">
                 {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2.5 mb-4">{error}</div>}
+
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Название компании / бренда (покажется в рейтинге)</label>
+                <input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Например: ТОО «Ваш Бухгалтер»"
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 mb-4" />
 
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">Срок размещения</label>
                 <div className="grid grid-cols-2 gap-2 mb-4">
