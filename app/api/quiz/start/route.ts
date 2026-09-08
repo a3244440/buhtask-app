@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
       });
     }
     if (existing?.status === 'in_progress') {
+      // Даже при возобновлении сначала показываем правила; сама попытка не меняется.
+      if (preview) return NextResponse.json({ status: 'resume_ready', questionCount: existing.total_questions });
       const { data: questions } = await db.from('quiz_questions').select('id, category, question, options, question_type').in('id', existing.question_ids);
       const ordered = existing.question_ids.map((id: string) => questions?.find(q => q.id === id)).filter(Boolean);
       const { data: manual } = await db.from('quiz_manual_answers').select('question_id, text_answer, voice_url').eq('attempt_id', existing.id);
