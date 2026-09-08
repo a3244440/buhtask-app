@@ -46,6 +46,8 @@ export default function QuizPage() {
   const [savingManual, setSavingManual] = useState(false);
   const [finalScore, setFinalScore] = useState<{ score?: number; autoScore?: number; total: number } | null>(null);
   const [results, setResults] = useState<Result[] | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  const [timedOut, setTimedOut] = useState<Record<string, boolean>>({});
 
   // Запись голоса
   const [recording, setRecording] = useState(false);
@@ -152,7 +154,7 @@ export default function QuizPage() {
     }
   };
 
-  const finish = async () => {
+  const finish = useCallback(async () => {
     setSubmitting(true);
     try {
       const data = await authedFetch('/api/quiz/finish', { attemptId });
@@ -164,11 +166,38 @@ export default function QuizPage() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [attemptId]);
 
   const q = questions[current];
   const isAnswered = (qq: Question) => qq.question_type === 'multiple_choice' ? answers[qq.id] !== undefined : !!manualAnswered[qq.id];
-  const allAnswered = questions.length > 0 && questions.every(isAnswered);
+  const isResolved = (qq: Question) => isAnswered(qq) || !!timedOut[qq.id];
+  const allResolved = questions.length > 0 && questions.every(isResolved);
+
+  // На каждый вопрос отводится ровно минута. Пропущенный по таймеру вопрос
+  // остаётся без ответа и не приносит баллов даже при возвращении назад.
+  useEffect(() => {
+    if (loading || status !== 'in_progress' || !q || isAnswered(q) || timedOut[q.id]) return;
+
+    setSecondsLeft(60);
+    const timer = window.setInterval(() => {
+      setSecondsLeft(previous => {
+        if (previous > 1) return previous - 1;
+
+        window.clearInterval(timer);
+        setTimedOut(prev => ({ ...prev, [q.id]: true }));
+        window.setTimeout(() => {
+          if (current < questions.length - 1) {
+            setCurrent(index => index === current ? index + 1 : index);
+          } else {
+            void finish();
+          }
+        }, 0);
+        return 0;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [current, finish, loading, manualAnswered, q?.id, questions.length, status, timedOut, answers]);
 
   if (loading) return <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>;
 
@@ -245,7 +274,10 @@ export default function QuizPage() {
               <div className="mb-4">
                 <div className="flex items-center justify-between text-xs text-gray-400 mb-1.5">
                   <span>Вопрос {current + 1} из {questions.length}</span>
-                  <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full font-medium">{CATEGORY_LABEL[q.category] || q.category}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full font-medium">{CATEGORY_LABEL[q.category] || q.category}</span>
+                    <span className={`font-semibold ${secondsLeft <= 10 ? 'text-red-500' : 'text-gray-500'}`}>⏱ {secondsLeft}с</span>
+                  </div>
                 </div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
@@ -256,6 +288,11 @@ export default function QuizPage() {
 
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-5 leading-snug">{q.question}</h2>
+                {timedOut[q.id] && (
+                  <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+                    Время на этот вопрос истекло. Он пропущен и не будет засчитан.
+                  </div>
+                )}
 
                 {/* Вариант ответа */}
                 {q.question_type === 'multiple_choice' && (
@@ -263,8 +300,8 @@ export default function QuizPage() {
                     {(q.options || []).map((opt, idx) => {
                       const selected = answers[q.id] === idx;
                       return (
-                        <button key={idx} onClick={() => selectAnswer(q.id, idx)}
-                          className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm transition-all ${selected ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
+                        <button key={idx} onClick={() => selectAnswer(q.id, idx)} disabled={timedOut[q.id]}
+                          className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-50 ${selected ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
                           {opt}
                         </button>
                       );
@@ -282,10 +319,10 @@ export default function QuizPage() {
                       </div>
                     ) : (
                       <>
-                        <textarea value={textDraft[q.id] || ''} onChange={e => setTextDraft(prev => ({ ...prev, [q.id]: e.target.value }))}
+                        <textarea value={textDraft[q.id] || ''} onChange={e => setTextDraft(prev => ({ ...prev, [q.id]: e.target.value }))} disabled={timedOut[q.id]}
                           rows={4} placeholder="Ваш ответ..."
                           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none mb-3" />
-                        <button onClick={() => submitTextAnswer(q.id)} disabled={savingManual || !(textDraft[q.id] || '').trim()}
+                        <button onClick={() => submitTextAnswer(q.id)} disabled={timedOut[q.id] || savingManual || !(textDraft[q.id] || '').trim()}
                           className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white py-2.5 rounded-xl text-sm font-semibold">
                           {savingManual ? 'Отправка…' : 'Отправить ответ'}
                         </button>
@@ -305,7 +342,7 @@ export default function QuizPage() {
                     ) : (
                       <div className="bg-gray-50 rounded-xl p-5 text-center">
                         {!recording && !recordedBlob && (
-                          <button onClick={startRecording} className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center mx-auto mb-2">
+                          <button onClick={startRecording} disabled={timedOut[q.id]} className="w-16 h-16 disabled:opacity-50 disabled:cursor-not-allowed rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center mx-auto mb-2">
                             <Mic className="w-7 h-7" />
                           </button>
                         )}
@@ -320,8 +357,8 @@ export default function QuizPage() {
                           <div className="mt-2 space-y-3">
                             <audio controls src={URL.createObjectURL(recordedBlob)} className="w-full" />
                             <div className="flex gap-2">
-                              <button onClick={startRecording} className="flex-1 text-xs text-gray-500 hover:text-gray-700 py-2">Перезаписать</button>
-                              <button onClick={() => submitVoiceAnswer(q.id)} disabled={uploadingVoice}
+                              <button onClick={startRecording} disabled={timedOut[q.id]} className="flex-1 text-xs text-gray-500 hover:text-gray-700 py-2 disabled:opacity-50">Перезаписать</button>
+                              <button onClick={() => submitVoiceAnswer(q.id)} disabled={timedOut[q.id] || uploadingVoice}
                                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5">
                                 {uploadingVoice ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                                 {uploadingVoice ? 'Отправка…' : 'Отправить ответ'}
@@ -342,18 +379,18 @@ export default function QuizPage() {
                 </button>
 
                 {current < questions.length - 1 ? (
-                  <button onClick={() => setCurrent(c => c + 1)} disabled={!isAnswered(q)}
+                  <button onClick={() => setCurrent(c => c + 1)} disabled={!isResolved(q)}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white px-6 py-2.5 rounded-xl text-sm font-semibold">
                     Далее <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
-                  <button onClick={finish} disabled={!allAnswered || submitting}
+                  <button onClick={finish} disabled={!allResolved || submitting}
                     className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white px-6 py-2.5 rounded-xl text-sm font-semibold">
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Завершить квиз
                   </button>
                 )}
               </div>
-              {!allAnswered && current === questions.length - 1 && (
+              {!allResolved && current === questions.length - 1 && (
                 <p className="text-xs text-amber-600 mt-2 text-right">Ответьте на все вопросы, чтобы завершить квиз</p>
               )}
             </div>
