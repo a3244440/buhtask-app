@@ -48,13 +48,11 @@ export async function POST(req: NextRequest) {
         };
       }
 
-      // text / voice — ждут ручной проверки, баллов пока нет
-      hasManual = true;
-      const manual = manualByQid.get(qid);
+      // Ручная проверка нужна только для реально присланного text/voice ответа.\n      // Пропущенный по таймеру вопрос остаётся с нулём и не блокирует результат.\n      const manual = manualByQid.get(qid);\n      if (manual) hasManual = true;
       return {
         questionId: qid, type, category: q?.category, question: q?.question,
         textAnswer: manual?.text_answer || null, voiceUrl: manual?.voice_url ? true : false,
-        pendingReview: true,
+        pendingReview: !!manual,
       };
     });
 
