@@ -36,8 +36,26 @@ export default function KazakhstanRankingMap({ entries, onViewRating }: { entrie
       </div>
       <div className="relative rounded-2xl border border-white/10 bg-white/5 p-2 sm:p-4">
         <svg viewBox="40 55 670 290" className="h-auto w-full" role="img" aria-label="Интерактивная карта Казахстана">
-          <path d="M75 178 L116 145 L179 151 L216 119 L282 128 L322 101 L389 108 L425 75 L482 97 L527 91 L560 119 L621 108 L682 140 L691 185 L660 209 L677 247 L630 270 L620 306 L564 313 L530 287 L475 303 L444 284 L392 306 L358 282 L304 288 L263 265 L215 275 L176 252 L128 259 L97 234 L74 209 Z" fill="#123c70" stroke="#67e8f9" strokeWidth="2.5" />
-          <path d="M119 184 C249 150 370 199 491 158 S620 181 668 159" fill="none" stroke="#7dd3fc" strokeOpacity=".25" strokeWidth="1.5" strokeDasharray="5 6" />
+          {/* Контур Казахстана: западный выступ, Мангистауский полуостров и длинная восточная граница */}
+          <path d="M55 181 L71 165 L101 161 L110 145 L132 151 L145 139 L163 149 L175 171 L199 174 L214 162 L234 172 L252 164 L270 177 L289 167 L306 147 L296 134 L314 121 L344 126 L360 111 L392 104 L411 88 L446 80 L458 67 L481 73 L487 91 L511 94 L520 112 L542 105 L553 119 L575 108 L570 128 L599 139 L619 131 L638 148 L651 169 L674 174 L688 191 L712 194 L723 210 L711 223 L691 224 L684 239 L662 239 L650 257 L629 265 L630 284 L608 289 L596 307 L571 303 L558 319 L535 307 L521 317 L499 309 L485 323 L463 316 L451 331 L432 323 L420 338 L401 327 L386 334 L374 315 L354 309 L337 295 L317 302 L294 284 L277 288 L261 273 L242 277 L222 264 L207 277 L190 265 L179 281 L159 268 L147 252 L128 257 L116 244 L103 250 L91 237 L76 234 L67 216 L50 205 Z" fill="#14588a" stroke="#67e8f9" strokeWidth="2.5" strokeLinejoin="round" />
+          {/* Границы областей: декоративно повторяют административное деление, не интерактивные */}
+          <g fill="none" stroke="#93e8f7" strokeOpacity=".38" strokeWidth="1.4">
+            <path d="M175 171 L186 201 L172 229 L190 265" />
+            <path d="M252 164 L259 202 L242 277" />
+            <path d="M306 147 L326 183 L317 238 L337 295" />
+            <path d="M392 104 L390 151 L411 188 L401 249 L420 338" />
+            <path d="M481 73 L472 132 L499 174 L485 323" />
+            <path d="M542 105 L536 157 L566 206 L558 319" />
+            <path d="M599 139 L598 188 L630 218 L608 289" />
+            <path d="M651 169 L637 205 L650 257" />
+            <path d="M116 244 L137 218 L159 268" />
+            <path d="M207 277 L221 225 L259 202" />
+            <path d="M277 288 L286 245 L317 238" />
+            <path d="M354 309 L361 258 L401 249" />
+            <path d="M451 331 L452 278 L485 268" />
+            <path d="M521 317 L520 267 L558 250" />
+          </g>
+          <path d="M73 192 C178 174 239 205 331 192 S473 177 565 196 S654 196 706 209" fill="none" stroke="#d6f6fb" strokeOpacity=".2" strokeWidth="1.2" strokeDasharray="5 6" />
           {CITIES.map(city => {
             const entry = byCity.get(key(city.name)); const selected = hovered === city.name;
             return <g key={city.name} role="button" tabIndex={0} aria-label={city.name} onMouseEnter={() => setHovered(city.name)} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered(city.name)} onBlur={() => setHovered(null)} onClick={onViewRating} className="cursor-pointer">
