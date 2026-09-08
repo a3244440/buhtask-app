@@ -13,6 +13,7 @@ import {
   CalendarDays, Baby, AlertTriangle, BookOpen, Scale, BarChart3, SearchCheck,
 } from "lucide-react";
 import Reveal from "./components/Reveal";
+import KazakhstanRankingMap from "./components/KazakhstanRankingMap";
 
 const TYPING_WORDS: Record<string, string[]> = {
   ru: ["Открыть ТОО", "Закрыть ТОО", "Сдать отчёт 910 ФНО", "Расчёт зарплаты сотрудника", "Ведение бухгалтерии", "Консультация по НДС", "Регистрация ИП", "Налоговый аудит"],
@@ -208,51 +209,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* КОНКУРС — Рейтинг лучших бухгалтеров Казахстана, сразу под шапкой */}
+      {/* КОНКУРС — интерактивная карта лидеров по городам */}
       <section className="py-14 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           <Reveal>
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 p-6 sm:p-10 shadow-xl">
-              <div aria-hidden className="absolute inset-0 opacity-10" style={{
-                backgroundImage: 'radial-gradient(circle, white 1.5px, transparent 1.5px)', backgroundSize: '28px 28px',
-              }} />
-              <div className="relative text-center mb-6">
-                <span className="text-4xl">🏆</span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-2 mb-2">Рейтинг лучших бухгалтеров Казахстана</h2>
-                <p className="text-white/90 max-w-xl mx-auto leading-relaxed text-sm">
-                  Топ-3 нельзя купить — их нужно заслужить в квизе на знание бухучёта и налогов
-                </p>
-              </div>
-
-              {contestTop3.length > 0 ? (
-                <div className="relative grid sm:grid-cols-3 gap-3 mb-6">
-                  {contestTop3.map(e => (
-                    <button key={e.id} onClick={() => router.push('/reyting')}
-                      className={`bg-white/95 backdrop-blur rounded-2xl p-4 text-center hover:-translate-y-1 transition-transform ${e.rank_position === 1 ? 'sm:-translate-y-2 shadow-lg' : 'shadow'}`}>
-                      <p className="text-2xl mb-1">{e.rank_position === 1 ? '🥇' : e.rank_position === 2 ? '🥈' : '🥉'}</p>
-                      {e.avatar_url ? (
-                        <img src={e.avatar_url} alt={e.full_name || ''} className="w-14 h-14 rounded-full object-cover mx-auto mb-2 border-2 border-white shadow" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-2 font-bold text-lg">
-                          {(e.full_name || '?').charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <p className="font-bold text-gray-900 text-sm truncate">{e.full_name}</p>
-                      {e.city && <p className="text-xs text-gray-400">{e.city}</p>}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="relative text-center text-white/80 text-sm mb-6">Первый сезон рейтинга скоро стартует — станьте одним из первых участников</p>
-              )}
-
-              <div className="relative text-center">
-                <button onClick={() => router.push('/reyting')}
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-white text-orange-600 font-bold hover:bg-gray-50 transition-all shadow-lg hover:-translate-y-0.5">
-                  Смотреть рейтинг <ArrowRight className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+            <KazakhstanRankingMap entries={contestTop3} onViewRating={() => router.push('/reyting')} />
           </Reveal>
         </div>
       </section>
