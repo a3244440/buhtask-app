@@ -18,3 +18,28 @@ where qa.status = 'pending_review'
     select 1 from quiz_manual_answers ma
     where ma.attempt_id = qa.id and ma.points_awarded is null
   );
+
+
+-- У уже начатых попыток раньше было жёсткое ограничение в 10 вопросов.
+-- Добавляем все остальные опубликованные вопросы, не сбрасывая уже данные ответы.
+update quiz_attempts qa
+set
+  question_ids = qa.question_ids || coalesce(
+    array(
+      select q.id
+      from quiz_questions q
+      where q.is_active and not (q.id = any(qa.question_ids))
+      order by random()
+    ),
+    array[]::uuid[]
+  ),
+  total_questions = cardinality(qa.question_ids || coalesce(
+    array(
+      select q.id
+      from quiz_questions q
+      where q.is_active and not (q.id = any(qa.question_ids))
+      order by random()
+    ),
+    array[]::uuid[]
+  ))
+where qa.status = 'in_progress';
