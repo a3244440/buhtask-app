@@ -34,7 +34,7 @@ export default function QuizPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [status, setStatus] = useState<'in_progress' | 'completed' | 'pending_review' | null>(null);
+  const [status, setStatus] = useState<'ready' | 'in_progress' | 'completed' | 'pending_review' | null>(null);
   const [attemptId, setAttemptId] = useState('');
   const [userId, setUserId] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -48,6 +48,7 @@ export default function QuizPage() {
   const [results, setResults] = useState<Result[] | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [timedOut, setTimedOut] = useState<Record<string, boolean>>({});
+  const [questionCount, setQuestionCount] = useState(0);
 
   // Запись голоса
   const [recording, setRecording] = useState(false);
@@ -58,37 +59,57 @@ export default function QuizPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [uploadingVoice, setUploadingVoice] = useState(false);
 
+  const applyQuizData = useCallback((data: any) => {
+    setStatus(data.status);
+    if (data.status === 'ready') {
+      setQuestionCount(data.questionCount || 0);
+      return;
+    }
+    if (data.status === 'in_progress') {
+      setAttemptId(data.attemptId);
+      setQuestions(data.questions);
+      setQuestionCount(data.questions.length);
+      setAnswers(data.answers || {});
+      const manualDone: Record<string, boolean> = {};
+      (data.manualAnswers || []).forEach((m: any) => { manualDone[m.question_id] = true; });
+      setManualAnswered(manualDone);
+      const firstUnanswered = data.questions.findIndex((q: Question) =>
+        q.question_type === 'multiple_choice' ? data.answers?.[q.id] === undefined : !manualDone[q.id]
+      );
+      setCurrent(firstUnanswered === -1 ? 0 : firstUnanswered);
+    } else if (data.status === 'pending_review') {
+      setFinalScore({ autoScore: data.autoScore, total: data.total });
+    } else {
+      setFinalScore({ score: data.score, total: data.total });
+    }
+  }, []);
+
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.replace('/auth?redirect=/quiz'); return; }
       setUserId(session.user.id);
       try {
-        const data = await authedFetch('/api/quiz/start');
-        setStatus(data.status);
-        if (data.status === 'in_progress') {
-          setAttemptId(data.attemptId);
-          setQuestions(data.questions);
-          setAnswers(data.answers || {});
-          const manualDone: Record<string, boolean> = {};
-          (data.manualAnswers || []).forEach((m: any) => { manualDone[m.question_id] = true; });
-          setManualAnswered(manualDone);
-          const firstUnanswered = data.questions.findIndex((q: Question) =>
-            q.question_type === 'multiple_choice' ? data.answers?.[q.id] === undefined : !manualDone[q.id]
-          );
-          setCurrent(firstUnanswered === -1 ? 0 : firstUnanswered);
-        } else if (data.status === 'pending_review') {
-          setFinalScore({ autoScore: data.autoScore, total: data.total });
-        } else {
-          setFinalScore({ score: data.score, total: data.total });
-        }
+        applyQuizData(await authedFetch('/api/quiz/start', { preview: true }));
       } catch (e: any) {
         setError(e.message || 'Не удалось загрузить квиз');
       } finally {
         setLoading(false);
       }
     })();
-  }, [router]);
+  }, [applyQuizData, router]);
+
+  const beginQuiz = async () => {
+    setError('');
+    setSubmitting(true);
+    try {
+      applyQuizData(await authedFetch('/api/quiz/start', { preview: false }));
+    } catch (e: any) {
+      setError(e.message || 'Не удалось начать квиз');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const selectAnswer = useCallback(async (questionId: string, idx: number) => {
     setAnswers(prev => ({ ...prev, [questionId]: idx }));
@@ -172,13 +193,14 @@ export default function QuizPage() {
   const isAnswered = useCallback((qq: Question) => qq.question_type === 'multiple_choice' ? answers[qq.id] !== undefined : !!manualAnswered[qq.id], [answers, manualAnswered]);
   const isResolved = (qq: Question) => isAnswered(qq) || !!timedOut[qq.id];
   const allResolved = questions.length > 0 && questions.every(isResolved);
+  const secondsPerQuestion = questions.length ? Math.max(1, Math.floor(60 * 60 / questions.length)) : 60;
 
   // На каждый вопрос отводится ровно минута. Пропущенный по таймеру вопрос
   // остаётся без ответа и не приносит баллов даже при возвращении назад.
   useEffect(() => {
     if (loading || status !== 'in_progress' || !q || isAnswered(q) || timedOut[q.id]) return;
 
-    setSecondsLeft(60);
+    setSecondsLeft(secondsPerQuestion);
     const timer = window.setInterval(() => {
       setSecondsLeft(previous => {
         if (previous > 1) return previous - 1;
@@ -197,7 +219,7 @@ export default function QuizPage() {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [current, finish, isAnswered, loading, q?.id, questions.length, status, timedOut]);
+  }, [current, finish, isAnswered, loading, q?.id, questions.length, secondsPerQuestion, status, timedOut]);
 
   if (loading) return <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>;
 
@@ -213,6 +235,23 @@ export default function QuizPage() {
               <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-3" />
               <p className="text-gray-700 font-medium mb-1">{error}</p>
               <button onClick={() => router.push('/reyting')} className="text-sm text-blue-600 hover:underline mt-2">← К рейтингу</button>
+            </div>
+          )}
+
+          {status === 'ready' && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+              <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-3" />
+              <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Квиз для рейтинга бухгалтеров</h1>
+              <p className="text-sm text-gray-600 leading-relaxed max-w-lg mx-auto">
+                Вам предстоит ответить на все <b>{questionCount}</b> активных вопросов. На прохождение отведён <b>1 час</b>
+                — это примерно {Math.floor(60 * 60 / Math.max(questionCount, 1))} секунд на вопрос. Если время вопроса истечёт,
+                он будет пропущен и принесёт 0 баллов. Текстовые и голосовые ответы проверяются администратором вручную.
+              </p>
+              <button onClick={beginQuiz} disabled={submitting}
+                className="mt-6 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-6 py-3 rounded-xl text-sm font-semibold">
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                Начать квиз
+              </button>
             </div>
           )}
 
