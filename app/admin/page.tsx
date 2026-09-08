@@ -797,10 +797,19 @@ export default function AdminPanel() {
     if (allGraded) {
       const manualScore = (remaining || []).reduce((s, r) => s + (r.points_awarded || 0), 0);
       const { data: attempt } = await supabase.from('quiz_attempts').select('auto_score').eq('id', answer.attempt_id).maybeSingle();
-      await supabase.from('quiz_attempts').update({
+      const { data: completedAttempt, error: completeError } = await supabase.from('quiz_attempts').update({
         manual_score: manualScore, score: (attempt?.auto_score || 0) + manualScore,
         status: 'completed', manual_reviewed_at: new Date().toISOString(),
-      }).eq('id', answer.attempt_id);
+      }).eq('id', answer.attempt_id).select().single();
+      if (completeError) {
+        alert('Оценка сохранена, но итог квиза не удалось завершить: ' + completeError.message);
+        setGradingId(null);
+        return;
+      }
+      if (completedAttempt) {
+        setQuizAttempts(prev => [...prev.filter(a => a.id !== completedAttempt.id), completedAttempt]
+          .sort((a, b) => (b.score || 0) - (a.score || 0) || (a.time_taken_seconds || 0) - (b.time_taken_seconds || 0)));
+      }
     }
 
     setManualAnswers(prev => prev.filter(a => a.id !== answer.id));
