@@ -169,7 +169,7 @@ export default function QuizPage() {
   }, [attemptId]);
 
   const q = questions[current];
-  const isAnswered = (qq: Question) => qq.question_type === 'multiple_choice' ? answers[qq.id] !== undefined : !!manualAnswered[qq.id];
+  const isAnswered = useCallback((qq: Question) => qq.question_type === 'multiple_choice' ? answers[qq.id] !== undefined : !!manualAnswered[qq.id], [answers, manualAnswered]);
   const isResolved = (qq: Question) => isAnswered(qq) || !!timedOut[qq.id];
   const allResolved = questions.length > 0 && questions.every(isResolved);
 
@@ -197,7 +197,7 @@ export default function QuizPage() {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [current, finish, loading, manualAnswered, q?.id, questions.length, status, timedOut, answers]);
+  }, [current, finish, isAnswered, loading, q?.id, questions.length, status, timedOut]);
 
   if (loading) return <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>;
 
