@@ -34,7 +34,7 @@ export default function QuizPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [status, setStatus] = useState<'ready' | 'in_progress' | 'completed' | 'pending_review' | null>(null);
+  const [status, setStatus] = useState<'ready' | 'resume_ready' | 'in_progress' | 'completed' | 'pending_review' | null>(null);
   const [attemptId, setAttemptId] = useState('');
   const [userId, setUserId] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -61,7 +61,7 @@ export default function QuizPage() {
 
   const applyQuizData = useCallback((data: any) => {
     setStatus(data.status);
-    if (data.status === 'ready') {
+    if (data.status === 'ready' || data.status === 'resume_ready') {
       setQuestionCount(data.questionCount || 0);
       return;
     }
@@ -238,7 +238,7 @@ export default function QuizPage() {
             </div>
           )}
 
-          {status === 'ready' && (
+          {(status === 'ready' || status === 'resume_ready') && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
               <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-3" />
               <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Квиз для рейтинга бухгалтеров</h1>
@@ -250,7 +250,7 @@ export default function QuizPage() {
               <button onClick={beginQuiz} disabled={submitting}
                 className="mt-6 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-6 py-3 rounded-xl text-sm font-semibold">
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-                Начать квиз
+{status === 'resume_ready' ? 'Продолжить квиз' : 'Начать квиз'}
               </button>
             </div>
           )}
