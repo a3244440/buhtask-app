@@ -16,9 +16,9 @@ export function supabaseAdmin() {
 /** Клиент от имени вызывающего (по его access_token) — только чтобы узнать, кто это, без обхода RLS. */
 export function supabaseCaller(token: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL не задан в окружении сервера');
-  if (!key) throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY не задан в окружении сервера');
+  if (!key) throw new Error('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY или NEXT_PUBLIC_SUPABASE_ANON_KEY не задан в окружении сервера');
   return createClient(url, key, { global: { headers: { Authorization: `Bearer ${token}` } } });
 }
 
