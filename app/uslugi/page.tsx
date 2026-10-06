@@ -1,50 +1,34 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ArrowUpRight, MapPin } from 'lucide-react';
 import { ALL_SEO_PAGES as SEO_PAGES } from '@/lib/seoPages';
+import { ServiceHeader, ServiceFooter, AccountingScene, ServiceCards, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip } from './ServiceSite';
+import styles from './services.module.css';
 
 export const metadata: Metadata = {
   title: 'Бухгалтерские услуги в Казахстане — сдача отчётов, открытие и закрытие ИП/ТОО',
-  description:
-    'Все бухгалтерские услуги для бизнеса Казахстана: поиск бухгалтера, сдача налоговой отчётности 910/200/300, открытие и закрытие ИП и ТОО, ведение учёта. Проверенные специалисты и бесплатные инструменты на BuhTask.',
+  description: 'Все бухгалтерские услуги для бизнеса Казахстана: поиск бухгалтера, сдача налоговой отчётности, открытие и закрытие ИП и ТОО, ведение учёта. Специалисты и бесплатные инструменты на BuhTask.',
   alternates: { canonical: 'https://buhtask.kz/uslugi' },
 };
 
 export default function UslugiIndexPage() {
-  return (
-    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <header className="bg-white border-b border-gray-100">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/"><img src="/images/logo-new.png" alt="BuhTask" className="h-10 w-auto" /></Link>
-          <Link href="/auth" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl">
-            Разместить задачу
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">Бухгалтерские услуги в Казахстане</h1>
-        <p className="text-gray-600 leading-relaxed mb-8">
-          Разместите задачу бесплатно — проверенные бухгалтеры откликнутся с ценами. Сдача отчётности,
-          открытие и закрытие бизнеса, ведение учёта для ИП и ТОО по всему Казахстану.
-        </p>
-
-        <div className="grid sm:grid-cols-2 gap-4">
-          {SEO_PAGES.map(p => (
-            <Link key={p.slug} href={`/uslugi/${p.slug}`}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:border-blue-200 hover:shadow-lg hover:-translate-y-0.5 transition-all">
-              <p className="font-bold text-gray-900 mb-1">{p.h1}</p>
-              <p className="text-sm text-gray-500 line-clamp-2">{p.intro.slice(0, 120)}…</p>
-              <p className="text-sm text-blue-600 font-semibold mt-3">Подробнее →</p>
-            </Link>
-          ))}
-        </div>
-      </main>
-
-      <footer className="border-t border-gray-100 bg-white mt-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 text-xs text-gray-400 text-center">
-          BuhTask — маркетплейс бухгалтерских услуг в Казахстане · info@buhtask.kz · <Link href="/news" className="hover:text-blue-600">Новости и статьи</Link>
-        </div>
-      </footer>
-    </div>
-  );
+  const cityPages = SEO_PAGES.filter(p => p.slug.startsWith('buhgalter-'));
+  const otherServices = SEO_PAGES.filter(p => !p.slug.startsWith('buhgalter-'));
+  return <div className={styles.site}>
+    <ServiceHeader />
+    <main className={styles.main}>
+      <nav className={styles.breadcrumb} aria-label="Хлебные крошки"><Link href="/">Главная</Link><span aria-hidden="true">/</span><span aria-current="page">Услуги</span></nav>
+      <section className={`${styles.hero} ${styles.catalogHero}`}><div><span className={styles.pill}><MapPin size={15} />Для ИП и ТОО в Казахстане</span><h1>Ваше дело — бизнес.<br />С бухгалтерией поможем.</h1><p>Найдите специалиста для отчёта, расчёта зарплаты или ведения учёта. BuhTask помогает встретиться предпринимателям и бухгалтерам.</p><div className={styles.heroActions}><Link href="/auth" className={styles.button}>Найти бухгалтера</Link><a href="#services" className={styles.textLink}>Выбрать услугу <ArrowUpRight size={18} /></a></div></div><AccountingScene /></section>
+      <TrustStrip />
+      <ServiceCards />
+      <section className={styles.related}><h2>Все направления</h2><div>{otherServices.map(page => <Link key={page.slug} href={`/uslugi/${page.slug}`}>{page.h1}</Link>)}</div></section>
+      <HowItWorks />
+      <CompanyBlock />
+      <ToolsBlock />
+      <section className={styles.section}><div className={styles.sectionHeading}><h2>Рядом с вами.<br />И всегда онлайн.</h2><p>Выберите свой город или работайте удалённо со специалистом из другого региона.</p></div><div className={styles.cityLinks}>{cityPages.map(page => <Link key={page.slug} href={`/uslugi/${page.slug}`}>{page.sections[0].h2.replace('Бухгалтерские услуги ', '')}<ArrowUpRight size={18} /></Link>)}</div></section>
+      <ContactBanner />
+      <div className={styles.related} />
+    </main>
+    <ServiceFooter />
+  </div>;
 }
