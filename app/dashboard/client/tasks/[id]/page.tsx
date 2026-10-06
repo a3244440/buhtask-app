@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
-import { ArrowLeft, MapPin, Calendar, Star, CheckCircle, Clock, User, Pencil, Trash2, CreditCard } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, CheckCircle, Clock, User, Pencil, Trash2, CreditCard } from 'lucide-react';
 import DashboardHeader from '../../../../components/DashboardHeader';
 
 const CATS: Record<string, string> = {
@@ -34,7 +34,7 @@ interface Task {
 interface Proposal {
   id: string; accountant_id: string; proposed_price: number;
   description: string; estimated_days?: number; created_at: string;
-  accountant_name?: string; accountant_rating?: number; accountant_tasks?: number; accountant_verified?: boolean;
+  accountant_name?: string; accountant_tasks?: number; accountant_verified?: boolean;
 }
 
 export default function ClientTaskDetail() {
@@ -99,11 +99,11 @@ export default function ClientTaskDetail() {
     if (propData && propData.length > 0) {
       const withProfiles = await Promise.all(propData.map(async (p: any) => {
         const { data: profile } = await supabase
-          .from('profiles').select('full_name,rating,completed_tasks,verification_status').eq('id', p.accountant_id).single();
+          .from('profiles').select('full_name,completed_tasks,verification_status').eq('id', p.accountant_id).single();
         return {
           ...p,
           accountant_name: profile?.full_name || 'Бухгалтер',
-          accountant_rating: profile?.rating || 0,
+
           accountant_tasks: profile?.completed_tasks || 0,
           accountant_verified: profile?.verification_status === 'verified',
         };
@@ -422,7 +422,7 @@ CREATE POLICY "tasks_select" ON tasks
                           )}
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-400">
-                          <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-amber-400 fill-amber-400"/>{(p.accountant_rating||0).toFixed(1)}</span>
+
                           <span>·</span>
                           <span>{p.accountant_tasks || 0} {t('td.tasksWord')}</span>
                           <span>·</span>

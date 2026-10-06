@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench, Baby, AlertTriangle, BookOpen, Shield, SearchCheck, Users, FileText, Scale, BarChart3, Trophy } from 'lucide-react';
+import { Search, Home, Briefcase, MessageSquare, User, MapPin, Clock, ChevronRight, TrendingUp, Settings, Send, ArrowLeft, Paperclip, Wallet, CheckCircle2, X, Copy, CalendarDays, Calculator, Building2, Wrench, Baby, AlertTriangle, BookOpen, Shield, SearchCheck, Users, FileText, Scale, BarChart3 } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 import { shortCompanyName } from '@/lib/companyName';
 import { useI18n } from '@/lib/i18n';
@@ -38,7 +38,6 @@ const NAV = [
   { id: 'tools', icon: Wrench, key: 'nav.tools' },
   { id: 'tasks', icon: Briefcase, key: 'nav.tasks' },
   { id: 'messages', icon: MessageSquare, key: 'nav.messages' },
-  { id: 'rating', icon: Trophy, key: 'nav.rating' },
 ];
 
 function AccountantDashboardInner() {
@@ -296,14 +295,7 @@ function AccountantDashboardInner() {
               className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <Users className="w-4 h-4 flex-shrink-0" /> {t('tools.counterparties')}
             </button>
-            <button onClick={() => router.push('/reyting')}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-amber-600 hover:bg-amber-50 whitespace-nowrap">
-              <Trophy className="w-4 h-4 flex-shrink-0" /> Рейтинг бухгалтеров
-            </button>
-            <button onClick={() => router.push('/promote')}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-violet-600 hover:bg-violet-50 whitespace-nowrap">
-              <TrendingUp className="w-4 h-4 flex-shrink-0" /> Продвижение в рейтинге
-            </button>
+
             <button onClick={() => router.push('/documents')}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
               <FileText className="w-4 h-4 flex-shrink-0" /> {t('tools.documents')}
@@ -345,7 +337,7 @@ function AccountantDashboardInner() {
               <BarChart3 className="w-4 h-4 flex-shrink-0" /> {t('tools.finance')}
             </button>
           </div>
-        
+
         </nav>
         <div className="p-3 border-t border-gray-100">
           <button onClick={() => setTab('tasks')}
@@ -383,33 +375,27 @@ function AccountantDashboardInner() {
             </div>
           )}
 
-          {/* Конкурс — квиз и продвижение в рейтинге, отдельным заметным блоком */}
+          {/* Квиз по бухгалтерскому учёту */}
           {tab === 'home' && (
-            <div className="grid sm:grid-cols-2 gap-3 mb-6">
+            <div className="grid gap-3 mb-6">
               <button onClick={() => router.push('/quiz')}
                 className="text-left bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-5 text-white hover:-translate-y-0.5 transition-transform shadow-sm">
-                <span className="text-2xl">🎁</span>
-                <p className="font-bold mt-2">Пройти квиз и получить подарок</p>
-                <p className="text-xs text-white/90 mt-1">Топ-3 по результатам квиза получают призы от партнёров конкурса</p>
+                <span className="text-2xl">📚</span>
+                <p className="font-bold mt-2">Проверить знания бухучёта</p>
+                <p className="text-xs text-white/90 mt-1">Квиз по бухгалтерскому и налоговому учёту</p>
               </button>
-              <button onClick={() => router.push('/promote')}
-                className="text-left bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-5 text-white hover:-translate-y-0.5 transition-transform shadow-sm">
-                <span className="text-2xl">📈</span>
-                <p className="font-bold mt-2">Купить место для рекламы</p>
-                <p className="text-xs text-white/90 mt-1">Разместите себя в рейтинге бухгалтеров Казахстана — места с 4-го</p>
-              </button>
+
             </div>
           )}
 
           {/* HOME */}
           {(tab === 'home' || tab === 'my_orders') && (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                 {[
                   { label: t('acc.openTasks'), value: tasks.length, color: 'text-blue-600' },
                   { label: t('acc.myOrders'), value: myOrders.length, color: 'text-emerald-600' },
                   { label: t('acc.dialogs'), value: conversations.length, color: 'text-purple-600' },
-                  { label: t('acc.rating'), value: '—', color: 'text-amber-500' },
                 ].map(s => (
                   <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
                     <p className="text-xs text-gray-500 mb-2">{s.label}</p>
@@ -762,10 +748,10 @@ function AccountantDashboardInner() {
 
       {/* Mobile nav */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-40">
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-4 h-16">
           {NAV.map(item => (
-            <button key={item.id} onClick={() => item.id === 'tools' ? router.push('/tools') : item.id === 'rating' ? router.push('/reyting') : setTab(item.id)}
-              className={`flex flex-col items-center justify-center gap-1 text-[10px] font-medium relative ${tab === item.id ? 'text-blue-600' : item.id === 'rating' ? 'text-amber-500' : 'text-gray-400'}`}>
+            <button key={item.id} onClick={() => item.id === 'tools' ? router.push('/tools') : setTab(item.id)}
+              className={`flex flex-col items-center justify-center gap-1 text-[10px] font-medium relative ${tab === item.id ? 'text-blue-600' : 'text-gray-400'}`}>
               <item.icon className="w-5 h-5" />
               {t(item.key)}
               {item.id === 'messages' && conversations.length > 0 && (

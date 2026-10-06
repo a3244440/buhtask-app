@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
-import { LogOut, User, Settings, ChevronDown, Building2, Check, Plus, Mail, Bell } from 'lucide-react';
+import { LogOut, User, Settings, ChevronDown, Building2, Check, Plus, Mail, Bell, ArrowLeftRight } from 'lucide-react';
 import { getActiveCompany, setActiveCompany } from '@/lib/activeCompany';
 import { shortCompanyName } from '@/lib/companyName';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -16,6 +16,8 @@ export default function DashboardHeader({ title, right }: Props) {
   const router = useRouter();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [switchingRole, setSwitchingRole] = useState(false);
+  const [roleError, setRoleError] = useState('');
   const [unreadSupport, setUnreadSupport] = useState(0);
   // Профиль (роль, имя, аватар, тариф) берём из общего кэширующего стора —
   // это устраняет повторный запрос профиля и "моргание" при каждом переходе между инструментами.
@@ -81,6 +83,25 @@ export default function DashboardHeader({ title, right }: Props) {
   const handleSignOut = async () => { await supabase.auth.signOut(); router.push('/'); };
   const initials = fullName ? fullName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : (email[0]?.toUpperCase() || '?');
   const dashHref = role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client';
+
+  const switchRole = async () => {
+    if (!uid || (role !== 'client' && role !== 'accountant') || switchingRole) return;
+    const nextRole = role === 'client' ? 'accountant' : 'client';
+    setSwitchingRole(true);
+    setRoleError('');
+    try {
+      const { data, error } = await supabase.from('profiles').update({ role: nextRole }).eq('id', uid).select('*').single();
+      if (error) throw error;
+      if (data.role !== nextRole) throw new Error('Смена роли не применена. Обратитесь в поддержку.');
+      useAuthStore.getState().setUser(data);
+      setOpen(false);
+      router.push(nextRole === 'accountant' ? '/dashboard/accountant' : '/dashboard/client');
+    } catch (error) {
+      setRoleError(error instanceof Error ? error.message : 'Не удалось сменить роль. Попробуйте снова.');
+    } finally {
+      setSwitchingRole(false);
+    }
+  };
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
@@ -191,6 +212,14 @@ export default function DashboardHeader({ title, right }: Props) {
                   Админ-панель
                 </button>
               )}
+              {(role === 'client' || role === 'accountant') && (
+                <button onClick={switchRole} disabled={switchingRole}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-700 hover:bg-blue-50 disabled:opacity-50">
+                  <ArrowLeftRight className="w-4 h-4" />
+                  {switchingRole ? 'Переключение…' : role === 'client' ? 'Стать бухгалтером' : 'Стать заказчиком'}
+                </button>
+              )}
+              {roleError && <p role="alert" className="px-4 py-2 text-xs text-red-600">{roleError}</p>}
               {role !== 'accountant' && (
                 <button onClick={() => { setOpen(false); router.push('/profile'); }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">

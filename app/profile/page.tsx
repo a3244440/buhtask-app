@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { Camera, Save, ArrowLeft, User, Phone, MapPin, Briefcase, FileText, ShieldCheck, BadgeCheck, Upload, CheckCircle2, Clock, CreditCard, Trash2, AlertTriangle, X } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
@@ -19,6 +20,7 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [userId, setUserId] = useState('');
+  const [savedRole, setSavedRole] = useState('client');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deletingRequest, setDeletingRequest] = useState(false);
@@ -42,6 +44,7 @@ export default function ProfilePage() {
     setUserId(user.id);
     const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (p) {
+      setSavedRole(p.role);
       setProfile(prev => ({
         ...prev,
         ...p,
@@ -192,11 +195,18 @@ export default function ProfilePage() {
       if (!updated || updated.length === 0) {
         throw new Error('Изменения не применились — возможно, истекла сессия. Обновите страницу и войдите заново, затем попробуйте снова.');
       }
+      if (updated[0].role !== profile.role) {
+        throw new Error('Смена роли не применена. Обратитесь в поддержку.');
+      }
+      useAuthStore.getState().setUser(updated[0]);
+      const roleChanged = savedRole !== updated[0].role;
+      setSavedRole(updated[0].role);
       setSuccess('Профиль успешно сохранён!');
       if (profile.role === 'accountant' && profile.id_card_url && profile.iin && profile.verification_status === 'not_verified') {
         setProfile(p => ({ ...p, verification_status: 'pending' }));
       }
       setTimeout(() => setSuccess(''), 3000);
+      if (roleChanged) router.push(updated[0].role === 'accountant' ? '/dashboard/accountant' : '/dashboard/client');
     } catch (err: any) { setError(err.message || 'Ошибка сохранения'); }
     finally { setSaving(false); }
   };
@@ -391,7 +401,7 @@ export default function ProfilePage() {
                 { label: 'Личность подтверждена', done: profile.identity_verified },
                 { label: 'Документы проверены', done: profile.documents_verified },
                 { label: 'Опыт подтверждён', done: profile.experience_verified },
-                { label: `Рейтинг ${(profile.rating || 0).toFixed(1)} · ${profile.completed_tasks || 0} задач`, done: true },
+                { label: `Выполнено задач: ${profile.completed_tasks || 0}`, done: true },
               ].map(item => (
                 <div key={item.label} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${item.done ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-50 text-gray-400'}`}>
                   <CheckCircle2 className={`w-4 h-4 ${item.done ? 'text-emerald-500' : 'text-gray-300'}`} />

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Star, MapPin, Briefcase, ShieldCheck, Clock, Award, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, MessageSquare, MapPin, Briefcase, ShieldCheck, Clock, Award, CheckCircle2 } from 'lucide-react';
 import DashboardHeader from '../../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 
@@ -12,7 +12,6 @@ interface AccProfile {
   avatar_url?: string;
   bio?: string;
   city?: string;
-  rating?: number;
   completed_tasks?: number;
   experience_years?: number;
   min_price?: number;
@@ -69,7 +68,6 @@ export default function AccountantProfilePage() {
   );
 
   const verified = acc.verification_status === 'verified';
-  const rating = acc.rating || 0;
   const memberSince = acc.created_at ? new Date(acc.created_at).getFullYear() : null;
 
   return (
@@ -102,7 +100,7 @@ export default function AccountantProfilePage() {
               )}
             </div>
             <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
-              <span className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-400 fill-amber-400" /> {rating > 0 ? rating.toFixed(1) : t('accp.noRating')}</span>
+
               {acc.city && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {acc.city}</span>}
               {memberSince && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {t('accp.since')} {memberSince}</span>}
             </div>
@@ -110,15 +108,12 @@ export default function AccountantProfilePage() {
         </div>
 
         {/* Метрики */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-2 gap-3 mb-5">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
             <p className="text-2xl font-extrabold text-blue-600">{acc.completed_tasks || 0}</p>
             <p className="text-xs text-gray-400 mt-0.5">{t('accp.tasksDone')}</p>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
-            <p className="text-2xl font-extrabold text-amber-500">{rating > 0 ? rating.toFixed(1) : '—'}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{t('accp.rating')}</p>
-          </div>
+
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
             <p className="text-2xl font-extrabold text-emerald-600">{acc.experience_years || 0}</p>
             <p className="text-xs text-gray-400 mt-0.5">{t('accp.yearsExp')}</p>
@@ -176,7 +171,7 @@ export default function AccountantProfilePage() {
         {/* Отзывы заказчиков */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mt-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2"><Star className="w-4 h-4 text-amber-400 fill-amber-400" /> {t('rev.clientReviews')}</h3>
+            <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-500" /> {t('rev.clientReviews')}</h3>
             {reviews.length > 0 && <span className="text-xs text-gray-400">{reviews.length} {t('rev.reviews')}</span>}
           </div>
           {reviews.length === 0 ? (
@@ -192,9 +187,7 @@ export default function AccountantProfilePage() {
                       </div>
                       <span className="text-sm font-medium text-gray-700">{r.client_name || '—'}</span>
                     </div>
-                    <div className="flex items-center gap-0.5">
-                      {[1,2,3,4,5].map(s => <Star key={s} className={`w-3.5 h-3.5 ${s <= r.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />)}
-                    </div>
+
                   </div>
                   {r.comment && <p className="text-sm text-gray-600 mt-1.5">{r.comment}</p>}
                   <p className="text-[11px] text-gray-300 mt-1">{new Date(r.created_at).toLocaleDateString('ru-RU')}</p>
