@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe, Award, MapPin, GripVertical, Gift, Mail, Phone, BookOpen, Mic, Upload, Loader2 } from 'lucide-react';
+import { ShieldCheck, BadgeCheck, Clock, X, Check, FileText, User, CreditCard, ExternalLink, Users, Briefcase, TrendingUp, AlertCircle, Headphones, Send, MessageSquare, Eye, Trash2, Building2, Calendar, Wallet, Radio, Newspaper, Plus, Pencil, Globe, MapPin, Gift, Mail, Phone, BookOpen, Mic, Upload, Loader2 } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import { useI18n } from '@/lib/i18n';
 import { attributionLabel } from '@/lib/attribution';
@@ -61,16 +61,6 @@ export default function AdminPanel() {
   const [savingArticle, setSavingArticle] = useState(false);
   const [articleError, setArticleError] = useState('');
 
-  // ===== Рейтинг бухгалтеров (конкурс) =====
-  const [contestEntries, setContestEntries] = useState<any[]>([]);
-  const [editingEntry, setEditingEntry] = useState<any | null>(null);
-  const [entryForm, setEntryForm] = useState({
-    accountant_id: '', rank_position: 1, city: '', company_name: '', badge_type: '', note: '', published: false,
-  });
-  const [accountantSearch, setAccountantSearch] = useState('');
-  const [savingEntry, setSavingEntry] = useState(false);
-  const [entryError, setEntryError] = useState('');
-
   // ===== Квиз конкурса =====
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
   const [quizAttempts, setQuizAttempts] = useState<any[]>([]);
@@ -80,16 +70,13 @@ export default function AdminPanel() {
   });
   const [savingQuestion, setSavingQuestion] = useState(false);
   const [questionError, setQuestionError] = useState('');
-  const [contestSubTab, setContestSubTab] = useState<'entries' | 'questions' | 'results' | 'promotions' | 'manualReview'>('entries');
+  const [contestSubTab, setContestSubTab] = useState<'questions' | 'results' | 'manualReview'>('questions');
 
   // ===== Ручная проверка вопросов квиза (text/voice) =====
   const [manualAnswers, setManualAnswers] = useState<any[]>([]);
   const [manualQuestionsMap, setManualQuestionsMap] = useState<Record<string, any>>({});
   const [pendingReviewAttemptMap, setPendingReviewAttemptMap] = useState<Record<string, string>>({});
   const [gradingId, setGradingId] = useState<string | null>(null);
-
-  // ===== Заявки на платное продвижение =====
-  const [promotionRequests, setPromotionRequests] = useState<any[]>([]);
 
   // ===== Партнёры =====
   const [partners, setPartners] = useState<any[]>([]);
@@ -185,12 +172,6 @@ export default function AdminPanel() {
       setArticles(arts || []);
     } catch { setArticles([]); }
 
-    // Рейтинг бухгалтеров — все записи, включая неопубликованные
-    try {
-      const { data: entries } = await supabase.from('contest_entries').select('*').order('rank_position', { ascending: true });
-      setContestEntries(entries || []);
-    } catch { setContestEntries([]); }
-
     // Квиз конкурса — банк вопросов и результаты попыток
     try {
       const { data: qs } = await supabase.from('quiz_questions').select('*').order('created_at', { ascending: false });
@@ -223,17 +204,11 @@ export default function AdminPanel() {
       }
     } catch { setManualAnswers([]); }
 
-    // Заявки партнёров конкурса — все статусы, модерация здесь
+    // Заявки партнёров BuhTask — все статусы, модерация здесь
     try {
       const { data: prts } = await supabase.from('partners').select('*').order('created_at', { ascending: false });
       setPartners(prts || []);
     } catch { setPartners([]); }
-
-    // Заявки на платное продвижение в рейтинге
-    try {
-      const { data: promos } = await supabase.from('promotion_requests').select('*').order('requested_at', { ascending: false });
-      setPromotionRequests(promos || []);
-    } catch { setPromotionRequests([]); }
 
     // Заявки на удаление аккаунта — только ожидающие рассмотрения
     try {
@@ -476,78 +451,6 @@ export default function AdminPanel() {
     setArticles(prev => prev.map(x => x.id === data.id ? data : x));
   };
 
-  // ===== Рейтинг бухгалтеров =====
-  const openNewEntry = () => {
-    const nextRank = contestEntries.length > 0 ? Math.max(...contestEntries.map(e => e.rank_position)) + 1 : 4;
-    setEditingEntry('new');
-    setEntryForm({ accountant_id: '', rank_position: nextRank, city: '', company_name: '', badge_type: '', note: '', published: false });
-    setAccountantSearch('');
-    setEntryError('');
-  };
-
-  const openEditEntry = (e: any) => {
-    setEditingEntry(e);
-    const acc = accountants.find(a => a.id === e.accountant_id);
-    setEntryForm({
-      accountant_id: e.accountant_id || '', rank_position: e.rank_position, city: e.city || acc?.city || '',
-      company_name: e.company_name || '', badge_type: e.badge_type || '', note: e.note || '', published: e.published,
-    });
-    setAccountantSearch(acc?.full_name || '');
-    setEntryError('');
-  };
-
-  const saveEntry = async () => {
-    if (!entryForm.accountant_id) { setEntryError('Выберите бухгалтера'); return; }
-    if (!entryForm.rank_position || entryForm.rank_position < 1) { setEntryError('Укажите место (число от 1)'); return; }
-    setSavingEntry(true);
-    setEntryError('');
-
-    const acc = accountants.find(a => a.id === entryForm.accountant_id);
-    const payload = {
-      accountant_id: entryForm.accountant_id,
-      rank_position: entryForm.rank_position,
-      full_name: acc?.full_name || acc?.email || null,
-      avatar_url: (acc as any)?.avatar_url || null,
-      city: entryForm.city.trim() || acc?.city || null,
-      company_name: entryForm.company_name.trim() || null,
-      badge_type: entryForm.rank_position <= 3 ? 'quiz_winner' : (entryForm.badge_type || null),
-      note: entryForm.note.trim() || null,
-      published: entryForm.published,
-    };
-
-    if (editingEntry === 'new') {
-      const { data, error } = await supabase.from('contest_entries').insert(payload).select().single();
-      setSavingEntry(false);
-      if (error) { setEntryError(error.message.includes('duplicate') ? 'Это место в сезоне уже занято другим участником' : error.message); return; }
-      setContestEntries(prev => [...prev, data].sort((a, b) => a.rank_position - b.rank_position));
-      setEditingEntry(null);
-    } else {
-      const { data, error } = await supabase.from('contest_entries').update(payload).eq('id', editingEntry.id).select().single();
-      setSavingEntry(false);
-      if (error) { setEntryError(error.message.includes('duplicate') ? 'Это место в сезоне уже занято другим участником' : error.message); return; }
-      setContestEntries(prev => prev.map(e => e.id === data.id ? data : e).sort((a, b) => a.rank_position - b.rank_position));
-      setEditingEntry(null);
-    }
-  };
-
-  const deleteEntry = async (e: any) => {
-    if (!window.confirm('Убрать участника из рейтинга?')) return;
-    const { error } = await supabase.from('contest_entries').delete().eq('id', e.id);
-    if (error) { alert('Ошибка удаления: ' + error.message); return; }
-    setContestEntries(prev => prev.filter(x => x.id !== e.id));
-  };
-
-  const toggleEntryPublish = async (e: any) => {
-    const published = !e.published;
-    const { data, error } = await supabase.from('contest_entries').update({ published }).eq('id', e.id).select().single();
-    if (error) { alert('Ошибка: ' + error.message + (error.message.includes('duplicate') ? ' — это место уже занято другим опубликованным участником' : '')); return; }
-    setContestEntries(prev => prev.map(x => x.id === data.id ? data : x));
-  };
-
-  const filteredAccountantsForContest = accountants.filter(a =>
-    !accountantSearch.trim() || `${a.full_name} ${a.email} ${a.city}`.toLowerCase().includes(accountantSearch.toLowerCase())
-  );
-
   // ===== Партнёры =====
   const openEditPartner = (p: any) => {
     setEditingPartner(p);
@@ -607,88 +510,6 @@ export default function AdminPanel() {
 
   const filteredPartners = partners.filter(p => partnerFilter === 'all' || p.status === partnerFilter);
   const pendingPartnersCount = partners.filter(p => p.status === 'pending').length;
-
-  // ===== Заявки на платное продвижение =====
-  // Пересчитывает места 4+ по сумме активной ставки — реализует аукцион на повышение:
-  // кто предложил больше, тот выше; кого перебили — автоматически опускается на следующее
-  // место (каскадом для всех, кто ниже). Заодно снимает с публикации истёкшие места.
-  //
-  // Технический нюанс: в базе уникальный индекс на (season, rank_position) среди
-  // опубликованных записей — расставлять новые ранги по одному напрямую нельзя,
-  // легко словить конфликт (например, новая ставка должна встать на уже занятое место 4).
-  // Поэтому в два прохода: сначала разводим всех во временную безопасную зону рангов,
-  // затем уже расставляем финальные 4, 5, 6...
-  const resortPromotedRanks = async () => {
-    const now = new Date();
-    const { data: all } = await supabase.from('contest_entries').select('*').eq('badge_type', 'promoted');
-    const list = all || [];
-
-    const expired = list.filter(e => e.published && (!e.paid_until || new Date(e.paid_until) <= now));
-    for (const e of expired) {
-      await supabase.from('contest_entries').update({ published: false }).eq('id', e.id);
-    }
-
-    const active = list.filter(e => e.published && e.paid_until && new Date(e.paid_until) > now);
-    const sorted = [...active].sort((a, b) => {
-      const diff = Number(b.paid_amount || 0) - Number(a.paid_amount || 0);
-      if (diff !== 0) return diff; // выше ставка — выше место
-      // при равной ставке — кто занял место раньше, тот и остаётся выше (не вытесняется равной ставкой)
-      return new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime();
-    });
-
-    for (let i = 0; i < sorted.length; i++) {
-      await supabase.from('contest_entries').update({ rank_position: 100000 + i }).eq('id', sorted[i].id);
-    }
-    for (let i = 0; i < sorted.length; i++) {
-      await supabase.from('contest_entries').update({ rank_position: 4 + i }).eq('id', sorted[i].id);
-    }
-
-    const { data: entries } = await supabase.from('contest_entries').select('*').order('rank_position', { ascending: true });
-    setContestEntries(entries || []);
-  };
-
-  const approvePromotion = async (req: any) => {
-    if (!window.confirm(`Подтвердить оплату ${Number(req.amount).toLocaleString('ru-RU')} ₸ от ${req.full_name || 'участника'} и пересчитать места?`)) return;
-
-    const paidUntil = new Date();
-    paidUntil.setMonth(paidUntil.getMonth() + req.period_months);
-
-    const existing = contestEntries.find(e => e.accountant_id === req.accountant_id && e.badge_type === 'promoted');
-    // Временный "безопасный" ранг для новой/неопубликованной записи — реальное место назначит
-    // resortPromotedRanks() ниже. Если у записи уже был published=true ранг — переиспользуем его как
-    // временный (это безопасно, конфликта не будет: с самим собой не пересекается, а с чужими текущими
-    // рангами конфликтов нет, раз индекс уникален только среди published=true). Если запись не была
-    // опубликована, её старый rank_position мог протухнуть и сейчас принадлежать кому-то другому —
-    // в этом случае используем свежий временной диапазон, а не чужой занятый ранг.
-    const tempRank = 500000 + Math.floor(Math.random() * 100000);
-    const payload = {
-      accountant_id: req.accountant_id, rank_position: (existing && existing.published) ? existing.rank_position : tempRank,
-      full_name: req.full_name, avatar_url: req.avatar_url, city: req.city, company_name: req.company_name,
-      badge_type: 'promoted', published: true, paid_until: paidUntil.toISOString(), paid_amount: req.amount,
-    };
-
-    let error;
-    if (existing) {
-      ({ error } = await supabase.from('contest_entries').update(payload).eq('id', existing.id));
-    } else {
-      ({ error } = await supabase.from('contest_entries').insert(payload));
-    }
-    if (error) { alert('Ошибка размещения: ' + error.message); return; }
-
-    await supabase.from('promotion_requests').update({ status: 'approved', processed_at: new Date().toISOString() }).eq('id', req.id);
-    await resortPromotedRanks();
-
-    const { data: promos } = await supabase.from('promotion_requests').select('*').order('requested_at', { ascending: false });
-    setPromotionRequests(promos || []);
-  };
-
-  const rejectPromotion = async (req: any) => {
-    const { error } = await supabase.from('promotion_requests').update({ status: 'rejected', processed_at: new Date().toISOString() }).eq('id', req.id);
-    if (error) { alert('Ошибка: ' + error.message); return; }
-    setPromotionRequests(prev => prev.map(p => p.id === req.id ? { ...p, status: 'rejected' } : p));
-  };
-
-  const pendingPromotionsCount = promotionRequests.filter(p => p.status === 'pending').length;
 
   // ===== Заявки на удаление аккаунта =====
   const [deletionRequests, setDeletionRequests] = useState<any[]>([]);
@@ -837,38 +658,6 @@ export default function AdminPanel() {
     setGradingId(null);
   };
 
-  // Одним кликом переносит результат квиза бухгалтера в топ-N рейтинга (contest_entries)
-  const promoteAttemptToRank = async (attempt: any, rank: 1 | 2 | 3) => {
-    const existingAtRank = contestEntries.find(e => e.rank_position === rank && e.published);
-    if (existingAtRank && !window.confirm(`Место ${rank} сейчас занято другим участником — заменить?`)) return;
-
-    const acc = accountants.find(a => a.id === attempt.accountant_id);
-    if (!acc) { alert('Профиль бухгалтера не найден'); return; }
-
-    if (existingAtRank) {
-      await supabase.from('contest_entries').update({ published: false }).eq('id', existingAtRank.id);
-    }
-
-    const payload = {
-      accountant_id: acc.id, rank_position: rank, full_name: acc.full_name || acc.email,
-      avatar_url: (acc as any).avatar_url || null, city: acc.city || null, badge_type: 'quiz_winner',
-      note: `Результат квиза: ${attempt.score}/${attempt.total_questions}`, published: true,
-    };
-
-    const already = contestEntries.find(e => e.accountant_id === acc.id);
-    let error;
-    if (already) {
-      ({ error } = await supabase.from('contest_entries').update(payload).eq('id', already.id));
-    } else {
-      ({ error } = await supabase.from('contest_entries').insert(payload));
-    }
-    if (error) { alert('Ошибка: ' + error.message); return; }
-
-    const { data: entries } = await supabase.from('contest_entries').select('*').order('rank_position', { ascending: true });
-    setContestEntries(entries || []);
-    alert(`${acc.full_name || acc.email} назначен(а) на место ${rank}`);
-  };
-
   const filteredTasks = allTasks.filter(tk => {
     if (taskStatusFilter !== 'all' && tk.status !== taskStatusFilter) return false;
     if (taskSearch.trim()) {
@@ -932,7 +721,7 @@ export default function AdminPanel() {
             { id: 'users', label: 'Все регистрации', icon: Users },
             { id: 'activity', label: 'Активность', icon: TrendingUp },
             { id: 'blog', label: 'Блог / SEO', icon: Newspaper },
-            { id: 'contest', label: 'Рейтинг', icon: Award },
+            { id: 'contest', label: 'Квиз', icon: BookOpen },
             { id: 'partners', label: 'Партнёры', icon: Gift },
             { id: 'support', label: 'Поддержка', icon: Headphones },
             { id: 'registry', label: 'Реестр БИН', icon: ShieldCheck, external: '/admin/registry' } as any,
@@ -1361,15 +1150,15 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* ===== CONTEST TAB (Рейтинг бухгалтеров) ===== */}
+        {/* ===== QUIZ TAB ===== */}
         {view === 'contest' && (
           <div>
             <div className="flex gap-2 mb-4">
               {[
-                { id: 'entries', label: 'Участники рейтинга' },
+
                 { id: 'questions', label: `Вопросы квиза (${quizQuestions.filter(q => q.is_active).length}/${quizQuestions.length} активно)` },
                 { id: 'results', label: `Результаты квиза (${quizAttempts.length})` },
-                { id: 'promotions', label: `Заявки на продвижение${pendingPromotionsCount > 0 ? ` (${pendingPromotionsCount})` : ''}` },
+
                 { id: 'manualReview', label: `Ручная проверка${manualAnswers.length > 0 ? ` (${manualAnswers.length})` : ''}` },
               ].map(t => (
                 <button key={t.id} onClick={() => setContestSubTab(t.id as any)}
@@ -1378,68 +1167,6 @@ export default function AdminPanel() {
                 </button>
               ))}
             </div>
-
-          {contestSubTab === 'entries' && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
-              <Award className="w-5 h-5 text-amber-500" />
-              <h2 className="font-semibold text-gray-900">Участники рейтинга</h2>
-              <span className="text-xs text-gray-400">({contestEntries.length})</span>
-              <a href="/reyting" target="_blank" rel="noopener noreferrer"
-                className="ml-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
-                <Globe className="w-3 h-3" /> Открыть страницу /reyting
-              </a>
-              <button onClick={openNewEntry}
-                className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold">
-                <Plus className="w-4 h-4" /> Добавить участника
-              </button>
-            </div>
-            <p className="px-6 pt-3 text-xs text-gray-400">
-              Места 1–3 лучше назначать через вкладку «Результаты квиза» (кнопка «В топ-N») — так они действительно отражают
-              квиз, а не ручной выбор. С 4-го места — обычный список/продвижение. Место в рамках сезона уникально среди опубликованных.
-            </p>
-
-            <div className="divide-y divide-gray-50 mt-2">
-              {contestEntries.length === 0 ? (
-                <p className="py-10 text-center text-gray-400 text-sm">Пока никого нет в рейтинге. Добавьте первого участника.</p>
-              ) : contestEntries.map(e => {
-                const acc = accountants.find(a => a.id === e.accountant_id);
-                return (
-                  <div key={e.id} className="px-6 py-3.5 hover:bg-gray-50 flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${e.rank_position <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {e.rank_position}
-                    </div>
-                    <button onClick={() => openEditEntry(e)} className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-medium text-gray-900 truncate">{acc?.full_name || acc?.email || e.full_name || 'Профиль не найден'}</p>
-                      <p className="text-xs text-gray-400 truncate">{e.city || acc?.city || '—'}{e.company_name ? ` · ${e.company_name}` : ''}</p>
-                    </button>
-                    {e.badge_type === 'quiz_winner' && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-600 flex-shrink-0">По квизу</span>}
-                    {e.badge_type === 'promoted' && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-violet-50 text-violet-600 flex-shrink-0">
-                        Продвигается{e.paid_amount ? ` · ${Number(e.paid_amount).toLocaleString('ru-RU')} ₸` : ''}
-                      </span>
-                    )}
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${e.published ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
-                      {e.published ? 'Опубликовано' : 'Черновик'}
-                    </span>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => toggleEntryPublish(e)} title={e.published ? 'Снять с публикации' : 'Опубликовать'}
-                        className={`p-2 rounded-lg transition-colors ${e.published ? 'hover:bg-amber-50 text-gray-400 hover:text-amber-600' : 'hover:bg-emerald-50 text-gray-400 hover:text-emerald-600'}`}>
-                        {e.published ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                      </button>
-                      <button onClick={() => openEditEntry(e)} title="Редактировать" className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => deleteEntry(e)} title="Убрать" className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          )}
 
           {contestSubTab === 'questions' && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
@@ -1507,66 +1234,10 @@ export default function AdminPanel() {
                       <p className="text-xs text-gray-400 truncate">{acc?.city || '—'} · {a.time_taken_seconds ? `${Math.round(a.time_taken_seconds / 60)} мин` : '—'}</p>
                     </div>
                     <span className="text-sm font-bold text-blue-600 flex-shrink-0">{a.score}/{a.total_questions}</span>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {[1, 2, 3].map(rank => (
-                        <button key={rank} onClick={() => promoteAttemptToRank(a, rank as 1 | 2 | 3)}
-                          className="text-[11px] px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-medium">
-                          В топ-{rank}
-                        </button>
-                      ))}
-                    </div>
+
                   </div>
                 );
               })}
-            </div>
-          </div>
-          )}
-
-          {contestSubTab === 'promotions' && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2 flex-wrap">
-              <TrendingUp className="w-5 h-5 text-violet-600" />
-              <h2 className="font-semibold text-gray-900">Заявки на платное продвижение</h2>
-              <span className="text-xs text-gray-400">({promotionRequests.length})</span>
-              <button onClick={() => resortPromotedRanks()}
-                className="ml-auto text-xs px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium">
-                Пересчитать места
-              </button>
-            </div>
-            <p className="px-6 pt-3 text-xs text-gray-400">
-              Места с 4-го — аукцион на повышение: кто заплатил больше, тот выше; кого перебили — опускается на
-              следующее место. Одобряйте заявку только после того, как реально проверили поступление оплаты по
-              Kaspi/реквизитам — подтверждение здесь не связано с автоматической проверкой платежа. Кнопка «Пересчитать
-              места» полезна, если истекли чьи-то оплаченные места, а новых заявок пока не было.
-            </p>
-            <div className="divide-y divide-gray-50 mt-2">
-              {promotionRequests.length === 0 ? (
-                <p className="py-10 text-center text-gray-400 text-sm">Заявок пока нет.</p>
-              ) : promotionRequests.map(req => (
-                <div key={req.id} className="px-6 py-3.5 flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{req.full_name || 'Без имени'}</p>
-                    <p className="text-xs text-gray-400 truncate">
-                      {req.city || '—'} · {req.period_months} мес · {Number(req.amount).toLocaleString('ru-RU')} ₸ · {new Date(req.requested_at).toLocaleDateString('ru-RU')}
-                    </p>
-                  </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : req.status === 'rejected' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600'}`}>
-                    {req.status === 'approved' ? 'Одобрена' : req.status === 'rejected' ? 'Отклонена' : 'На проверке'}
-                  </span>
-                  {req.status === 'pending' && (
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <button onClick={() => approvePromotion(req)}
-                        className="text-[11px] px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium">
-                        Оплата пришла — разместить
-                      </button>
-                      <button onClick={() => rejectPromotion(req)}
-                        className="text-[11px] px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-medium">
-                        Отклонить
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
             </div>
           </div>
           )}
@@ -1961,100 +1632,6 @@ export default function AdminPanel() {
       )}
 
       {/* Contest entry editor modal */}
-      {editingEntry && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setEditingEntry(null)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="font-bold text-gray-900">{editingEntry === 'new' ? 'Добавить в рейтинг' : 'Редактирование места'}</h3>
-              <button onClick={() => setEditingEntry(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              {entryError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2.5">{entryError}</div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Бухгалтер</label>
-                <input value={accountantSearch} onChange={e => setAccountantSearch(e.target.value)}
-                  placeholder="Поиск по имени, email, городу…"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 mb-2" />
-                <div className="max-h-40 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
-                  {filteredAccountantsForContest.length === 0 ? (
-                    <p className="text-xs text-gray-400 text-center py-4">Никто не найден</p>
-                  ) : filteredAccountantsForContest.slice(0, 30).map(a => (
-                    <button key={a.id} onClick={() => { setEntryForm(f => ({ ...f, accountant_id: a.id, city: f.city || a.city || '' })); setAccountantSearch(a.full_name || a.email); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center justify-between ${entryForm.accountant_id === a.id ? 'bg-blue-50' : ''}`}>
-                      <span className="truncate">{a.full_name || a.email}</span>
-                      <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{a.city}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Место</label>
-                  <input type="number" min={1} value={entryForm.rank_position}
-                    onChange={e => setEntryForm(f => ({ ...f, rank_position: parseInt(e.target.value) || 1 }))}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                  <p className="text-[11px] text-gray-400 mt-1">{entryForm.rank_position <= 3 ? 'Заслуженное место — бейдж «По квизу» проставится автоматически' : 'Обычное место'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Город</label>
-                  <input value={entryForm.city} onChange={e => setEntryForm(f => ({ ...f, city: e.target.value }))}
-                    placeholder="Если пусто — возьмём из профиля"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Компания / бренд (необязательно)</label>
-                <input value={entryForm.company_name} onChange={e => setEntryForm(f => ({ ...f, company_name: e.target.value }))}
-                  placeholder="Например: ТОО «Ваш Бухгалтер»"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-
-              {entryForm.rank_position > 3 && (
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Бейдж</label>
-                  <select value={entryForm.badge_type} onChange={e => setEntryForm(f => ({ ...f, badge_type: e.target.value }))}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Без бейджа</option>
-                    <option value="promoted">Продвигается (партнёрское размещение)</option>
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Подпись под карточкой (необязательно)</label>
-                <input value={entryForm.note} onChange={e => setEntryForm(f => ({ ...f, note: e.target.value }))}
-                  placeholder="Например: «10 лет опыта, специализация — НДС»"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input type="checkbox" checked={entryForm.published} onChange={e => setEntryForm(f => ({ ...f, published: e.target.checked }))}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600" />
-                <span className="text-sm text-gray-700">Опубликовать сразу на странице /reyting</span>
-              </label>
-
-              <div className="flex gap-3 pt-2">
-                {editingEntry !== 'new' && (
-                  <button onClick={() => deleteEntry(editingEntry)}
-                    className="px-4 flex items-center justify-center gap-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 py-3 rounded-xl font-semibold text-sm transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-                <button onClick={saveEntry} disabled={savingEntry}
-                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
-                  {savingEntry ? 'Сохранение…' : (editingEntry === 'new' ? 'Добавить' : 'Сохранить изменения')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Quiz question editor modal */}
       {editingQuestion && (

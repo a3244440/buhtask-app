@@ -3,17 +3,15 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useTheme } from "@/lib/theme";
-import { supabase } from "@/lib/supabase";
 import NavWrapper from "./components/NavWrapper";
 import { useI18n } from "@/lib/i18n";
 import {
-  Calculator, FileText, Users, Building2, Search, Star,
+  Calculator, FileText, Users, Building2, Search,
   ArrowRight, ChevronRight, Briefcase, TrendingUp, Shield,
   Clock, MapPin, Zap, DollarSign, BarChart2, Moon, Sun, Mail,
   CalendarDays, Baby, AlertTriangle, BookOpen, Scale, BarChart3, SearchCheck,
 } from "lucide-react";
 import Reveal from "./components/Reveal";
-import KazakhstanRankingMap from "./components/KazakhstanRankingMap";
 
 const TYPING_WORDS: Record<string, string[]> = {
   ru: ["Открыть ТОО", "Закрыть ТОО", "Сдать отчёт 910 ФНО", "Расчёт зарплаты сотрудника", "Ведение бухгалтерии", "Консультация по НДС", "Регистрация ИП", "Налоговый аудит"],
@@ -105,13 +103,9 @@ export default function HomePage() {
   const { t, lang } = useI18n();
   const { dark, toggle: toggleDark, mounted } = useTheme();
   const { displayed, showCursor } = useTypingAnimation(TYPING_WORDS[lang] || TYPING_WORDS.ru);
-  const [contestTop3, setContestTop3] = useState<any[]>([]);
 
   useEffect(() => {
     fetchUser();
-    supabase.from('contest_entries').select('*').eq('published', true).eq('season', 'permanent')
-      .lte('rank_position', 3).order('rank_position', { ascending: true })
-      .then(({ data }) => setContestTop3(data || []));
   }, []);
 
   useEffect(() => {
@@ -206,15 +200,6 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* КОНКУРС — интерактивная карта лидеров по городам */}
-      <section className="py-14 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
-          <Reveal>
-            <KazakhstanRankingMap entries={contestTop3} onViewRating={() => router.push('/reyting')} />
-          </Reveal>
         </div>
       </section>
 
@@ -355,8 +340,8 @@ export default function HomePage() {
                         <p className="font-bold text-base truncate">Сейілбек Әлихан</p>
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
-                        {[1,2,3,4,5].map(s => <Star key={s} className="w-3 h-3 text-amber-400 fill-amber-400" />)}
-                        <span className={`text-xs ml-1 ${mutedText}`}>5.0 · 48 {t('land.tasksLabel')}</span>
+
+                        <span className={`text-xs ml-1 ${mutedText}`}>48 {t('land.tasksLabel')}</span>
                       </div>
                       <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-semibold">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
@@ -372,8 +357,8 @@ export default function HomePage() {
                       <span key={tag} className={`px-2.5 py-1 rounded-full text-xs border ${D ? 'border-gray-700 text-gray-300' : 'border-gray-200 text-gray-600'}`}>{tag}</span>
                     ))}
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[{ label: t('land.tasksCount'), value: "48" }, { label: t('land.reviewsCount'), value: "41" }, { label: t('land.ratingCount'), value: "5.0" }].map(m => (
+                  <div className="grid grid-cols-2 gap-3">
+                    {[{ label: t('land.tasksCount'), value: "48" }, { label: t('land.reviewsCount'), value: "41" }].map(m => (
                       <div key={m.label} className={`rounded-xl p-3 text-center ${D ? 'bg-gray-900' : 'bg-gray-50'}`}>
                         <p className="text-xl font-extrabold text-blue-500">{m.value}</p>
                         <p className={`text-xs mt-0.5 ${mutedText}`}>{m.label}</p>
@@ -436,8 +421,8 @@ export default function HomePage() {
             <a href="/uslugi/buhgalter-almaty" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Алматы</a>
             <a href="/uslugi/buhgalter-shymkent" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Шымкент</a>
             <a href="/news" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Новости и статьи</a>
-            <a href="/reyting" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Рейтинг бухгалтеров</a>
-            <a href="/partners" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Партнёрам конкурса</a>
+
+            <a href="/partners" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Партнёрам BuhTask</a>
             <a href="/uslugi" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Все услуги →</a>
           </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">

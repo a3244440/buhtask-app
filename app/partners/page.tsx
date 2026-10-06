@@ -5,9 +5,9 @@ import { Building2, Globe, Gift } from 'lucide-react';
 import PartnerApplyForm from './PartnerApplyForm';
 
 export const metadata: Metadata = {
-  title: 'Партнёры конкурса «Рейтинг лучших бухгалтеров Казахстана»',
+  title: 'Партнёры BuhTask',
   description:
-    'Станьте партнёром конкурса BuhTask — дайте приз победителям топ-3 рейтинга бухгалтеров Казахстана или разместите свою компанию перед аудиторией бухгалтеров и предпринимателей.',
+    'Станьте партнёром BuhTask — представьте свою компанию аудитории бухгалтеров и предпринимателей Казахстана.',
   alternates: { canonical: 'https://buhtask.kz/partners' },
 };
 
@@ -25,8 +25,8 @@ export default async function PartnersPage() {
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/"><img src="/images/logo-new.png" alt="BuhTask" className="h-10 w-auto" /></Link>
-          <Link href="/reyting" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl">
-            Рейтинг бухгалтеров
+          <Link href="/" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl">
+            На главную
           </Link>
         </div>
       </header>
@@ -34,11 +34,11 @@ export default async function PartnersPage() {
       <div className="bg-gradient-to-br from-violet-700 via-purple-600 to-indigo-700 relative overflow-hidden">
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-14 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/20 bg-white/10 text-xs text-white/90 mb-5">
-            <Gift className="w-3.5 h-3.5" /> Партнёры конкурса BuhTask
+            <Gift className="w-3.5 h-3.5" /> Партнёры BuhTask
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-white mb-4">Станьте партнёром рейтинга лучших бухгалтеров</h1>
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-white mb-4">Станьте партнёром BuhTask</h1>
           <p className="text-purple-100 max-w-2xl mx-auto leading-relaxed">
-            Дайте приз победителям топ-3 или разместите свою компанию перед тысячами бухгалтеров и предпринимателей Казахстана.
+            Представьте свою компанию бухгалтерам и предпринимателям Казахстана.
           </p>
         </div>
       </div>
@@ -48,7 +48,7 @@ export default async function PartnersPage() {
         <h2 className="text-xl font-bold text-gray-900 mb-4">Наши партнёры</h2>
         {!partners || partners.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400 text-sm mb-12">
-            Пока здесь пусто — станьте первым партнёром конкурса!
+            Пока здесь пусто — станьте первым партнёром BuhTask!
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4 mb-12">

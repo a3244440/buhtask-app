@@ -401,7 +401,7 @@ export default function ProfilePage() {
                 { label: 'Личность подтверждена', done: profile.identity_verified },
                 { label: 'Документы проверены', done: profile.documents_verified },
                 { label: 'Опыт подтверждён', done: profile.experience_verified },
-                { label: `Рейтинг ${(profile.rating || 0).toFixed(1)} · ${profile.completed_tasks || 0} задач`, done: true },
+                { label: `Выполнено задач: ${profile.completed_tasks || 0}`, done: true },
               ].map(item => (
                 <div key={item.label} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${item.done ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-50 text-gray-400'}`}>
                   <CheckCircle2 className={`w-4 h-4 ${item.done ? 'text-emerald-500' : 'text-gray-300'}`} />

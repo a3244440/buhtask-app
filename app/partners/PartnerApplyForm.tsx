@@ -72,7 +72,7 @@ export default function PartnerApplyForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1.5">Что предлагаете в качестве приза победителям (необязательно)</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5">Предложение для пользователей BuhTask (необязательно)</label>
           <input value={form.prize_offer} onChange={e => setForm(f => ({ ...f, prize_offer: e.target.value }))} placeholder="Например: годовая подписка, сертификат на курс, консультация" className={inp} />
         </div>
 

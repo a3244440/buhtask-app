@@ -14,8 +14,6 @@ interface Result {
   textAnswer?: string | null; voiceUrl?: boolean; pendingReview?: boolean;
 }
 
-const QUIZ_CITIES = ['Астана','Алматы','Шымкент','Актобе','Тараз','Павлодар','Усть-Каменогорск','Семей','Атырау','Костанай','Кызылорда','Уральск','Петропавловск','Актау','Темиртау','Туркестан','Кокшетау','Талдыкорган'];
-
 const CATEGORY_LABEL: Record<string, string> = {
   nds: 'НДС', kpn_ipn: 'КПН/ИПН', form910: 'Форма 910', trud: 'Трудовое право', obshee: 'Общий бухучёт', msfo: 'МСФО',
 };
@@ -51,9 +49,6 @@ export default function QuizPage() {
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [timedOut, setTimedOut] = useState<Record<string, boolean>>({});
   const [questionCount, setQuestionCount] = useState(0);
-  const [selectedCity, setSelectedCity] = useState('');
-  const [savingCity, setSavingCity] = useState(false);
-  const [citySaved, setCitySaved] = useState(false);
 
   // Запись голоса
   const [recording, setRecording] = useState(false);
@@ -94,8 +89,6 @@ export default function QuizPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.replace('/auth?redirect=/quiz'); return; }
       setUserId(session.user.id);
-      const { data: profile } = await supabase.from('profiles').select('city').eq('id', session.user.id).maybeSingle();
-      setSelectedCity(profile?.city || '');
       try {
         applyQuizData(await authedFetch('/api/quiz/start', { preview: true }));
       } catch (e: any) {
@@ -116,16 +109,6 @@ export default function QuizPage() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const saveQuizCity = async () => {
-    if (!selectedCity || !userId) return;
-    setSavingCity(true);
-    setCitySaved(false);
-    const { error: saveError } = await supabase.from('profiles').update({ city: selectedCity }).eq('id', userId);
-    if (saveError) setError(saveError.message);
-    else setCitySaved(true);
-    setSavingCity(false);
   };
 
   const selectAnswer = useCallback(async (questionId: string, idx: number) => {
@@ -244,21 +227,21 @@ export default function QuizPage() {
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, sans-serif' }}>
       <ToolsSidebar />
       <div className="lg:pl-60">
-        <DashboardHeader title="Квиз конкурса" />
+        <DashboardHeader title="Квиз по бухгалтерскому учёту" />
         <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
 
           {error && !questions.length && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
               <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-3" />
               <p className="text-gray-700 font-medium mb-1">{error}</p>
-              <button onClick={() => router.push('/reyting')} className="text-sm text-blue-600 hover:underline mt-2">← К рейтингу</button>
+              <button onClick={() => router.push('/dashboard/accountant')} className="text-sm text-blue-600 hover:underline mt-2">← В кабинет</button>
             </div>
           )}
 
           {(status === 'ready' || status === 'resume_ready') && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
               <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-3" />
-              <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Квиз для рейтинга бухгалтеров</h1>
+              <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Квиз для бухгалтеров</h1>
               <p className="text-sm text-gray-600 leading-relaxed max-w-lg mx-auto">
                 Вам предстоит ответить на все <b>{questionCount}</b> активных вопросов. На прохождение отведён <b>1 час</b>
                 — это примерно {Math.floor(60 * 60 / Math.max(questionCount, 1))} секунд на вопрос. Если время вопроса истечёт,
@@ -272,25 +255,6 @@ export default function QuizPage() {
             </div>
           )}
 
-          {(status === 'pending_review' || status === 'completed') && (
-            <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:flex sm:items-center sm:gap-4">
-              <MapPin className="h-5 w-5 flex-none text-blue-600 mb-2 sm:mb-0" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">Ваш город на карте рейтинга</p>
-                <p className="text-xs text-gray-500">После подтверждения результата администратором он будет показан в выбранном городе.</p>
-              </div>
-              <div className="mt-3 flex gap-2 sm:mt-0">
-                <select value={selectedCity} onChange={e => { setSelectedCity(e.target.value); setCitySaved(false); }} className="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Выберите город</option>
-                  {QUIZ_CITIES.map(city => <option key={city} value={city}>{city}</option>)}
-                </select>
-                <button onClick={saveQuizCity} disabled={!selectedCity || savingCity} className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white disabled:bg-gray-300">
-                  {savingCity ? '…' : citySaved ? 'Сохранено' : 'Сохранить'}
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Ждём ручной проверки текстовых/голосовых вопросов */}
           {status === 'pending_review' && finalScore && (
             <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-8 text-center">
@@ -300,7 +264,7 @@ export default function QuizPage() {
                 Вопросы с вариантами уже проверены автоматически: <b>{finalScore.autoScore} баллов</b> из них.
                 Часть вопросов требует ручной проверки — итоговый результат появится после того, как администратор их оценит.
               </p>
-              <button onClick={() => router.push('/reyting')} className="text-sm text-blue-600 hover:underline mt-2">← К рейтингу</button>
+              <button onClick={() => router.push('/dashboard/accountant')} className="text-sm text-blue-600 hover:underline mt-2">← В кабинет</button>
             </div>
           )}
 
@@ -312,8 +276,7 @@ export default function QuizPage() {
                 <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Квиз завершён</h1>
                 <p className="text-4xl font-extrabold text-blue-600 my-3">{finalScore.score} / {finalScore.total}</p>
                 <p className="text-sm text-gray-500">
-                  Результат учитывается при определении топ-3 в <button onClick={() => router.push('/reyting')} className="text-blue-600 hover:underline">рейтинге бухгалтеров</button>.
-                  Повторное прохождение недоступно — так рейтинг остаётся честным для всех участников.
+                  Повторное прохождение недоступно. Ниже можно посмотреть результат и разбор вопросов.
                 </p>
               </div>
 
