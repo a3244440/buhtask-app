@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ALL_SEO_PAGES as SEO_PAGES } from '@/lib/seoPages';
 import { MapPin, ArrowUpRight } from 'lucide-react';
-import { ServiceHeader, ServiceFooter, AccountingScene, ServiceCards, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip } from '../ServiceSite';
+import { ServiceHeader, ServiceFooter, FounderPhoto, ServiceCards, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip } from '../ServiceSite';
 import styles from '../services.module.css';
 
 const WHATSAPP_NUMBER = '77783244440'; // +7 778 324 4440
@@ -80,9 +80,9 @@ export default async function SeoServicePage({ params }: { params: Promise<{ slu
       <ServiceHeader />
       <main className={styles.main}>
         <nav className={styles.breadcrumb} aria-label="Хлебные крошки"><Link href="/">Главная</Link><span aria-hidden="true">/</span><Link href="/uslugi">Услуги</Link><span aria-hidden="true">/</span><span aria-current="page">{heading}</span></nav>
-        <section className={styles.hero}>
-          <div><span className={styles.pill}><MapPin size={15} />BuhTask · Казахстан</span><h1>{heading}</h1><p>{description}</p><div className={styles.heroActions}><Link href="/auth" className={styles.button}>Найти бухгалтера</Link><a href="#services" className={styles.textLink}>Посмотреть услуги <ArrowUpRight size={18} /></a></div></div>
-          <AccountingScene />
+        <section className={styles.companyPanel}>
+          <div className={styles.companyCopy}><span className={styles.pill}><MapPin size={15} />BuhTask · Казахстан</span><h1>{heading}</h1><p>{description}</p><div className={styles.heroActions}><Link href="/auth" className={styles.whiteButton}>Найти бухгалтера</Link><a href="#services" className={styles.textLink}>Посмотреть услуги <ArrowUpRight size={18} /></a></div></div>
+          <FounderPhoto />
         </section>
         <TrustStrip />
         <ServiceCards />

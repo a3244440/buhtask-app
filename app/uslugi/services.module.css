@@ -15,9 +15,6 @@
 .main { max-width: 1240px; margin: auto; padding: 0 28px; }
 .breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; color: #63738b; font-size: 12px; padding-top: 25px; }
 .breadcrumb a:hover { color: var(--blue); }
-.hero { display: grid; grid-template-columns: 1.06fr 1fr; align-items: center; gap: 38px; padding: 55px 0 45px; }
-.hero h1 { font-size: clamp(38px, 4.4vw, 60px); line-height: 1.08; font-weight: 800; letter-spacing: -2.6px; margin: 21px 0 23px; }
-.hero p { color: var(--muted); font-size: 17px; line-height: 1.7; max-width: 580px; }
 .pill { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; background: #eaf1ff; color: #2359b7; padding: 8px 12px; border-radius: 30px; }
 .heroActions { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-top: 29px; }
 .textLink { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; color: var(--ink); padding: 10px 0; }
@@ -58,16 +55,18 @@
 .steps h3 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
 .steps p { font-size: 15px; line-height: 1.7; color: var(--muted); }
 .company { padding: 0; }
-.companyPanel { position: relative; isolation: isolate; overflow: visible; display: grid; grid-template-columns: 1.05fr .95fr; align-items: stretch; background: linear-gradient(135deg, #0f2a5c 0%, #1d4ed8 62%, #2563eb 100%); border-radius: 32px; }
+.companyPanel { position: relative; isolation: isolate; overflow: visible; display: grid; grid-template-columns: 1.05fr .95fr; align-items: stretch; background: linear-gradient(135deg, #0f2a5c 0%, #1d4ed8 62%, #2563eb 100%); border-radius: 32px; margin: 26px 0 45px; }
 .companyPanel::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(640px 420px at 88% 10%, rgba(255,255,255,.12), transparent 62%); pointer-events: none; z-index: 0; }
 .companyCopy { position: relative; z-index: 2; padding: 60px 54px; display: flex; flex-direction: column; justify-content: center; color: #fff; }
 .companyCopy .pill { background: rgba(255,255,255,.14); color: #fff; width: fit-content; margin-bottom: 4px; }
+.companyCopy h1 { color: #fff; font-size: clamp(34px, 4vw, 54px); line-height: 1.08; font-weight: 800; letter-spacing: -2.2px; margin: 21px 0 20px; }
 .companyCopy h2 { color: #fff; font-size: clamp(30px, 3.1vw, 40px); font-weight: 750; letter-spacing: -1.3px; line-height: 1.16; margin: 22px 0 6px; }
-.companyCopy > p { color: rgba(255,255,255,.74); font-size: 15px; line-height: 1.75; margin: 14px 0; max-width: 430px; }
+.companyCopy > p { color: rgba(255,255,255,.74); font-size: 15px; line-height: 1.75; margin: 14px 0; max-width: 480px; }
 .companyCopy .whiteButton { margin-top: 8px; width: fit-content; }
-.companyContacts { display: grid; gap: 12px; margin-top: 26px; font-size: 13px; color: rgba(255,255,255,.82); }
+.companyCopy .textLink { color: #fff; }
+.companyContacts { display: grid; gap: 12px; margin-top: 26px; font-size: 13px; color: #3e5577; }
 .companyContacts > * { display: flex; align-items: center; gap: 10px; }
-.companyContacts svg { flex-shrink: 0; color: #9fbcf2; }
+.companyContacts svg { flex-shrink: 0; color: #2563eb; }
 .companyPhotoWrap { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 40px 34px 0; min-height: 420px; }
 .photoRing { position: absolute; top: 2%; right: -10%; width: 116%; height: auto; z-index: 0; }
 .companyPhotoImg { position: relative; z-index: 1; height: 480px; width: auto; max-width: 100%; object-fit: contain; filter: drop-shadow(0 26px 34px rgba(6,16,40,.4)); }
@@ -80,6 +79,15 @@
 .badge span { display: block; font-size: 10.5px; color: var(--muted); font-weight: 600; margin-top: 2px; white-space: nowrap; }
 .badgeTop { top: 12%; left: -22px; }
 .badgeBottom { bottom: 22%; right: -18px; }
+.companyCard { background: #eef4ff; border-radius: 28px; padding: 52px 56px; }
+.companyCard .pill { background: #fff; margin-bottom: 20px; }
+.companyAvatarRow { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+.companyAvatar { border-radius: 50%; object-fit: cover; width: 60px; height: 60px; flex-shrink: 0; }
+.companyAvatarRow strong { display: block; font-size: 15px; }
+.companyAvatarRow span { display: block; font-size: 12px; color: var(--muted); margin-top: 3px; }
+.companyCard h2 { margin: 0 0 14px; }
+.companyCard > p { color: var(--muted); font-size: 15px; line-height: 1.75; margin: 14px 0; max-width: 620px; }
+.companyCard .button { margin-top: 10px; }
 .toolGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
 .toolGrid > a { border-top: 2px solid #bfd1ed; padding: 24px 0; }
 .toolGrid svg { color: #2563eb; }
@@ -112,12 +120,11 @@
 .footerTop h3 { font-weight: 700; font-size: 14px; margin-bottom: 17px; }
 .footerTop p, .footerTop > div > a:not(.brand) { font-size: 13px; line-height: 1.8; color: var(--muted); display: block; margin: 9px 0; }
 .footerBottom { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; border-top: 1px solid #e4eaf2; padding-top: 25px; margin-top: 35px; font-size: 11px; color: #63738b; }
-.catalogHero { padding-bottom: 50px; }
 .cityLinks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .cityLinks a { display: flex; align-items: center; justify-content: space-between; padding: 18px; background: #eaf1ff; border-radius: 12px; font-size: 14px; font-weight: 600; }
 .cityLinks a:hover { background: #dce8ff; }
-@media (max-width: 1100px) { .nav { gap: 16px; font-size: 12px; } .headerInner { gap: 15px; } .headerActions { gap: 14px; } .hero h1 { font-size: 46px; } .companyCopy { padding: 40px 36px; } }
-@media (max-width: 900px) { .nav { display: none; } .serviceGrid { grid-template-columns: repeat(2, 1fr); } .hero { gap: 12px; } .hero h1 { font-size: 40px; letter-spacing: -1.6px; } .hero p { font-size: 15px; } .heroActions { gap: 12px; } .companyPanel { grid-template-columns: .95fr 1.05fr; } .companyCopy { padding: 30px; } .companyCopy h2 { font-size: 30px; } .sectionHeading { gap: 30px; } .faq { gap: 35px; } }
-@media (max-width: 700px) { .headerInner { padding: 14px 20px; } .brand { font-size: 23px; } .brand img { width: 43px; height: 43px; } .headerActions .button { font-size: 12px; padding: 11px 12px; } .login { display: none; } .main { padding: 0 20px; } .breadcrumb { font-size: 11px; padding-top: 20px; } .hero { grid-template-columns: 1fr; gap: 15px; padding: 35px 0 30px; } .hero h1 { font-size: 39px; line-height: 1.1; margin-top: 17px; } .hero p { font-size: 16px; } .scene { max-width: 430px; width: 100%; margin: 0 auto; } .trustStrip { flex-direction: column; gap: 14px; } .section, .detailsSection { padding: 50px 0; } .sectionHeading { flex-direction: column; align-items: start; gap: 19px; margin-bottom: 28px; } .sectionHeading h2 { font-size: 32px; letter-spacing: -1px; } .sectionHeading > p { max-width: 100%; } .serviceGrid { gap: 12px; } .serviceCard { padding: 21px; border-radius: 20px; min-height: 250px; } .serviceCard h3 { font-size: 20px; } .serviceCard p { font-size: 13px; } .cardNote { font-size: 10px; } .detailsGrid { grid-template-columns: 1fr; gap: 16px; } .detail { padding: 25px; } .steps { grid-template-columns: 1fr; gap: 26px; } .steps li { display: grid; grid-template-columns: 44px 1fr; gap: 0 17px; } .steps li > span { grid-row: span 2; margin: 0; } .steps h3 { font-size: 19px; margin: 0 0 8px; } .steps p { grid-column: 2; } .companyPanel { grid-template-columns: 1fr; border-radius: 24px; } .companyCopy { padding: 34px 26px 10px; } .companyCopy > p { max-width: 100%; } .companyPhotoWrap { min-height: 0; padding: 30px 20px 0; } .companyPhotoImg { height: 340px; } .photoRing { width: 100%; right: -4%; } .badge { padding: 9px 12px; gap: 8px; } .badgeIcon { width: 32px; height: 32px; } .badge strong { font-size: 13px; } .badge span { font-size: 9.5px; } .badgeTop { top: 6%; left: 2px; } .badgeBottom { bottom: 16%; right: 2px; } .toolGrid { grid-template-columns: 1fr; gap: 10px; } .toolGrid > a { padding: 22px 0; } .toolGrid h3 { margin-top: 12px; } .faq { grid-template-columns: 1fr; gap: 28px; padding: 50px 0; } .faq h2 { font-size: 32px; } .faq summary { font-size: 16px; } .contactBanner { padding: 32px 25px; flex-direction: column; align-items: start; border-radius: 22px; } .contactBanner h2 { font-size: 32px; } .bannerActions { width: 100%; } .footer { padding: 35px 20px; } .footerTop { grid-template-columns: 1fr; gap: 24px; } .footerBottom { flex-direction: column; } .cityLinks { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 390px) { .serviceGrid { grid-template-columns: 1fr; } .hero h1 { font-size: 35px; } .brand { gap: 6px; font-size: 21px; } .headerActions .button { padding: 10px; } }
+@media (max-width: 1100px) { .nav { gap: 16px; font-size: 12px; } .headerInner { gap: 15px; } .headerActions { gap: 14px; } .companyCopy h1 { font-size: 46px; } .companyCopy { padding: 40px 36px; } .companyCard { padding: 40px 36px; } }
+@media (max-width: 900px) { .nav { display: none; } .serviceGrid { grid-template-columns: repeat(2, 1fr); } .heroActions { gap: 12px; } .companyPanel { grid-template-columns: .95fr 1.05fr; } .companyCopy { padding: 30px; } .companyCopy h1 { font-size: 38px; letter-spacing: -1.6px; } .companyCopy h2 { font-size: 30px; } .companyCopy > p { font-size: 15px; } .sectionHeading { gap: 30px; } .faq { gap: 35px; } }
+@media (max-width: 700px) { .headerInner { padding: 14px 20px; } .brand { font-size: 23px; } .brand img { width: 43px; height: 43px; } .headerActions .button { font-size: 12px; padding: 11px 12px; } .login { display: none; } .main { padding: 0 20px; } .breadcrumb { font-size: 11px; padding-top: 20px; } .trustStrip { flex-direction: column; gap: 14px; } .section, .detailsSection { padding: 50px 0; } .sectionHeading { flex-direction: column; align-items: start; gap: 19px; margin-bottom: 28px; } .sectionHeading h2 { font-size: 32px; letter-spacing: -1px; } .sectionHeading > p { max-width: 100%; } .serviceGrid { gap: 12px; } .serviceCard { padding: 21px; border-radius: 20px; min-height: 250px; } .serviceCard h3 { font-size: 20px; } .serviceCard p { font-size: 13px; } .cardNote { font-size: 10px; } .detailsGrid { grid-template-columns: 1fr; gap: 16px; } .detail { padding: 25px; } .steps { grid-template-columns: 1fr; gap: 26px; } .steps li { display: grid; grid-template-columns: 44px 1fr; gap: 0 17px; } .steps li > span { grid-row: span 2; margin: 0; } .steps h3 { font-size: 19px; margin: 0 0 8px; } .steps p { grid-column: 2; } .companyPanel { grid-template-columns: 1fr; border-radius: 24px; margin: 18px 0 35px; } .companyCopy { padding: 34px 26px 10px; } .companyCopy h1 { font-size: 34px; line-height: 1.12; margin-top: 0; } .companyCopy > p { max-width: 100%; } .companyPhotoWrap { min-height: 0; padding: 30px 20px 0; } .companyPhotoImg { height: 340px; } .photoRing { width: 100%; right: -4%; } .badge { padding: 9px 12px; gap: 8px; } .badgeIcon { width: 32px; height: 32px; } .badge strong { font-size: 13px; } .badge span { font-size: 9.5px; } .badgeTop { top: 6%; left: 2px; } .badgeBottom { bottom: 16%; right: 2px; } .companyCard { padding: 30px 24px; border-radius: 22px; } .companyCard > p { max-width: 100%; } .toolGrid { grid-template-columns: 1fr; gap: 10px; } .toolGrid > a { padding: 22px 0; } .toolGrid h3 { margin-top: 12px; } .faq { grid-template-columns: 1fr; gap: 28px; padding: 50px 0; } .faq h2 { font-size: 32px; } .faq summary { font-size: 16px; } .contactBanner { padding: 32px 25px; flex-direction: column; align-items: start; border-radius: 22px; } .contactBanner h2 { font-size: 32px; } .bannerActions { width: 100%; } .footer { padding: 35px 20px; } .footerTop { grid-template-columns: 1fr; gap: 24px; } .footerBottom { flex-direction: column; } .cityLinks { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 390px) { .serviceGrid { grid-template-columns: 1fr; } .companyCopy h1 { font-size: 32px; } .brand { gap: 6px; font-size: 21px; } .headerActions .button { padding: 10px; } }
 @media (prefers-reduced-motion: reduce) { .site * { transition: none !important; } }

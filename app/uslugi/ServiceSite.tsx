@@ -81,27 +81,33 @@ export function HowItWorks() {
   </section>;
 }
 
+/** Taxtory-style hero visual: cutout photo, decorative ring and floating stat badges. Used in the page hero (first block). */
+export function FounderPhoto() {
+  return <div className={styles.companyPhotoWrap}>
+    <svg className={styles.photoRing} viewBox="0 0 520 560" aria-hidden="true">
+      <circle cx="330" cy="230" r="210" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="1.5" strokeDasharray="2 11" strokeLinecap="round" />
+      <circle cx="330" cy="230" r="172" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="1" />
+    </svg>
+    <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={621} height={1173} sizes="(max-width: 700px) 260px, 420px" className={styles.companyPhotoImg} priority />
+    <div className={`${styles.badge} ${styles.badgeTop}`}><span className={styles.badgeIcon}><Award size={18} /></span><div><strong>10 лет</strong><span>опыта в бухгалтерии</span></div></div>
+    <div className={`${styles.badge} ${styles.badgeBottom}`}><span className={styles.badgeIcon}><Users size={18} /></span><div><strong>2000+</strong><span>довольных клиентов</span></div></div>
+    <div className={styles.photoCaption}><strong>{CONTACT.founder}</strong><span>Основатель и руководитель BuhTask</span></div>
+  </div>;
+}
+
 export function CompanyBlock() {
   return <section id="company" className={styles.company}>
-    <div className={styles.companyPanel}>
-      <div className={styles.companyCopy}>
-        <span className={styles.pill}><ShieldCheck size={17} />Люди за сервисом</span>
-        <h2>Опыт, который<br />экономит вам время</h2>
-        <p>Алихан Сейілбек руководит BuhTask и лично знает, как устроен учёт в малом бизнесе — от первой задачи до постоянной команды бухгалтеров.</p>
-        <p>Есть вопрос о BuhTask или нужна помощь с первым шагом? Свяжитесь с нами напрямую.</p>
-        <a href={CONTACT.whatsapp} className={styles.whiteButton} target="_blank" rel="noopener noreferrer"><MessageCircle size={19} />Написать в WhatsApp</a>
-        <div className={styles.companyContacts}><span><MapPin size={18} />{CONTACT.address}</span><a href="tel:+77783244440"><Phone size={18} />{CONTACT.phone}</a><a href="mailto:info@buhtask.kz"><Mail size={18} />info@buhtask.kz</a></div>
+    <div className={styles.companyCard}>
+      <span className={styles.pill}><ShieldCheck size={17} />Люди за сервисом</span>
+      <div className={styles.companyAvatarRow}>
+        <Image src="/images/founder-alikhan.jpg" alt={CONTACT.founder} width={60} height={60} className={styles.companyAvatar} />
+        <div><strong>{CONTACT.founder}</strong><span>Основатель и руководитель BuhTask</span></div>
       </div>
-      <div className={styles.companyPhotoWrap}>
-        <svg className={styles.photoRing} viewBox="0 0 520 560" aria-hidden="true">
-          <circle cx="330" cy="230" r="210" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="1.5" strokeDasharray="2 11" strokeLinecap="round" />
-          <circle cx="330" cy="230" r="172" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="1" />
-        </svg>
-        <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={621} height={1173} sizes="(max-width: 700px) 260px, 400px" className={styles.companyPhotoImg} />
-        <div className={`${styles.badge} ${styles.badgeTop}`}><span className={styles.badgeIcon}><Award size={18} /></span><div><strong>10 лет</strong><span>опыта в бухгалтерии</span></div></div>
-        <div className={`${styles.badge} ${styles.badgeBottom}`}><span className={styles.badgeIcon}><Users size={18} /></span><div><strong>2000+</strong><span>довольных клиентов</span></div></div>
-        <div className={styles.photoCaption}><strong>{CONTACT.founder}</strong><span>Основатель и руководитель BuhTask</span></div>
-      </div>
+      <h2>Опыт, который экономит вам время</h2>
+      <p>Алихан Сейілбек руководит BuhTask и лично знает, как устроен учёт в малом бизнесе — от первой задачи до постоянной команды бухгалтеров.</p>
+      <p>Есть вопрос о BuhTask или нужна помощь с первым шагом? Свяжитесь с нами напрямую.</p>
+      <a href={CONTACT.whatsapp} className={styles.button} target="_blank" rel="noopener noreferrer"><MessageCircle size={19} />Написать в WhatsApp</a>
+      <div className={styles.companyContacts}><span><MapPin size={18} />{CONTACT.address}</span><a href="tel:+77783244440"><Phone size={18} />{CONTACT.phone}</a><a href="mailto:info@buhtask.kz"><Mail size={18} />info@buhtask.kz</a></div>
     </div>
   </section>;
 }
