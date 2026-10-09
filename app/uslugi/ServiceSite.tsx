@@ -88,7 +88,7 @@ export function FounderPhoto() {
       <circle cx="330" cy="230" r="210" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="1.5" strokeDasharray="2 11" strokeLinecap="round" />
       <circle cx="330" cy="230" r="172" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="1" />
     </svg>
-    <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={621} height={1173} sizes="(max-width: 700px) 260px, 420px" className={styles.companyPhotoImg} priority />
+    <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={871} height={1304} sizes="(max-width: 700px) 260px, 420px" className={styles.companyPhotoImg} priority />
     <div className={`${styles.badge} ${styles.badgeTop}`}><span className={styles.badgeIcon}><Award size={18} /></span><div><strong>10 лет</strong><span>опыта в бухгалтерии</span></div></div>
     <div className={`${styles.badge} ${styles.badgeBottom}`}><span className={styles.badgeIcon}><Users size={18} /></span><div><strong>2000+</strong><span>довольных клиентов</span></div></div>
     <div className={styles.photoCaption}><strong>{CONTACT.founder}</strong><span>Основатель и руководитель BuhTask</span></div>
