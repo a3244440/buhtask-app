@@ -1,6 +1,7 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowUpRight, Check, FileText, Calculator, Building2, Users, MessageCircle, CalendarDays, Mail, MapPin, Phone, ShieldCheck, ReceiptText, Award } from 'lucide-react';
+import { ArrowUpRight, Check, FileText, Calculator, Building2, Users, MessageCircle, CalendarDays, Mail, MapPin, Phone, ShieldCheck, ReceiptText, Star, Clock, TrendingUp } from 'lucide-react';
 import styles from './services.module.css';
 
 export const CONTACT = {
@@ -81,18 +82,49 @@ export function HowItWorks() {
   </section>;
 }
 
-/** Taxtory-style hero visual: cutout photo, decorative ring and floating stat badges. Used in the page hero (first block). */
-export function FounderPhoto() {
-  return <div className={styles.companyPhotoWrap}>
-    <svg className={styles.photoRing} viewBox="0 0 520 560" aria-hidden="true">
-      <circle cx="330" cy="230" r="210" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="1.5" strokeDasharray="2 11" strokeLinecap="round" />
-      <circle cx="330" cy="230" r="172" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="1" />
-    </svg>
-    <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={871} height={1304} sizes="(max-width: 700px) 260px, 420px" className={styles.companyPhotoImg} priority />
-    <div className={`${styles.badge} ${styles.badgeTop}`}><span className={styles.badgeIcon}><Award size={18} /></span><div><strong>10 лет</strong><span>опыта в бухгалтерии</span></div></div>
-    <div className={`${styles.badge} ${styles.badgeBottom}`}><span className={styles.badgeIcon}><Users size={18} /></span><div><strong>2000+</strong><span>довольных клиентов</span></div></div>
-    <div className={styles.photoCaption}><strong>{CONTACT.founder}</strong><span>Основатель и руководитель BuhTask</span></div>
-  </div>;
+const STATS = [
+  { icon: Clock, value: '10 лет', label: 'опыта в бухгалтерии' },
+  { icon: Users, value: '2000+', label: 'довольных клиентов' },
+  { icon: TrendingUp, value: '98%', label: 'продлевают работу с нами' },
+  { icon: ShieldCheck, value: '100%', label: 'официально, с ЭЦП' },
+];
+
+/** Full hero block: centered founder photo on a bold blue panel, with a trust badge,
+ * a review card and a 4-stat strip — reused by both the catalog and per-service pages. */
+export function HeroSection({ heading, description, badgeText, primaryCtaLabel, secondaryCtaLabel }: {
+  heading: ReactNode;
+  description: string;
+  badgeText: string;
+  primaryCtaLabel: string;
+  secondaryCtaLabel: string;
+}) {
+  return <section className={styles.heroPanel}>
+    <div className={styles.heroStage}>
+      <div className={styles.heroGlow} aria-hidden="true" />
+      <svg className={styles.heroRings} viewBox="0 0 560 560" aria-hidden="true">
+        <circle cx="280" cy="260" r="250" fill="none" stroke="rgba(255,255,255,.16)" strokeWidth="1.5" strokeDasharray="2 12" strokeLinecap="round" />
+        <circle cx="280" cy="260" r="205" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="1" />
+      </svg>
+      <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={871} height={1304} sizes="(max-width: 700px) 280px, 460px" className={styles.heroPhoto} priority />
+      <span className={styles.heroBadge}><ShieldCheck size={15} />{badgeText}</span>
+      <div className={styles.reviewCard}>
+        <div className={styles.reviewStars}>{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={13} fill="#f5b544" stroke="#f5b544" />)}<strong>4.9</strong></div>
+        <p>2000+ довольных клиентов доверяют нам свою бухгалтерию</p>
+        <a href={CONTACT.whatsapp} target="_blank" rel="noopener noreferrer" className={styles.reviewBtn}>Написать <ArrowUpRight size={14} /></a>
+      </div>
+    </div>
+    <div className={styles.heroBottom}>
+      <div className={styles.heroText}>
+        <h1>{heading}</h1>
+        <p>{description}</p>
+        <div className={styles.heroActions}>
+          <Link href="/auth" className={styles.whiteButton}>{primaryCtaLabel}</Link>
+          <a href="#services" className={styles.textLink}>{secondaryCtaLabel} <ArrowUpRight size={18} /></a>
+        </div>
+      </div>
+      <div className={styles.statsRow}>{STATS.map(({ icon: Icon, value, label }) => <div key={label}><Icon size={20} /><strong>{value}</strong><span>{label}</span></div>)}</div>
+    </div>
+  </section>;
 }
 
 export function CompanyBlock() {
