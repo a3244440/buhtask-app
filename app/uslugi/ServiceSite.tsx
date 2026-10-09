@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowUpRight, Check, FileText, Calculator, Building2, Users, MessageCircle, CalendarDays, Mail, MapPin, Phone, ShieldCheck, ReceiptText } from 'lucide-react';
+import { ArrowUpRight, Check, FileText, Calculator, Building2, Users, MessageCircle, CalendarDays, Mail, MapPin, Phone, ShieldCheck, ReceiptText, Award } from 'lucide-react';
 import styles from './services.module.css';
 
 export const CONTACT = {
@@ -65,7 +65,7 @@ export function ServiceCards() {
   return <section id="services" className={styles.section}>
     <div className={styles.sectionHeading}><h2>Вы занимаетесь бизнесом.<br />Бухгалтерию найдёте здесь.</h2><p>Разовая задача или регулярное сопровождение — выберите, какая помощь нужна сейчас.</p></div>
     <div className={styles.serviceGrid}>{SERVICES.map(({ slug, title, text, icon: Icon, tone, note }) => <Link href={`/uslugi/${slug}`} key={slug} className={`${styles.serviceCard} ${styles[tone]}`}>
-      <div className={styles.cardTop}><Icon size={32} strokeWidth={1.6} /><ArrowUpRight size={24} aria-hidden="true" /></div><h3>{title}</h3><p>{text}</p><span className={styles.cardNote}>{note}</span>
+      <div className={styles.cardTop}><span className={styles.cardIcon}><Icon size={22} strokeWidth={1.8} /></span><span className={styles.cardArrow}><ArrowUpRight size={18} aria-hidden="true" /></span></div><h3>{title}</h3><p>{text}</p><span className={styles.cardNote}>{note}</span>
     </Link>)}</div>
   </section>;
 }
@@ -83,8 +83,26 @@ export function HowItWorks() {
 
 export function CompanyBlock() {
   return <section id="company" className={styles.company}>
-    <div className={styles.companyPhoto}><Image src="/images/founder-alikhan.jpg" alt={CONTACT.founder} width={853} height={1280} sizes="(max-width: 700px) 100vw, 420px" /><div><strong>{CONTACT.founder}</strong><span>Основатель и руководитель BuhTask</span></div></div>
-    <div className={styles.companyCopy}><span className={styles.pill}><ShieldCheck size={17} />Люди за сервисом</span><h2>Основатель BuhTask —<br />на связи</h2><p>Мы создаём сервис, в котором предпринимателю удобно найти бухгалтера, а специалисту — работать с клиентами.</p><p>Есть вопрос о BuhTask или нужна помощь с первым шагом? Свяжитесь с нами напрямую.</p><a href={CONTACT.whatsapp} className={styles.button} target="_blank" rel="noopener noreferrer"><MessageCircle size={19} />Написать в WhatsApp</a><div className={styles.companyContacts}><span><MapPin size={18} />{CONTACT.address}</span><a href="tel:+77783244440"><Phone size={18} />{CONTACT.phone}</a><a href="mailto:info@buhtask.kz"><Mail size={18} />info@buhtask.kz</a></div></div>
+    <div className={styles.companyPanel}>
+      <div className={styles.companyCopy}>
+        <span className={styles.pill}><ShieldCheck size={17} />Люди за сервисом</span>
+        <h2>Опыт, который<br />экономит вам время</h2>
+        <p>Алихан Сейілбек руководит BuhTask и лично знает, как устроен учёт в малом бизнесе — от первой задачи до постоянной команды бухгалтеров.</p>
+        <p>Есть вопрос о BuhTask или нужна помощь с первым шагом? Свяжитесь с нами напрямую.</p>
+        <a href={CONTACT.whatsapp} className={styles.whiteButton} target="_blank" rel="noopener noreferrer"><MessageCircle size={19} />Написать в WhatsApp</a>
+        <div className={styles.companyContacts}><span><MapPin size={18} />{CONTACT.address}</span><a href="tel:+77783244440"><Phone size={18} />{CONTACT.phone}</a><a href="mailto:info@buhtask.kz"><Mail size={18} />info@buhtask.kz</a></div>
+      </div>
+      <div className={styles.companyPhotoWrap}>
+        <svg className={styles.photoRing} viewBox="0 0 520 560" aria-hidden="true">
+          <circle cx="330" cy="230" r="210" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="1.5" strokeDasharray="2 11" strokeLinecap="round" />
+          <circle cx="330" cy="230" r="172" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="1" />
+        </svg>
+        <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={621} height={1173} sizes="(max-width: 700px) 260px, 400px" className={styles.companyPhotoImg} />
+        <div className={`${styles.badge} ${styles.badgeTop}`}><span className={styles.badgeIcon}><Award size={18} /></span><div><strong>10 лет</strong><span>опыта в бухгалтерии</span></div></div>
+        <div className={`${styles.badge} ${styles.badgeBottom}`}><span className={styles.badgeIcon}><Users size={18} /></span><div><strong>2000+</strong><span>довольных клиентов</span></div></div>
+        <div className={styles.photoCaption}><strong>{CONTACT.founder}</strong><span>Основатель и руководитель BuhTask</span></div>
+      </div>
+    </div>
   </section>;
 }
 
