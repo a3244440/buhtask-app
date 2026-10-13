@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ALL_SEO_PAGES as SEO_PAGES } from '@/lib/seoPages';
-import { ServiceHeader, ServiceFooter, HeroSection, ServiceCards, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip } from '../ServiceSite';
+import { ServiceHeader, ServiceFooter, HeroSection, ServiceCards, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip, WhatsAppFloat } from '../ServiceSite';
 import styles from '../services.module.css';
 
 const WHATSAPP_NUMBER = '77783244440'; // +7 778 324 4440
@@ -94,6 +94,7 @@ export default async function SeoServicePage({ params }: { params: Promise<{ slu
         <section className={styles.related}><h2>Другие услуги и города</h2><div>{SEO_PAGES.filter(p => p.slug !== page.slug).map(p => <Link key={p.slug} href={'/uslugi/' + p.slug}>{p.slug.startsWith('buhgalter-') ? p.sections[0].h2 : p.h1}</Link>)}</div></section>
       </main>
       <ServiceFooter />
+      <WhatsAppFloat />
     </div>
   );
 }

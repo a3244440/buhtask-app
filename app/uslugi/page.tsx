@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { ALL_SEO_PAGES as SEO_PAGES } from '@/lib/seoPages';
-import { ServiceHeader, ServiceFooter, HeroSection, ServiceCards, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip } from './ServiceSite';
+import { ServiceHeader, ServiceFooter, HeroSection, ServiceCards, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip, WhatsAppFloat } from './ServiceSite';
 import styles from './services.module.css';
 
 export const metadata: Metadata = {
@@ -36,5 +36,6 @@ export default function UslugiIndexPage() {
       <div className={styles.related} />
     </main>
     <ServiceFooter />
+    <WhatsAppFloat />
   </div>;
 }
