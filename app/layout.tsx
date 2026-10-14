@@ -3,6 +3,7 @@ import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
 import AttributionCapture from "./components/AttributionCapture";
+import { SITE, OG_IMAGE } from "@/lib/siteInfo";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://buhtask.kz"),
@@ -34,12 +35,13 @@ export const metadata: Metadata = {
     description:
       "Проверенные бухгалтеры для ИП и ТОО, сдача отчётности, открытие/закрытие бизнеса и бесплатные налоговые инструменты 2026.",
     locale: "ru_KZ",
-    images: [{ url: "/images/logo-new.png", width: 512, height: 512, alt: "BuhTask" }],
+    images: [OG_IMAGE],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "BuhTask — найти бухгалтера в Казахстане",
     description: "Маркетплейс бухгалтеров и бесплатные налоговые инструменты для бизнеса РК.",
+    images: [OG_IMAGE.url],
   },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large" } },
   icons: {
@@ -71,8 +73,12 @@ const jsonLd = {
       name: "BuhTask",
       url: "https://buhtask.kz",
       logo: "https://buhtask.kz/images/logo-new.png",
-      email: "info@buhtask.kz",
-      description: "Маркетплейс бухгалтерских услуг и бесплатные налоговые инструменты для бизнеса Казахстана",
+      email: SITE.email,
+      telephone: SITE.phone,
+      description: SITE.tagline,
+      address: { "@type": "PostalAddress", ...SITE.address },
+      founder: { "@type": "Person", "@id": `${SITE.url}/#founder`, name: SITE.founder.name, jobTitle: SITE.founder.jobTitle },
+      contactPoint: { "@type": "ContactPoint", contactType: "customer support", telephone: SITE.phone, email: SITE.email, areaServed: "KZ", availableLanguage: ["ru"] },
       areaServed: { "@type": "Country", name: "Kazakhstan" },
     },
     {

@@ -1,13 +1,17 @@
 import type { MetadataRoute } from 'next';
 import { ALL_SEO_PAGES as SEO_PAGES } from '@/lib/seoPages';
 import { supabase } from '@/lib/supabase';
+import { CONTENT_UPDATED } from '@/lib/siteInfo';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = 'https://buhtask.kz';
   const now = new Date();
+  // Для страниц услуг отдаём дату реального изменения текстов, а не момент сборки:
+  // поисковики перестают доверять lastmod, если он обновляется при каждом деплое.
+  const contentUpdated = new Date(`${CONTENT_UPDATED}T00:00:00Z`);
   const staticPages: MetadataRoute.Sitemap = [
     { url: base, lastModified: now, changeFrequency: 'daily', priority: 1 },
-    { url: `${base}/uslugi`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${base}/uslugi`, lastModified: contentUpdated, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${base}/news`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: `${base}/partners`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${base}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
@@ -22,7 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
   const seoPages: MetadataRoute.Sitemap = SEO_PAGES.map(p => ({
     url: `${base}/uslugi/${p.slug}`,
-    lastModified: now,
+    lastModified: contentUpdated,
     changeFrequency: 'weekly',
     priority: 0.9,
   }));

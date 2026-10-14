@@ -390,6 +390,11 @@ const CITIES: { slug: string; name: string; loc: string }[] = [
   { slug: 'taraz', name: 'Тараз', loc: 'в Таразе' },
 ];
 
+// Быстрый доступ к городу по slug страницы (например 'buhgalter-astana') — для JSON-LD и заголовков.
+export const CITY_BY_PAGE_SLUG: Record<string, { name: string; loc: string }> = Object.fromEntries(
+  CITIES.map(c => [`buhgalter-${c.slug}`, { name: c.name, loc: c.loc }]),
+);
+
 const CITY_PAGES: SeoPage[] = CITIES.map(c => ({
   slug: `buhgalter-${c.slug}`,
   metaTitle: `Бухгалтер ${c.name} — бухгалтерские услуги ${c.loc} для ИП и ТОО`,
