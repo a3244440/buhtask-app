@@ -4,8 +4,11 @@ import Image from 'next/image';
 import { ArrowUpRight, Check, FileText, Calculator, Building2, Users, MessageCircle, CalendarDays, Mail, MapPin, Phone, ShieldCheck, ReceiptText, Star, Clock, TrendingUp } from 'lucide-react';
 import styles from './services.module.css';
 
+const WHATSAPP_NUMBER = '77783244440';
+const WHATSAPP_MESSAGE = 'Здравствуйте! Пишу с сайта, нужны бухгалтерские услуги.';
+
 export const CONTACT = {
-  whatsapp: 'https://wa.me/77783244440',
+  whatsapp: `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`,
   phone: '+7 778 324 4440',
   address: 'г. Астана, проспект Абая, 80',
   founder: 'Сейілбек Әлихан Ғалымұлы',
@@ -105,7 +108,7 @@ export function HeroSection({ heading, description, badgeText, primaryCtaLabel, 
         <circle cx="280" cy="260" r="250" fill="none" stroke="rgba(255,255,255,.16)" strokeWidth="1.5" strokeDasharray="2 12" strokeLinecap="round" />
         <circle cx="280" cy="260" r="205" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="1" />
       </svg>
-      <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={871} height={1304} sizes="(max-width: 700px) 280px, 460px" className={styles.heroPhoto} priority />
+      <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={871} height={1304} sizes="(max-width: 700px) 100vw, 460px" className={styles.heroPhoto} priority />
       <span className={styles.heroBadge}><ShieldCheck size={15} />{badgeText}</span>
       <div className={styles.reviewCard}>
         <div className={styles.reviewStars}>{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={13} fill="#f5b544" stroke="#f5b544" />)}<strong>4.9</strong></div>
