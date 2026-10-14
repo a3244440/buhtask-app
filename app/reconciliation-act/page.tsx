@@ -173,7 +173,7 @@ export default function ReconciliationActPage() {
     <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
       <div className="print:hidden"><ToolsSidebar /></div>
       <div className="lg:pl-60 print:pl-0">
-        <div className="print:hidden"><DashboardHeader title={t('act.title')} /></div>
+        <div className="print:hidden"><DashboardHeader title={t('act.title')} titleIsHeading={false} /></div>
         <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 print:py-2 print:max-w-none">
           <div className="mb-6 print:hidden">
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Scale className="w-5 h-5 text-blue-600" /> {t('act.title')}</h1>

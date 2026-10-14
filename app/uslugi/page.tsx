@@ -7,8 +7,9 @@ import { ServiceHeader, ServiceFooter, HeroSection, ServiceCards, HowItWorks, Co
 import styles from './services.module.css';
 
 const PAGE_URL = `${SITE.url}/uslugi`;
-const TITLE = 'Бухгалтерские услуги в Казахстане — сдача отчётов, открытие и закрытие ИП/ТОО';
-const DESCRIPTION = 'Все бухгалтерские услуги для бизнеса Казахстана: поиск бухгалтера, сдача налоговой отчётности, открытие и закрытие ИП и ТОО, ведение учёта. Специалисты и бесплатные инструменты на BuhTask.';
+// Заголовок вместе с суффиксом « | BuhTask» и описание держим в пределах ~60 и ~160 символов.
+const TITLE = 'Бухгалтерские услуги в Казахстане для ИП и ТОО';
+const DESCRIPTION = 'Все бухгалтерские услуги для бизнеса в Казахстане: поиск бухгалтера, сдача отчётности, открытие и закрытие ИП и ТОО, ведение учёта. Бесплатные инструменты.';
 
 export const metadata: Metadata = {
   title: TITLE,

@@ -134,13 +134,17 @@ export default function TaxCalendarPage() {
     return cells;
   };
 
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
+  // Этот экран попадает в серверный HTML — заголовок и описание дублируем в нём (скрыты визуально) для роботов без JavaScript.
+  if (loading) return <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="sr-only"><h1>{t('tax.title')} {year}</h1><p>{t('tax.subtitle')}</p></div>
+    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" role="status" aria-label="Loading" />
+  </main>;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
       <ToolsSidebar />
       <div className="lg:pl-60">
-        <DashboardHeader title={t('tax.title')} />
+        <DashboardHeader title={t('tax.title')} titleIsHeading={false} />
         <main className={`${yearView ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 sm:px-6 py-8`}>
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /> {t('tax.title')} {year}</h1>

@@ -37,7 +37,7 @@ export default function PenaltyCalculatorPage() {
     <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
       <ToolsSidebar />
       <div className="lg:pl-60">
-        <DashboardHeader title={t('pen.title')} />
+        <DashboardHeader title={t('pen.title')} titleIsHeading={false} />
         <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
           <div className="mb-6">
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500" /> {t('pen.title')}</h1>

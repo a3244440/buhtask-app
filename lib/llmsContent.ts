@@ -26,7 +26,7 @@ const HEADER = `# ${SITE.name}
 export function buildLlmsTxt(): string {
   const services = SEO_PAGES.map(p => `- [${p.h1}](${abs(`/uslugi/${p.slug}`)}): ${p.metaDescription}`).join('\n');
   const cities = cityPages().map(p => `- [${p.h1}](${abs(`/uslugi/${p.slug}`)})`).join('\n');
-  const tools = TOOLS.map(t => `- [${t.name}](${abs(t.path)}): ${t.description}`).join('\n');
+  const tools = TOOLS.map(t => `- [${t.name}](${abs(t.path)}): ${t.description}${t.requiresLogin && !t.description.includes('вход') ? ' Доступно после входа в аккаунт.' : ''}`).join('\n');
   return `${HEADER}
 ## Бухгалтерские услуги
 

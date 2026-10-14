@@ -15,8 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/news`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: `${base}/partners`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${base}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${base}/income-910`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${base}/tax-calendar`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    // /income-910 и /tax-calendar в карту не включаем: без входа в аккаунт они перекидывают на /auth.
     { url: `${base}/salary-calculator`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/maternity-calculator`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/penalty-calculator`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },

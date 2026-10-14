@@ -10,9 +10,10 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { useI18n } from '@/lib/i18n';
 import { activePlan } from '@/lib/plans';
 
-interface Props { title?: string; right?: React.ReactNode; }
+// titleIsHeading=false — когда у страницы есть собственный <h1>: название в шапке тогда обычный текст, а не второй заголовок.
+interface Props { title?: string; right?: React.ReactNode; titleIsHeading?: boolean; }
 
-export default function DashboardHeader({ title, right }: Props) {
+export default function DashboardHeader({ title, right, titleIsHeading = true }: Props) {
   const router = useRouter();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -111,7 +112,9 @@ export default function DashboardHeader({ title, right }: Props) {
           <img src="/images/logo-new.png" alt="BuhTask" className="h-9 w-auto" />
         </a>
 
-        {title && <h1 className="hidden lg:block text-sm font-semibold text-gray-700 flex-shrink-0">{title}</h1>}
+        {title && (titleIsHeading
+          ? <h1 className="hidden lg:block text-sm font-semibold text-gray-700 flex-shrink-0">{title}</h1>
+          : <p className="hidden lg:block text-sm font-semibold text-gray-700 flex-shrink-0">{title}</p>)}
         {right && <div className="flex-1 max-w-md">{right}</div>}
 
         {/* Уведомление поддержки — не исчезает пока не прочитано */}

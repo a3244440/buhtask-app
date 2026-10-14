@@ -82,7 +82,7 @@ export default function ReferencePage() {
     <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
       <ToolsSidebar />
       <div className="lg:pl-60">
-        <DashboardHeader title={t('ref.title')} />
+        <DashboardHeader title={t('ref.title')} titleIsHeading={false} />
         <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
           <div className="mb-6">
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><BookOpen className="w-5 h-5 text-blue-600" /> {t('ref.title')} 2026</h1>

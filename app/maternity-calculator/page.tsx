@@ -62,7 +62,7 @@ export default function MaternityCalculatorPage() {
     <div className="min-h-screen bg-[#F8FAFC] pb-20 lg:pb-0" style={{ fontFamily: 'Inter, sans-serif' }}>
       <ToolsSidebar />
       <div className="lg:pl-60">
-        <DashboardHeader title={t('mat.title')} />
+        <DashboardHeader title={t('mat.title')} titleIsHeading={false} />
         <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
           <div className="mb-6">
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Baby className="w-5 h-5 text-pink-500" /> {t('mat.title')}</h1>

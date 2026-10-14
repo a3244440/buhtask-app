@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useTheme } from "@/lib/theme";
@@ -114,10 +115,22 @@ export default function HomePage() {
     }
   }, [user, loading]);
 
+  // Пока определяем сессию и тему, показываем спиннер. Но именно этот экран попадает в серверный HTML,
+  // который видят поисковые и ИИ-боты (многие из них не выполняют JavaScript), поэтому кладём в него
+  // тот же заголовок H1, описание и ссылки на ключевые разделы, что пользователь увидит после загрузки.
+  // Блок скрыт только визуально (sr-only), для скринридеров и роботов он остаётся обычным текстом.
   if (loading || !mounted) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-    </div>
+    <main className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+      <div className="sr-only">
+        <h1>{t('land.hero1')} {t('land.hero2')} {t('land.hero3')}</h1>
+        <p>{t('land.heroDesc')}</p>
+        <nav aria-label="BuhTask">
+          <Link href="/uslugi">Все бухгалтерские услуги</Link>
+          {TOOLS.slice(0, 8).map(tool => <Link key={tool.href} href={tool.href}>{t(tool.title)}</Link>)}
+        </nav>
+      </div>
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" role="status" aria-label="Loading" />
+    </main>
   );
 
   const D = dark;
