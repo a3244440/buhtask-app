@@ -961,10 +961,10 @@ const translations: Record<string, Record<Lang, string>> = {
 
   // Лендинг — hero и секции (детально)
   'land.badge': { ru: 'Маркетплейс бухгалтерских услуг Казахстана', kz: 'Қазақстанның бухгалтерлік қызметтер маркетплейсі', en: 'Kazakhstan Accounting Services Marketplace' },
-  'land.hero1': { ru: 'Найти', kz: 'Бухгалтер', en: 'Find an' },
-  'land.hero2': { ru: 'бухгалтера', kz: 'табу', en: 'accountant' },
-  'land.hero3': { ru: 'просто и быстро', kz: 'оңай және жылдам', en: 'easily and fast' },
-  'land.heroDesc': { ru: 'BuhTask — цифровая платформа, где предприниматели находят проверенных бухгалтеров и получают бухгалтерские услуги из любой точки Казахстана.', kz: 'BuhTask — кәсіпкерлер тексерілген бухгалтерлерді тауып, Қазақстанның кез келген нүктесінен бухгалтерлік қызмет алатын цифрлық платформа.', en: 'BuhTask is a digital platform where entrepreneurs find verified accountants and get accounting services from anywhere in Kazakhstan.' },
+  'land.hero1': { ru: 'Бухгалтерские услуги', kz: 'Бухгалтер', en: 'Find an' },
+  'land.hero2': { ru: 'в\u00a0Астане', kz: 'табу', en: 'accountant' },
+  'land.hero3': { ru: 'и регистрация ТОО', kz: 'оңай және жылдам', en: 'easily and fast' },
+  'land.heroDesc': { ru: 'BuhTask — цифровая платформа, где предприниматели находят проверенных бухгалтеров, открывают ТОО и получают бухгалтерские услуги из любой точки Казахстана.', kz: 'BuhTask — кәсіпкерлер тексерілген бухгалтерлерді тауып, Қазақстанның кез келген нүктесінен бухгалтерлік қызмет алатын цифрлық платформа.', en: 'BuhTask is a digital platform where entrepreneurs find verified accountants and get accounting services from anywhere in Kazakhstan.' },
   'land.postTask': { ru: 'Разместить задачу', kz: 'Тапсырма орналастыру', en: 'Post a Task' },
   'land.imAccountant': { ru: 'Я бухгалтер — найти заказы', kz: 'Мен бухгалтермін — тапсырыс табу', en: "I'm an accountant — find orders" },
   'land.forExample': { ru: 'Например:', kz: 'Мысалы:', en: 'For example:' },

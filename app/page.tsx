@@ -125,7 +125,12 @@ export default function HomePage() {
         <h1>{t('land.hero1')} {t('land.hero2')} {t('land.hero3')}</h1>
         <p>{t('land.heroDesc')}</p>
         <nav aria-label="BuhTask">
-          <Link href="/uslugi">Все бухгалтерские услуги</Link>
+          <Link href="/uslugi">Бухгалтерские услуги</Link>
+          <Link href="/uslugi/buhgalter-astana">Бухгалтерские услуги в Астане</Link>
+          <Link href="/uslugi/otkrytie-too">Открыть ТОО</Link>
+          <Link href="/uslugi/otkrytie-too-astana">Открыть ТОО в Астане</Link>
+          <Link href="/uslugi/registraciya-too">Регистрация ТОО</Link>
+          <Link href="/uslugi/registraciya-too-astana">Регистрация ТОО в Астане</Link>
           {TOOLS.slice(0, 8).map(tool => <Link key={tool.href} href={tool.href}>{t(tool.title)}</Link>)}
         </nav>
       </div>
@@ -167,7 +172,7 @@ export default function HomePage() {
             <MapPin className="w-3.5 h-3.5" /> {t('land.badge')}
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1] mb-5">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1] mb-5">
             {t('land.hero1')} <span className="text-yellow-300">{t('land.hero2')}</span><br />{t('land.hero3')}
           </h1>
 
@@ -430,7 +435,10 @@ export default function HomePage() {
             <a href="/uslugi/nds" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">НДС: постановка и форма 300</a>
             <a href="/uslugi/zarplata-i-kadry" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Зарплата и кадровый учёт</a>
             <a href="/uslugi/konsultaciya-buhgaltera" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Консультация бухгалтера</a>
-            <a href="/uslugi/buhgalter-astana" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Астана</a>
+            <a href="/uslugi/buhgalter-astana" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтерские услуги в Астане</a>
+            <Link href="/uslugi/otkrytie-too-astana" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Открыть ТОО в Астане</Link>
+            <Link href="/uslugi/registraciya-too-astana" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Регистрация ТОО в Астане</Link>
+            <Link href="/uslugi/registraciya-too" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Регистрация ТОО</Link>
             <a href="/uslugi/buhgalter-almaty" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Алматы</a>
             <a href="/uslugi/buhgalter-shymkent" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Бухгалтер Шымкент</a>
             <a href="/news" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">Новости и статьи</a>

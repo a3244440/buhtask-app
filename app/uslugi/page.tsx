@@ -57,8 +57,8 @@ export default function UslugiIndexPage() {
     <main className={styles.main}>
       <nav className={styles.breadcrumb} aria-label="Хлебные крошки"><Link href="/">Главная</Link><span aria-hidden="true">/</span><span aria-current="page">Услуги</span></nav>
       <HeroSection
-        heading={<>Ваше дело — бизнес.<br />С бухгалтерией поможем.</>}
-        description="Найдите специалиста для отчёта, расчёта зарплаты или ведения учёта. BuhTask помогает встретиться предпринимателям и бухгалтерам."
+        heading={<>Бухгалтерские услуги<br />для ИП и ТОО</>}
+        description="Ваше дело — бизнес, с бухгалтерией поможем. Найдите специалиста для отчёта, расчёта зарплаты, ведения учёта или регистрации ТОО."
         badgeText="Для ИП и ТОО в Казахстане"
         primaryCtaLabel="Найти бухгалтера"
         secondaryCtaLabel="Выбрать услугу"
