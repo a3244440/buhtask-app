@@ -24,45 +24,13 @@ export function ServiceHeader() {
   </header>;
 }
 
-/** Original vector scene: accounting documents, a laptop and Astana's skyline. */
-export function AccountingScene() {
-  return <div className={styles.scene}>
-    <svg viewBox="0 0 600 460" role="img" aria-label="Бухгалтерия онлайн: документы, расчёты и задачи в одном месте">
-      <path d="M45 244C19 151 107 58 236 62c127 4 139-47 247 19s126 198 54 278-168 33-274 49S69 337 45 244Z" fill="#e4edff" />
-      <g fill="none" stroke="#b6c9eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M370 217v-87h40v87m-30-87v-16h20v16m35 87v-59h45v59m-33-59v-25h20v25m30 59V89h24v128m-12-128V69m-5 18a14 14 0 1 1 10 0M349 217h196" />
-        <path d="M66 96h45m-22-22v45M537 257h25m-13-13v26" />
-      </g>
-      <g transform="rotate(-9 126 262)">
-        <rect x="55" y="193" width="140" height="182" rx="13" fill="white" stroke="#25497c" strokeWidth="3" />
-        <rect x="73" y="211" width="62" height="13" rx="4" fill="#2f80ed" />
-        <path d="M75 249h98M75 265h69M75 281h89" stroke="#c2cde0" strokeWidth="5" strokeLinecap="round" />
-        <circle cx="149" cy="332" r="21" fill="#def5e8" /><path d="m139 332 7 7 13-15" stroke="#27ae60" strokeWidth="4" fill="none" strokeLinecap="round" />
-      </g>
-      <path d="M169 190h244a13 13 0 0 1 13 13v156H156V203a13 13 0 0 1 13-13Z" fill="#17345b" stroke="#17345b" strokeWidth="3" />
-      <rect x="169" y="204" width="244" height="141" rx="5" fill="white" />
-      <rect x="169" y="204" width="54" height="141" fill="#f1f5fc" />
-      <rect x="181" y="216" width="29" height="23" rx="6" fill="#2f80ed" /><text x="190" y="233" fill="white" fontSize="16" fontWeight="700">B</text>
-      <path d="M181 254h29m-29 16h22m-22 16h26m-26 16h18" stroke="#aabbd4" strokeWidth="4" strokeLinecap="round" />
-      <text x="237" y="233" fill="#17345b" fontSize="12" fontWeight="700">Мои задачи</text>
-      <rect x="237" y="248" width="162" height="34" rx="6" fill="#eaf2ff" /><path d="M249 260h78m-78 11h51" stroke="#83a9e3" strokeWidth="4" strokeLinecap="round" /><circle cx="383" cy="265" r="7" fill="#2f80ed" />
-      <rect x="237" y="291" width="162" height="34" rx="6" fill="#f0f7f3" /><path d="M249 303h93m-93 11h63" stroke="#8abea1" strokeWidth="4" strokeLinecap="round" /><path d="m378 308 4 4 7-9" stroke="#27ae60" strokeWidth="3" fill="none" />
-      <path d="M156 359h270l31 21a6 6 0 0 1-4 11H129a6 6 0 0 1-4-11Z" fill="#abc3ea" stroke="#17345b" strokeWidth="3" strokeLinejoin="round" /><path d="M261 363h60l10 13h-80Z" fill="#769cd1" />
-      <g transform="rotate(9 457 327)"><rect x="422" y="263" width="77" height="125" rx="13" fill="#2f80ed" stroke="#17345b" strokeWidth="3" /><rect x="431" y="281" width="59" height="89" rx="5" fill="white" /><path d="M444 303h31m-31 13h22" stroke="#aabbd4" strokeWidth="4" strokeLinecap="round" /><circle cx="460" cy="344" r="14" fill="#def5e8" /><path d="m453 345 5 5 10-11" fill="none" stroke="#27ae60" strokeWidth="3" strokeLinecap="round" /></g>
-      <path d="M73 398h451" stroke="#17345b" strokeWidth="3" strokeLinecap="round" />
-      <g transform="rotate(7 296 104)"><rect x="212" y="79" width="187" height="54" rx="15" fill="white" stroke="#b6c9eb" strokeWidth="2" /><circle cx="240" cy="106" r="14" fill="#def5e8" /><path d="m233 106 5 5 9-10" fill="none" stroke="#27ae60" strokeWidth="3" strokeLinecap="round" /><text x="263" y="111" fill="#17345b" fontSize="13" fontWeight="600">Всё по порядку</text></g>
-    </svg>
-    <div className={styles.sceneCaption}><span className={styles.onlineDot} />Для бизнеса в Казахстане</div>
-  </div>;
-}
-
 const SERVICES = [
-  { slug: 'buhgalterskie-uslugi', title: 'Бухгалтерия без лишних забот', text: 'Ведение учёта ИП и ТОО: от первичных документов до отчётности.', icon: Calculator, tone: 'blue', note: 'Учёт в порядке' },
-  { slug: 'sdacha-otchetov', title: 'Отчётность и налоги', text: 'Подготовка деклараций и помощь со сдачей отчётов.', icon: FileText, tone: 'sky', note: 'ФНО 910 · 200 · 300' },
-  { slug: 'zarplata-i-kadry', title: 'Зарплата и сотрудники', text: 'Расчёты, начисления и кадровые документы для вашей команды.', icon: Users, tone: 'mint', note: 'Забота о команде' },
-  { slug: 'otkrytie-ip', title: 'Начать своё дело', text: 'Помощь с регистрацией ИП и ТОО и постановкой учёта.', icon: Building2, tone: 'lavender', note: 'От идеи к бизнесу' },
-  { slug: 'vosstanovlenie-ucheta', title: 'Восстановить учёт', text: 'Разобраться в документах и привести бухгалтерию в порядок.', icon: ReceiptText, tone: 'sky', note: 'Без хаоса в документах' },
-  { slug: 'konsultaciya-buhgaltera', title: 'Разобраться в вопросе', text: 'Консультация по учёту, документам и вашей ситуации.', icon: MessageCircle, tone: 'mint', note: 'Понятным языком' },
+  { slug: 'buhgalterskie-uslugi', title: 'Бухгалтерия без лишних забот', text: 'Ведение учёта ИП и ТОО: от первичных документов до отчётности.', icon: Calculator, tone: 'toneInk', note: 'Учёт в порядке' },
+  { slug: 'sdacha-otchetov', title: 'Отчётность и налоги', text: 'Подготовка деклараций и помощь со сдачей отчётов.', icon: FileText, tone: 'toneSky', note: 'ФНО 910, 200, 300' },
+  { slug: 'zarplata-i-kadry', title: 'Зарплата и сотрудники', text: 'Расчёты, начисления и кадровые документы для вашей команды.', icon: Users, tone: 'toneLime', note: 'Забота о команде' },
+  { slug: 'otkrytie-ip', title: 'Начать своё дело', text: 'Помощь с регистрацией ИП и ТОО и постановкой учёта.', icon: Building2, tone: 'toneWhite', note: 'От идеи к бизнесу' },
+  { slug: 'vosstanovlenie-ucheta', title: 'Восстановить учёт', text: 'Разобраться в документах и привести бухгалтерию в порядок.', icon: ReceiptText, tone: 'toneSky', note: 'Без хаоса в документах' },
+  { slug: 'konsultaciya-buhgaltera', title: 'Разобраться в вопросе', text: 'Консультация по учёту, документам и вашей ситуации.', icon: MessageCircle, tone: 'toneBlue', note: 'Понятным языком' },
 ];
 
 export function ServiceCards() {
@@ -74,6 +42,28 @@ export function ServiceCards() {
   </section>;
 }
 
+// Страницы про ТОО: открыть, зарегистрировать, закрыть. Сроки и цены — те же, что в текстах самих страниц.
+const TOO_LINKS = [
+  { slug: 'otkrytie-too', title: 'Открыть ТОО', note: 'Под ключ от 20 000 ₸, за 1-3 рабочих дня' },
+  { slug: 'registraciya-too', title: 'Регистрация ТОО', note: 'Госрегистрация малого бизнеса бесплатна, около 1 дня' },
+  { slug: 'otkrytie-too-astana', title: 'Открыть ТОО в Астане', note: 'Онлайн, без визита в госорган' },
+  { slug: 'registraciya-too-astana', title: 'Регистрация ТОО в Астане', note: 'Порядок действий, сроки и стоимость' },
+  { slug: 'zakrytie-too', title: 'Закрыть ТОО: ликвидация', note: 'Пошагово, сроки 3-6 месяцев' },
+];
+
+export function TooServices({ currentSlug }: { currentSlug?: string }) {
+  return <section className={styles.tooPanel} aria-labelledby="too-title">
+    <div className={styles.tooIntro}>
+      <h2 id="too-title">ТОО под ключ: от регистрации до закрытия</h2>
+      <p>Открытие, регистрация и ликвидация ТОО с бухгалтером с платформы: документы, заявка, налоговый режим и учёт.</p>
+      <a href={CONTACT.whatsapp} target="_blank" rel="noopener noreferrer" className={styles.button}><MessageCircle size={19} />Обсудить в WhatsApp</a>
+    </div>
+    <div className={styles.tooList}>{TOO_LINKS.filter(l => l.slug !== currentSlug).map(({ slug, title, note }) => <Link href={`/uslugi/${slug}`} key={slug}>
+      <span><strong>{title}</strong><small>{note}</small></span><span className={styles.tooArrow}><ArrowUpRight size={20} aria-hidden="true" /></span>
+    </Link>)}</div>
+  </section>;
+}
+
 export function HowItWorks() {
   return <section id="how-it-works" className={`${styles.section} ${styles.process}`}>
     <div className={styles.sectionHeading}><h2>Начать проще,<br />чем кажется</h2><p>BuhTask соединяет предпринимателей и бухгалтеров. Вы выбираете специалиста и договариваетесь об условиях работы.</p></div>
@@ -81,7 +71,7 @@ export function HowItWorks() {
       <li><span>1</span><h3>Расскажите о задаче</h3><p>Укажите, что нужно сделать, сроки и особенности вашего бизнеса.</p></li>
       <li><span>2</span><h3>Выберите бухгалтера</h3><p>Сравните предложения, опыт, отзывы и стоимость работы.</p></li>
       <li><span>3</span><h3>Работайте в одном месте</h3><p>Общайтесь в чате и следите за задачей в личном кабинете.</p></li>
-    </ol><Link href="/auth" className={styles.button}>Разместить задачу бесплатно</Link>
+    </ol><Link href="/auth" className={styles.buttonInk}>Разместить задачу бесплатно</Link>
   </section>;
 }
 
@@ -92,68 +82,82 @@ const STATS = [
   { icon: ShieldCheck, value: '100%', label: 'официально, с ЭЦП' },
 ];
 
-/** Full hero block: centered founder photo on a bold blue panel, with a trust badge,
- * a review card and a 4-stat strip — reused by both the catalog and per-service pages. */
-export function HeroSection({ heading, description, badgeText, primaryCtaLabel, secondaryCtaLabel }: {
+// Бегущая строка под hero: направления работы компании.
+const MARQUEE = ['Открыть ТОО', 'Регистрация ТОО', 'Закрыть ТОО', 'Ликвидация ТОО', 'Бухгалтерские услуги', 'Сдача отчётности', 'НДС', 'Зарплата и кадры', 'Открыть ИП', 'Восстановление учёта'];
+
+/** Выделяет в заголовке фразу `accent` (например, город) цветом — только если заголовок передан строкой. */
+function renderHeading(heading: ReactNode, accent?: string) {
+  if (typeof heading === 'string' && accent) {
+    const i = heading.indexOf(accent);
+    if (i >= 0) return <>{heading.slice(0, i)}<mark>{accent.replace(/ /g, ' ')}</mark>{heading.slice(i + accent.length)}</>;
+  }
+  return heading;
+}
+
+/** Hero: слева заголовок и призыв, справа основатель на салатовой арке; ниже бегущая строка и плашка с цифрами.
+ * Один и тот же блок используется в каталоге и на страницах услуг. */
+export function HeroSection({ heading, description, badgeText, primaryCtaLabel, secondaryCtaLabel, accent }: {
   heading: ReactNode;
   description: string;
   badgeText: string;
   primaryCtaLabel: string;
   secondaryCtaLabel: string;
+  accent?: string;
 }) {
-  return <section className={styles.heroPanel}>
-    <div className={styles.heroStage}>
-      <div className={styles.heroGlow} aria-hidden="true" />
-      <svg className={styles.heroRings} viewBox="0 0 560 560" aria-hidden="true">
-        <circle cx="280" cy="260" r="250" fill="none" stroke="rgba(255,255,255,.16)" strokeWidth="1.5" strokeDasharray="2 12" strokeLinecap="round" />
-        <circle cx="280" cy="260" r="205" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="1" />
-      </svg>
-      <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={871} height={1304} sizes="(max-width: 700px) 100vw, 460px" className={styles.heroPhoto} priority />
-      <span className={styles.heroBadge}><ShieldCheck size={15} />{badgeText}</span>
-      <div className={styles.reviewCard}>
-        <div className={styles.reviewStars}>{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={13} fill="#f5b544" stroke="#f5b544" />)}<strong>4.9</strong></div>
-        <p>2000+ довольных клиентов доверяют нам свою бухгалтерию</p>
-        <a href={CONTACT.whatsapp} target="_blank" rel="noopener noreferrer" className={styles.reviewBtn}>Написать <ArrowUpRight size={14} /></a>
-      </div>
-    </div>
-    <div className={styles.heroBottom}>
-      <div className={styles.heroText}>
-        <h1>{heading}</h1>
+  return <>
+    <section className={styles.hero}>
+      <div className={styles.heroCopy}>
+        <span className={styles.heroBadge}><ShieldCheck size={15} />{badgeText}</span>
+        <h1>{renderHeading(heading, accent)}</h1>
         <p>{description}</p>
         <div className={styles.heroActions}>
-          <Link href="/auth" className={styles.whiteButton}>{primaryCtaLabel}</Link>
+          <Link href="/auth" className={styles.button}>{primaryCtaLabel}</Link>
           <a href="#services" className={styles.textLink}>{secondaryCtaLabel} <ArrowUpRight size={18} /></a>
         </div>
       </div>
-      <div className={styles.statsRow}>{STATS.map(({ icon: Icon, value, label }) => <div key={label}><Icon size={20} /><strong>{value}</strong><span>{label}</span></div>)}</div>
+      <div className={styles.heroVisual}>
+        <div className={styles.arch} aria-hidden="true" />
+        <Image src="/images/founder-alikhan-cutout.webp" alt={CONTACT.founder} width={871} height={1304} sizes="(max-width: 900px) 62vw, 460px" className={styles.heroPhoto} priority />
+        <div className={styles.reviewCard}>
+          <div className={styles.reviewStars}>{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={13} fill="#f5b544" stroke="#f5b544" />)}<strong>4.9</strong></div>
+          <p>2000+ довольных клиентов доверяют нам свою бухгалтерию</p>
+          <a href={CONTACT.whatsapp} target="_blank" rel="noopener noreferrer" className={styles.reviewBtn}>Написать <ArrowUpRight size={14} /></a>
+        </div>
+        <span className={styles.heroChip}>Отклики обычно в течение часа</span>
+      </div>
+    </section>
+    <div className={styles.marquee} aria-hidden="true">
+      <div className={styles.marqueeTrack}>{[0, 1].map(g => <div className={styles.marqueeGroup} key={g}>{MARQUEE.map(t => <span key={t}>{t}</span>)}</div>)}</div>
     </div>
-  </section>;
+    <div className={styles.statsBar}>{STATS.map(({ icon: Icon, value, label }) => <div key={label}><Icon size={22} /><strong>{value}</strong><span>{label}</span></div>)}</div>
+  </>;
 }
 
 export function CompanyBlock() {
   return <section id="company" className={styles.company}>
     <div className={styles.companyCard}>
-      <span className={styles.pill}><ShieldCheck size={17} />Люди за сервисом</span>
-      <div className={styles.companyAvatarRow}>
-        <Image src="/images/founder-alikhan.jpg" alt={CONTACT.founder} width={60} height={60} className={styles.companyAvatar} />
-        <div><strong>{CONTACT.founder}</strong><span>Основатель и руководитель BuhTask</span></div>
+      <div className={styles.companyPhoto}>
+        <Image src="/images/founder-alikhan.jpg" alt={CONTACT.founder} fill sizes="(max-width: 900px) 100vw, 480px" />
+        <div className={styles.companyName}><strong>{CONTACT.founder}</strong><span>Основатель и руководитель BuhTask</span></div>
       </div>
-      <h2>Опыт, который экономит вам время</h2>
-      <p>Алихан Сейілбек руководит BuhTask и лично знает, как устроен учёт в малом бизнесе — от первой задачи до постоянной команды бухгалтеров.</p>
-      <p>Есть вопрос о BuhTask или нужна помощь с первым шагом? Свяжитесь с нами напрямую.</p>
-      <a href={CONTACT.whatsapp} className={styles.button} target="_blank" rel="noopener noreferrer"><MessageCircle size={19} />Написать в WhatsApp</a>
-      <div className={styles.companyContacts}><span><MapPin size={18} />{CONTACT.address}</span><a href="tel:+77783244440"><Phone size={18} />{CONTACT.phone}</a><a href="mailto:info@buhtask.kz"><Mail size={18} />info@buhtask.kz</a></div>
+      <div className={styles.companyBody}>
+        <h2>Опыт, который экономит вам время</h2>
+        <p>Алихан Сейілбек руководит BuhTask и лично знает, как устроен учёт в малом бизнесе — от первой задачи до постоянной команды бухгалтеров.</p>
+        <p>Есть вопрос о BuhTask или нужна помощь с первым шагом? Свяжитесь с нами напрямую.</p>
+        <a href={CONTACT.whatsapp} className={styles.buttonInk} target="_blank" rel="noopener noreferrer"><MessageCircle size={19} />Написать в WhatsApp</a>
+        <div className={styles.companyContacts}><span><MapPin size={18} />{CONTACT.address}</span><a href="tel:+77783244440"><Phone size={18} />{CONTACT.phone}</a><a href="mailto:info@buhtask.kz"><Mail size={18} />info@buhtask.kz</a></div>
+      </div>
     </div>
   </section>;
 }
 
 export function ToolsBlock() {
   const tools = [{ href: '/income-910', icon: FileText, title: 'Доход для формы 910', text: 'Разберите поступления из банковской выписки.' }, { href: '/tax-calendar', icon: CalendarDays, title: 'Налоговый календарь', text: 'Посмотрите сроки отчётности и платежей.' }, { href: '/salary-calculator', icon: Calculator, title: 'Калькулятор зарплаты', text: 'Рассчитайте начисления и удержания.' }];
-  return <section className={`${styles.section} ${styles.tools}`}><div className={styles.sectionHeading}><h2>Полезное уже<br />под рукой</h2><p>Бесплатные инструменты BuhTask для повседневных задач бухгалтера и предпринимателя.</p></div><div className={styles.toolGrid}>{tools.map(({ href, icon: Icon, title, text }) => <Link href={href} key={href}><Icon size={26} /><h3>{title}</h3><p>{text}</p><span>Открыть инструмент <ArrowUpRight size={17} /></span></Link>)}</div></section>;
+  return <section className={styles.section}><div className={styles.sectionHeading}><h2>Полезное уже<br />под рукой</h2><p>Бесплатные инструменты BuhTask для повседневных задач бухгалтера и предпринимателя.</p></div><div className={styles.toolGrid}>{tools.map(({ href, icon: Icon, title, text }) => <Link href={href} key={href}><Icon size={26} /><h3>{title}</h3><p>{text}</p><span>Открыть инструмент <ArrowUpRight size={17} /></span></Link>)}</div></section>;
 }
 
 export function ContactBanner() {
-  return <section className={styles.contactBanner}><div><h2>Давайте начнём<br />с вашей задачи</h2><p>Напишите нам или разместите задачу на платформе.<br />Выберите удобный способ начать.</p></div><div className={styles.bannerActions}><a href={CONTACT.whatsapp} target="_blank" rel="noopener noreferrer" className={styles.whiteButton}><MessageCircle size={20} />Обсудить в WhatsApp</a><Link href="/auth" className={styles.outlineButton}>Разместить задачу</Link></div></section>;
+  return <section className={styles.contactBanner}><div><h2>Давайте начнём<br />с вашей задачи</h2><p>Напишите нам или разместите задачу на платформе.<br />Выберите удобный способ начать.</p></div><div className={styles.bannerActions}><a href={CONTACT.whatsapp} target="_blank" rel="noopener noreferrer" className={styles.button}><MessageCircle size={20} />Обсудить в WhatsApp</a><Link href="/auth" className={styles.outlineButton}>Разместить задачу</Link></div></section>;
 }
 
 export function ServiceFooter() {

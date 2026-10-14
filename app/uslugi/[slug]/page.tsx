@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ALL_SEO_PAGES as SEO_PAGES, CITY_BY_PAGE_SLUG } from '@/lib/seoPages';
 import { SITE, OG_IMAGE, CONTENT_UPDATED, formatContentDate } from '@/lib/siteInfo';
-import { ServiceHeader, ServiceFooter, HeroSection, ServiceCards, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip, WhatsAppFloat } from '../ServiceSite';
+import { ServiceHeader, ServiceFooter, HeroSection, ServiceCards, TooServices, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip, WhatsAppFloat } from '../ServiceSite';
 import styles from '../services.module.css';
 
 export function generateStaticParams() {
@@ -110,13 +110,14 @@ export default async function SeoServicePage({ params }: { params: Promise<{ slu
       <ServiceHeader />
       <main className={styles.main}>
         <nav className={styles.breadcrumb} aria-label="Хлебные крошки"><Link href="/">Главная</Link><span aria-hidden="true">/</span><Link href="/uslugi">Услуги</Link><span aria-hidden="true">/</span><span aria-current="page">{heading}</span></nav>
-        <HeroSection heading={heading} description={description} badgeText="BuhTask · Казахстан" primaryCtaLabel="Найти бухгалтера" secondaryCtaLabel="Посмотреть услуги" />
+        <HeroSection heading={heading} description={description} badgeText="BuhTask, Казахстан" primaryCtaLabel="Найти бухгалтера" secondaryCtaLabel="Посмотреть услуги" accent={city?.loc} />
         <TrustStrip />
         {cityPage && city && <section className={styles.answerBlock} aria-labelledby="answer-title">
           <h2 id="answer-title">Бухгалтер {city.loc}: коротко</h2>
           <p>{page.intro}</p>
         </section>}
         <ServiceCards />
+        <TooServices currentSlug={page.slug} />
         <section className={styles.detailsSection}>
           <div className={styles.sectionHeading}><h2>{cityPage ? 'Что важно знать' : 'Подробнее об услуге'}</h2><p>Задачи, условия и стоимость — чтобы выбрать подходящий формат работы.</p></div>
           <div className={styles.detailsGrid}>{page.sections.map(section => <article key={section.h2} className={styles.detail}><h3>{section.h2}</h3><p>{section.text}</p></article>)}</div>

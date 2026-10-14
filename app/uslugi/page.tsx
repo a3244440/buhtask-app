@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { ALL_SEO_PAGES as SEO_PAGES } from '@/lib/seoPages';
 import { SITE, OG_IMAGE, CONTENT_UPDATED } from '@/lib/siteInfo';
-import { ServiceHeader, ServiceFooter, HeroSection, ServiceCards, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip, WhatsAppFloat } from './ServiceSite';
+import { ServiceHeader, ServiceFooter, HeroSection, ServiceCards, TooServices, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip, WhatsAppFloat } from './ServiceSite';
 import styles from './services.module.css';
 
 const PAGE_URL = `${SITE.url}/uslugi`;
@@ -65,6 +65,7 @@ export default function UslugiIndexPage() {
       />
       <TrustStrip />
       <ServiceCards />
+      <TooServices />
       <section className={styles.related}><h2>Все направления</h2><div>{otherServices.map(page => <Link key={page.slug} href={`/uslugi/${page.slug}`}>{page.h1}</Link>)}</div></section>
       <HowItWorks />
       <CompanyBlock />
