@@ -22,7 +22,7 @@ export const WHATSAPP_URL = `https://wa.me/${SITE.whatsappNumber}?text=${encodeU
 // Дата последнего реального изменения текстов на страницах услуг (ГГГГ-ММ-ДД).
 // Обновляйте её только когда действительно меняете содержимое: она попадает в sitemap,
 // в JSON-LD (dateModified) и в строку «Обновлено» на странице.
-export const CONTENT_UPDATED = '2026-10-14';
+export const CONTENT_UPDATED = '2026-10-15';
 
 export function formatContentDate(iso: string = CONTENT_UPDATED): string {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });

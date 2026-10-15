@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ALL_SEO_PAGES as SEO_PAGES, CITY_BY_PAGE_SLUG } from '@/lib/seoPages';
+import { ALL_SEO_PAGES as SEO_PAGES, CITY_BY_PAGE_SLUG, type SeoPage } from '@/lib/seoPages';
 import { SITE, OG_IMAGE, CONTENT_UPDATED, formatContentDate } from '@/lib/siteInfo';
 import { ServiceHeader, ServiceFooter, HeroSection, ServiceCards, TooServices, HowItWorks, CompanyBlock, ToolsBlock, ContactBanner, TrustStrip, WhatsAppFloat } from '../ServiceSite';
 import styles from '../services.module.css';
@@ -97,6 +97,7 @@ export default async function SeoServicePage({ params }: { params: Promise<{ slu
     ],
   };
 
+  const relatedPages = (page.related ?? []).map(slug => SEO_PAGES.find(p => p.slug === slug)).filter((p): p is SeoPage => Boolean(p));
   const cityPage = page.slug.startsWith('buhgalter-');
   const heading = cityPage ? page.sections[0].h2 : page.h1;
   const description = cityPage
@@ -112,6 +113,16 @@ export default async function SeoServicePage({ params }: { params: Promise<{ slu
         <nav className={styles.breadcrumb} aria-label="Хлебные крошки"><Link href="/">Главная</Link><span aria-hidden="true">/</span><Link href="/uslugi">Услуги</Link><span aria-hidden="true">/</span><span aria-current="page">{heading}</span></nav>
         <HeroSection heading={heading} description={description} badgeText="BuhTask, Казахстан" primaryCtaLabel="Найти бухгалтера" secondaryCtaLabel="Посмотреть услуги" accent={city?.loc} />
         <TrustStrip />
+        {page.table && <section className={styles.priceSection} aria-labelledby="price-title">
+          <div className={styles.sectionHeading}><h2 id="price-title">{page.table.title}</h2></div>
+          <div className={styles.priceTableWrap}>
+            <table className={styles.priceTable}>
+              <thead><tr>{page.table.columns.map(column => <th key={column} scope="col">{column}</th>)}</tr></thead>
+              <tbody>{page.table.rows.map(row => <tr key={row[0]}><th scope="row">{row[0]}</th>{row.slice(1).map((cell, index) => <td key={index}>{cell}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+          {page.table.note && <p className={styles.tableNote}>{page.table.note}</p>}
+        </section>}
         {cityPage && city && <section className={styles.answerBlock} aria-labelledby="answer-title">
           <h2 id="answer-title">Бухгалтер {city.loc}: коротко</h2>
           <p>{page.intro}</p>
@@ -122,11 +133,13 @@ export default async function SeoServicePage({ params }: { params: Promise<{ slu
           <div className={styles.sectionHeading}><h2>{cityPage ? 'Что важно знать' : 'Подробнее об услуге'}</h2><p>Задачи, условия и стоимость — чтобы выбрать подходящий формат работы.</p></div>
           <div className={styles.detailsGrid}>{page.sections.map(section => <article key={section.h2} className={styles.detail}><h3>{section.h2}</h3><p>{section.text}</p></article>)}</div>
           <p className={styles.updated}>Страница обновлена: <time dateTime={CONTENT_UPDATED}>{formatContentDate()}</time></p>
+          {page.officialSources && <p className={styles.sources}>Законодательство меняется, а материал носит справочный характер и не заменяет консультацию бухгалтера или юриста. Актуальные требования проверяйте на официальных порталах: <a href="https://egov.kz" target="_blank" rel="noopener noreferrer">egov.kz</a>, <a href="https://kgd.gov.kz" target="_blank" rel="noopener noreferrer">kgd.gov.kz</a>, <a href="https://adilet.zan.kz" target="_blank" rel="noopener noreferrer">adilet.zan.kz</a>.</p>}
         </section>
         <HowItWorks />
         <CompanyBlock />
         <ToolsBlock />
         <section className={styles.faq}><h2>Ответы на<br />ваши вопросы</h2><div>{page.faq.map(f => <details key={f.q}><summary>{f.q}<span aria-hidden="true">+</span></summary><p>{f.a}</p></details>)}</div></section>
+        {relatedPages.length > 0 && <section className={styles.related}><h2>Читайте также</h2><div>{relatedPages.map(p => <Link key={p.slug} href={'/uslugi/' + p.slug}>{p.slug.startsWith('buhgalter-') ? p.sections[0].h2 : p.h1}</Link>)}</div></section>}
         <ContactBanner />
         <section className={styles.related}><h2>Другие услуги и города</h2><div>{SEO_PAGES.filter(p => p.slug !== page.slug).map(p => <Link key={p.slug} href={'/uslugi/' + p.slug}>{p.slug.startsWith('buhgalter-') ? p.sections[0].h2 : p.h1}</Link>)}</div></section>
       </main>

@@ -44,7 +44,7 @@ export function ServiceCards() {
 const TOO_LINKS = [
   { slug: 'otkrytie-too', title: 'Открыть ТОО', note: 'Под ключ от 20 000 ₸, за 1-3 рабочих дня' },
   { slug: 'registraciya-too', title: 'Регистрация ТОО', note: 'Госрегистрация малого бизнеса бесплатна, около 1 дня' },
-  { slug: 'otkrytie-too-astana', title: 'Открыть ТОО в Астане', note: 'Онлайн, без визита в госорган' },
+  { slug: 'otkrytie-too-astana', title: 'Открыть ТОО в Астане', note: 'Онлайн через eGov' },
   { slug: 'registraciya-too-astana', title: 'Регистрация ТОО в Астане', note: 'Порядок действий, сроки и стоимость' },
   { slug: 'zakrytie-too', title: 'Закрыть ТОО: ликвидация', note: 'Пошагово, сроки 3-6 месяцев' },
 ];
