@@ -1,0 +1,18 @@
+/* Плавающая кнопка WhatsApp с пульсирующим кольцом (справа внизу). Те же размеры и анимация, что на страницах /uslugi. */
+.waFloat { position: fixed; z-index: 1000; right: 26px; bottom: 26px; width: 62px; height: 62px; border-radius: 50%; background: #25d366; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 30px rgba(15, 34, 20, .28), 0 2px 10px rgba(37, 211, 102, .4); transition: transform .18s ease, box-shadow .18s ease; }
+.waFloat:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 16px 36px rgba(15, 34, 20, .32), 0 3px 12px rgba(37, 211, 102, .5); }
+.waFloat svg { position: relative; z-index: 1; width: 30px; height: 30px; }
+.waPulse, .waPulse::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #25d366; }
+.waPulse { opacity: .55; animation: waPulse 2.1s ease-out infinite; }
+.waPulse::before { animation: waPulse 2.1s ease-out .7s infinite; }
+@keyframes waPulse { 0% { transform: scale(1); opacity: .55; } 70% { transform: scale(1.9); opacity: 0; } 100% { transform: scale(1.9); opacity: 0; } }
+
+@media (max-width: 700px) {
+  .waFloat { width: 54px; height: 54px; right: 16px; bottom: 16px; }
+  .waFloat svg { width: 26px; height: 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waFloat { transition: none; }
+  .waPulse, .waPulse::before { animation: none; opacity: 0; }
+}

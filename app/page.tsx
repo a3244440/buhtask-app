@@ -13,6 +13,7 @@ import {
   CalendarDays, Baby, AlertTriangle, BookOpen, Scale, BarChart3, SearchCheck,
 } from "lucide-react";
 import Reveal from "./components/Reveal";
+import WhatsAppButton from "./components/WhatsAppButton";
 
 const TYPING_WORDS: Record<string, string[]> = {
   ru: ["Открыть ТОО", "Закрыть ТОО", "Сдать отчёт 910 ФНО", "Расчёт зарплаты сотрудника", "Ведение бухгалтерии", "Консультация по НДС", "Регистрация ИП", "Налоговый аудит"],
@@ -149,9 +150,12 @@ export default function HomePage() {
     <div className={`min-h-screen ${bg} transition-colors duration-500`} style={{ fontFamily: "Inter, sans-serif" }}>
       <NavWrapper dark={D} />
 
-      {/* Dark mode toggle */}
+      {/* Плавающая кнопка WhatsApp (справа внизу) */}
+      <WhatsAppButton />
+
+      {/* Dark mode toggle — стоит над кнопкой WhatsApp, центры по одной вертикали */}
       <button onClick={toggleDark}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 border"
+        className="fixed bottom-[104px] right-[33px] max-[700px]:bottom-[84px] max-[700px]:right-[19px] z-50 w-12 h-12 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 border"
         style={{ background: D ? '#1e293b' : '#fff', borderColor: D ? '#334155' : '#e2e8f0' }}
         title={D ? "Светлая тема" : "Тёмная тема"}>
         {D ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-500" />}

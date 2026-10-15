@@ -2,13 +2,11 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowUpRight, Check, FileText, Calculator, Building2, Users, MessageCircle, CalendarDays, Mail, MapPin, Phone, ShieldCheck, ReceiptText, Star, Clock, TrendingUp } from 'lucide-react';
+import { WHATSAPP_URL } from '@/lib/siteInfo';
 import styles from './services.module.css';
 
-const WHATSAPP_NUMBER = '77783244440';
-const WHATSAPP_MESSAGE = 'Здравствуйте! Пишу с сайта, нужны бухгалтерские услуги.';
-
 export const CONTACT = {
-  whatsapp: `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`,
+  whatsapp: WHATSAPP_URL,
   phone: '+7 778 324 4440',
   address: 'г. Астана, проспект Абая, 80',
   founder: 'Сейілбек Әлихан Ғалымұлы',
