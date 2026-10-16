@@ -375,19 +375,6 @@ function AccountantDashboardInner() {
             </div>
           )}
 
-          {/* Квиз по бухгалтерскому учёту */}
-          {tab === 'home' && (
-            <div className="grid gap-3 mb-6">
-              <button onClick={() => router.push('/quiz')}
-                className="text-left bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-5 text-white hover:-translate-y-0.5 transition-transform shadow-sm">
-                <span className="text-2xl">📚</span>
-                <p className="font-bold mt-2">Проверить знания бухучёта</p>
-                <p className="text-xs text-white/90 mt-1">Квиз по бухгалтерскому и налоговому учёту</p>
-              </button>
-
-            </div>
-          )}
-
           {/* HOME */}
           {(tab === 'home' || tab === 'my_orders') && (
             <>

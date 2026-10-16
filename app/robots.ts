@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { SITE } from '@/lib/siteInfo';
 
 // Закрытые разделы кабинета и служебные страницы — не для поиска и не для ИИ-ответов.
-const DISALLOW = ['/dashboard/', '/admin/', '/api/', '/auth', '/onboarding/', '/support', '/profile', '/quiz', '/promote'];
+const DISALLOW = ['/dashboard/', '/admin/', '/api/', '/auth', '/onboarding/', '/support', '/profile'];
 
 // Поисковые и ИИ-краулеры, которым мы явно разрешаем доступ, чтобы сайт мог попадать в ответы
 // ChatGPT, Claude, Perplexity, Gemini, Apple Intelligence, Яндекса и Bing.
